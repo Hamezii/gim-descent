@@ -439,7 +439,7 @@ class MainMenu(Menu):
             keypress = event[2]
             if self.active:
                 if keypress:
-                    ui.add_menu(GameMenu(game), focus=True)
+                    ui.add_menu(GameMenu(self.game), focus=True)
                     ui.remove_menu(self)
 
     def draw(self):
@@ -764,7 +764,7 @@ class ThrowOptions(Menu):
 
 
 class Renderer:
-    def __init__(self, game):
+    def __init__(self):
 
         self.SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
                               "!": "exc", "/": "fwdslash", "?": "que", " ": "space"}
@@ -775,7 +775,7 @@ class Renderer:
         self.t = 0
         self._zoom_cache = 0
         self._floor_cache = None
-        self.game = game
+        self.world = None
 
     def get_image(self, **args):
         if not "scale" in args:
@@ -809,19 +809,19 @@ class Renderer:
 
     def entity_image(self, entity, scale):
         color = [0, 0, 0]
-        if self.game.world.has_component(entity, FireElementC) or self.game.world.has_component(entity, BurningC):
+        if self.world.has_component(entity, FireElementC) or self.world.has_component(entity, BurningC):
             color[0] += 100
-        if self.game.world.has_component(entity, IceElementC) or self.game.world.has_component(entity, FrozenC):
+        if self.world.has_component(entity, IceElementC) or self.world.has_component(entity, FrozenC):
             color[0] += 0
             color[1] += 50
             color[2] += 100
 
         ready = False
-        if self.t % BLINK_RATE < BLINK_RATE/2 and entity != self.game.world.tags.player:
-            if self.game.world.has_component(entity, MyTurnC):
+        if self.t % BLINK_RATE < BLINK_RATE/2 and entity != self.world.tags.player:
+            if self.world.has_component(entity, MyTurnC):
                 ready = True
-            if self.game.world.has_component(entity, InitiativeC):
-                if self.game.world.entity_component(entity, InitiativeC).nextturn <= self.game.world.entity_component(self.game.world.tags.player, InitiativeC).nextturn:
+            if self.world.has_component(entity, InitiativeC):
+                if self.world.entity_component(entity, InitiativeC).nextturn <= self.world.entity_component(self.world.tags.player, InitiativeC).nextturn:
                     ready = True
 
         if ready:
@@ -830,10 +830,10 @@ class Renderer:
             color[2] += 50
 
         if any(color):
-            img = self.get_image(name=self.game.world.entity_component(
+            img = self.get_image(name=self.world.entity_component(
                 entity, RenderC).imagename, scale=scale, color=(color[0], color[1], color[2], pygame.BLEND_ADD))
         else:
-            img = self.get_image(name=self.game.world.entity_component(
+            img = self.get_image(name=self.world.entity_component(
                 entity, RenderC).imagename, scale=scale)
         return img
 
@@ -1277,6 +1277,36 @@ def get_input():
 
 
 def main():
+    game = Game()
+
+    game.world.add_system(GridSystem())
+    game.world.add_system(InitiativeSystem())
+
+    game.world.add_system(PlayerInputSystem())
+    game.world.add_system(AISystem())
+    game.world.add_system(FreezingSystem())
+    game.world.add_system(BumpSystem())
+    game.world.add_system(PickupSystem())
+
+    game.world.add_system(AnimationSystem())
+
+    game.generate_level()
+
+    game.world.tags.focus = game.world.tags.player = game.world.create_entity(
+        RenderC("magnum"),
+        TilePositionC(20, 20),
+        PlayerInputC(),
+        MovementC(),
+        InitiativeC(1),
+        BlockerC(),
+        HealthC(50),
+        CarrierC(10),
+        AttackC(5)
+    )
+
+    renderer.world = game.world
+    ui.add_menu(MainMenu(game), focus=True)
+
 
     while True:
 
@@ -1345,36 +1375,8 @@ if __name__ == "__main__":
         auname = au[len(AUDIO):-4]
         audio[auname] = pygame.mixer.Sound(au)
 
-    game = Game()
-
-    game.world.add_system(GridSystem())
-    game.world.add_system(InitiativeSystem())
-
-    game.world.add_system(PlayerInputSystem())
-    game.world.add_system(AISystem())
-    game.world.add_system(FreezingSystem())
-    game.world.add_system(BumpSystem())
-    game.world.add_system(PickupSystem())
-
-    game.world.add_system(AnimationSystem())
-
-    game.generate_level()
-
-    game.world.tags.focus = game.world.tags.player = game.world.create_entity(
-        RenderC("magnum"),
-        TilePositionC(20, 20),
-        PlayerInputC(),
-        MovementC(),
-        InitiativeC(1),
-        BlockerC(),
-        HealthC(50),
-        CarrierC(10),
-        AttackC(5)
-    )
-
-    renderer = Renderer(game)
+    renderer = Renderer()
     ui = UI()
-    ui.add_menu(MainMenu(game), focus=True)
 
     # Playing music
     pygame.mixer.music.load(random.choice(glob.glob(MUSIC+"*")))
