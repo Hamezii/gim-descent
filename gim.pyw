@@ -1,13 +1,7 @@
 '''
-GIM Descent
-4.4 :
-
-- Moved bumping code into the ECS in order to organise code
-- Took more code out of the main game class and put it into the ECS. Much better!
+GIM Descent 4
 
 James Lecomte
-Started : 13/04/18
-Last edit: 14/04/18
 '''
 
 FULLSCREEN_MODE = True
@@ -16,9 +10,6 @@ MUSIC_VOLUME = 1
 '''
 To Do:
 - Stop enemies hitting each other.
-
-- Stop enemies walking on the same tile.
-  This is because the blockerGrid does not get updated when something moves.
 
 - Add fire damage back into the game.
 
