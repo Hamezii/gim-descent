@@ -130,7 +130,10 @@ class World:
 
     def get_component(self, component_type):
         '''Get all components of a specific type.'''
-        comp_db = self._components[component_type].items()
+        try:
+            comp_db = self._components[component_type].items()
+        except KeyError:
+            raise StopIteration
 
         for entity, component in comp_db:
             yield entity, component
@@ -139,15 +142,13 @@ class World:
     def get_components(self, *component_types):
         '''Get all entity components in which the entity has a component of every type.'''
         type_set = set(component_types)
-        entity_db = self._entities.items()
+        entity_db = list(self._entities.items())
         comp_db = self._components
 
-        try:
-            for entity, comps in entity_db:
-                if type_set.issubset(comps):
-                    yield entity, tuple(comp_db[comp][entity] for comp in component_types)
-        except KeyError:
-            pass
+        for entity, comps in entity_db:
+            if type_set.issubset(comps):
+                yield entity, tuple(comp_db[comp][entity] for comp in component_types)
+
 
     def update(self, **args):
         '''Run a tick of the ECS.'''

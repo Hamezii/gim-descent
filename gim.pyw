@@ -895,6 +895,14 @@ class AttackingC:  # Not used yet
         self.target = target  # An entity id
 
 
+class DamageC:
+    def __init__(self, target, amount, burn=False, freeze=False):
+        self.target = target
+        self.amount = amount
+        self.burn = burn
+        self.freeze = freeze
+
+
 class BlockerC:
     def __init__(self):
         pass
@@ -1141,7 +1149,8 @@ class BumpSystem(ECS.System):
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
-            targetent = self.world.get_system(GridSystem).get_blocker_at(bumppos)
+            targetent = self.world.get_system(
+                GridSystem).get_blocker_at(bumppos)
             if targetent == entity:
                 return
 
@@ -1157,28 +1166,46 @@ class BumpSystem(ECS.System):
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    attack = self.world.entity_component(entity, AttackC)
-                    targethealth = self.world.entity_component(targetent, HealthC)
-                    targethealth.current -= attack.damage
-                    if targetent == self.world.tags.player:
-                        game.camera.shake(attack.damage*3)
-                    if targethealth.current <= 0:
-                        self.world.delete_entity(targetent)
+                    attack = self.world.entity_component(entity, AttackC).damage
+                    targethealth = self.world.entity_component(
+                        targetent, HealthC)
+                    self.world.create_entity(
+                        DamageC(targetent, attack, burn=self.world.has_component(
+                            entity, FireElementC), freeze=self.world.has_component(entity, IceElementC))
+                    )
 
                     if entity == self.world.tags.player:
                         self.game.camera.shake(5)
-
-                    if self.world.has_component(entity, FireElementC) and not self.world.has_component(targetent, FireElementC):
-                        self.world.add_component(targetent, BurningC(5))
-
-                    if self.world.has_component(entity, IceElementC) and not self.world.has_component(targetent, IceElementC):
-                        self.world.add_component(targetent, FrozenC())
 
                     self.world.remove_component(entity, MyTurnC)
 
         for entity, comps in self.world.get_components(BumpC):
             self.world.remove_component(entity, BumpC)
 
+
+class DamageSystem(ECS.System):
+    def __init__(self):
+        super().__init__()
+
+    def update(self, **args):
+        for entity, damage in self.world.get_component(DamageC):
+            if self.world.has_component(damage.target, HealthC):
+                targethealth = self.world.entity_component(
+                    damage.target, HealthC)
+
+                targethealth.current -= damage.amount
+                if damage.target == self.world.tags.player:
+                    self.game.camera.shake(damage.amount*3)
+                if targethealth.current <= 0:
+                    self.world.delete_entity(damage.target)
+
+                if damage.burn and not self.world.has_component(damage.target, FireElementC):
+                    self.world.add_component(damage.target, BurningC(5))
+
+                if damage.freeze and not self.world.has_component(damage.target, IceElementC):
+                    self.world.add_component(damage.target, FrozenC())
+            
+            self.world.delete_entity(entity)
 
 class PickupSystem(ECS.System):
     def __init__(self):
@@ -1277,6 +1304,7 @@ def main():
     game.world.add_system(AISystem())
     game.world.add_system(FreezingSystem())
     game.world.add_system(BumpSystem())
+    game.world.add_system(DamageSystem())
     game.world.add_system(PickupSystem())
 
     game.world.add_system(AnimationSystem())
@@ -1298,10 +1326,9 @@ def main():
     renderer.world = game.world
     ui.add_menu(MainMenu(game), focus=True)
 
-
     while True:
 
-        ms = clock.tick(60)
+        ms = clock.tick()
         fps = clock.get_fps()
         if fps != 0:
             avgms = 1000/fps
