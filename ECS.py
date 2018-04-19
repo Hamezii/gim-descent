@@ -97,7 +97,7 @@ class World:
         return (self._components[comp][entity] for comp in self._entities[entity])
 
     def has_component(self, entity, component_type):
-        '''Return true if entity has a component of a specific type/'''
+        '''Return true if entity has a component of a specific type.'''
         return component_type in self._entities[entity]
 
     def add_component(self, entity, component):

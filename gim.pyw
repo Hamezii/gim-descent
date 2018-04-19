@@ -2,18 +2,13 @@
 GIM Descent 4
 
 James Lecomte
-'''
 
-FULLSCREEN_MODE = True
-MUSIC_VOLUME = 1
-
-'''
 To Do:
 - Stop enemies hitting each other.
 
 - Add fire damage back into the game.
-
 '''
+
 import cProfile as profile
 import glob
 import random
@@ -23,7 +18,12 @@ from math import floor, hypot
 
 import pygame
 
-import ECS
+import ecs
+
+
+FULLSCREEN_MODE = True
+MUSIC_VOLUME = 1
+
 
 pygame.mixer.pre_init(44100, -16, 8, 2048)
 pygame.init()
@@ -94,21 +94,25 @@ class DynamicPos:
         self.speed = speed
 
     def move(self, pos, instant=False):
+        """Set a target position. Instant moves it there instantly."""
         self.goal = pos
         if instant:
             self.current = pos
 
-    def update(self, ms):
-        x = (self.goal[0] - self.current[0])*min(1, ms*self.speed*0.001)
-        y = (self.goal[1] - self.current[1])*min(1, ms*self.speed*0.001)
+    def update(self, delta):
+        """Linearly interpolate to target position."""
+        x = (self.goal[0] - self.current[0])*min(1, delta*self.speed*0.001)
+        y = (self.goal[1] - self.current[1])*min(1, delta*self.speed*0.001)
         self.current = (self.current[0]+x, self.current[1] + y)
 
     @property
-    def x(self):
+    def x(self): 
+        """Get x value of vector."""
         return self.current[0]
 
     @property
     def y(self):
+        """Get y value of vector."""
         return self.current[1]
 
 
@@ -129,6 +133,10 @@ class Camera:
         self.start = True
 
     def get_rect(self):
+        """Return the rect in which the camera can see.
+
+        Rect position and size is in pixels.
+        """
         x = (self._pos.x + random.uniform(-self._shake_x,
                                           self._shake_x)) * self._ppt / TILE_SIZE
         y = (self._pos.y + random.uniform(-self._shake_y,
@@ -138,32 +146,41 @@ class Camera:
         return rect
 
     def get_scale(self):
+        """Return scale of camera. Larger number means more zoomed in."""
         return self._ppt / TILE_SIZE
 
     def get_zoom(self):
+        """Get pixels per tile of camera. Larger number means larger tiles."""
         return self._ppt
 
     def zoom(self, zoom):
+        """Change the pixels per tile of the camera. Positive zoom means zooming in."""
         self._ppt += zoom
 
     def shake(self, amount):
+        """Shake the camera."""
         self._shake += amount
 
     def set(self, pos, direct=False):
+        """Set target position of the camera."""
         self._pos.move(pos, direct)
 
     def tile_to_pixel_pos(self, x, y):
+        """Including zoom, return the position of the center of a tile relative to the top-left of the map."""
         return ((x+0.5)*self._ppt, (y+0.5)*self._ppt)
 
     def tile_to_camera_pos(self, x, y):
+        """Excluding zoom, return the position of the center of a tile relative to the top-left of the map."""
         return ((x+0.5)*TILE_SIZE, (y+0.5)*TILE_SIZE)
 
     def tile_to_screen_pos(self, x, y):
+        """Return the position of the center of a tile relative to the top-left of the screen."""
         pixelpos = self.tile_to_pixel_pos(x, y)
         rect = self.get_rect()
         return (pixelpos[0] - rect.x, pixelpos[1] - rect.y)
 
     def update(self, t_frame, pos):
+        """Update shake amount and move towards target position."""
         if self.start:
             self.start = False
             self.set(pos, direct=True)
@@ -188,7 +205,7 @@ class Game:
 
     def __init__(self):
         self.camera = Camera(speed=10)
-        self.world = ECS.World(self)
+        self.world = ecs.World(self)
 
     def on_grid(self, pos):
         """Return True if a position is on the grid."""
@@ -366,11 +383,22 @@ class UI:
 
 
 class Menu:
+    """A class that can be interacted with and drawn to the screen."""
+
     def __init__(self, game):
         self.game = game
 
     def get_event(self, event):
-        return NotImplementedError
+        """React to an event.
+
+        An event is a list of arbitrary length.
+        The first element of the list is the name of the event.
+        """
+        raise NotImplementedError
+
+    def draw(self):
+        """Draw the menu."""
+        raise NotImplementedError
 
 
 class MainMenuTitle:
@@ -384,6 +412,7 @@ class MainMenuTitle:
         self.lastshake = 1000/60
 
     def update(self, ms):
+        """Update the title."""
         if self.pos.y < self.y_goal:
             self.speed += ms*0.001
             self.pos.move(
@@ -402,6 +431,7 @@ class MainMenuTitle:
                         self.shake = 0
 
     def draw(self):
+        """Draw the title."""
         renderer.draw_centered_image(screen, renderer.get_image(
             name="title", scale=MENU_SCALE/2), (self.pos.x+self.shake_x, self.pos.y+self.shake_y))
 
@@ -445,8 +475,12 @@ class MainMenu(Menu):
 
 
 class GameMenu(Menu):
+    """The main game menu. Takes player input and draws the game."""
+
     def __init__(self, game):
         super().__init__(game)
+        self._floor_cache = None
+        self._zoom_cache = 0
 
     def get_event(self, event):
         if event[0] == "update":
@@ -468,52 +502,51 @@ class GameMenu(Menu):
         camerazoom = self.game.camera.get_zoom()
         camerascale = camerazoom/TILE_SIZE
 
-        if renderer._zoom_cache != camerazoom:
-            renderer._zoom_cache = camerazoom
+        if self._zoom_cache != camerazoom:
+            self._zoom_cache = camerazoom
 
             gridwidth = self.game.world.get_system(GridSystem).gridwidth
             gridheight = self.game.world.get_system(GridSystem).gridheight
 
-            renderer._floor_cache = pygame.Surface(
+            self._floor_cache = pygame.surface.Surface(
                 (gridwidth*camerazoom, gridheight*camerazoom))
             for x in range(0, gridwidth):
                 for y in range(0, gridheight):
-                    renderer._floor_cache.blit(renderer.get_image(
+                    self._floor_cache.blit(renderer.get_image(
                         name="floor", scale=camerascale), (x*camerazoom, y*camerazoom))
 
-        screen.blit(renderer._floor_cache, (0, 0), (camerarect.x,
-                                                    camerarect.y, camerarect.width, camerarect.height))
+        screen.blit(self._floor_cache, (0, 0), (camerarect.x,
+                                                camerarect.y, camerarect.width, camerarect.height))
 
         for entity, comps in self.game.world.get_components(RenderC, TilePositionC):
-            Render = comps[0]
-            Pos = comps[1]
+            pos = comps[1]
 
-            pixelpos = self.game.camera.tile_to_pixel_pos(Pos.x, Pos.y)
-            Rect = pygame.Rect(0, 0, camerazoom*2, camerazoom*2)
-            Rect.center = pixelpos
+            pixelpos = self.game.camera.tile_to_pixel_pos(pos.x, pos.y)
+            rect = pygame.Rect(0, 0, camerazoom*2, camerazoom*2)
+            rect.center = pixelpos
 
-            drawing = Rect.colliderect(camerarect)
+            drawing = rect.colliderect(camerarect)
 
             if drawing:
                 image = renderer.entity_image(entity, scale=camerascale)
-                Rect = image.get_rect()
+                rect = image.get_rect()
                 pixelpos = (pixelpos[0] - camerarect.x,
                             pixelpos[1] - camerarect.y)
-                Rect.center = pixelpos
-                screen.blit(image, Rect)
+                rect.center = pixelpos
+                screen.blit(image, rect)
 
                 if self.game.world.has_component(entity, FireElementC):
                     screen.blit(renderer.get_image(
-                        name="elementFire", scale=camerascale), Rect)
+                        name="elementFire", scale=camerascale), rect)
                 if self.game.world.has_component(entity, IceElementC):
                     screen.blit(renderer.get_image(
-                        name="elementIce", scale=camerascale), Rect)
+                        name="elementIce", scale=camerascale), rect)
                 if self.game.world.has_component(entity, FrozenC):
                     renderer.draw_centered_image(screen, renderer.get_image(
                         name="ice-cube", scale=camerascale), pixelpos)
 
                 if self.game.world.has_component(entity, HealthC):    # Healthbar
-                    Health = self.game.world.entity_component(entity, HealthC)
+                    health = self.game.world.entity_component(entity, HealthC)
                     barx = pixelpos[0] - camerazoom*0.4
                     bary = pixelpos[1] + camerazoom*0.4
                     barwidth = camerazoom*0.8
@@ -522,7 +555,7 @@ class GameMenu(Menu):
                                      (barx, bary, barwidth, barheight))
                     try:
                         pygame.draw.rect(
-                            screen, DARK_GREEN, (barx, bary, barwidth*(Health.current / Health.max), barheight))
+                            screen, DARK_GREEN, (barx, bary, barwidth*(health.current / health.max), barheight))
                     except ZeroDivisionError:
                         pass
 
@@ -764,8 +797,6 @@ class Renderer:
         self.imported_images = {}
         self.total_images = 0
         self.t = 0
-        self._zoom_cache = 0
-        self._floor_cache = None
         self.world = None
 
     def get_image(self, **args):
@@ -791,7 +822,7 @@ class Renderer:
         if not name in self.imported_images:
             try:
                 image = pygame.image.load(IMAGES+name+".png").convert_alpha()
-            except:
+            except pygame.error:
                 image = pygame.image.load(
                     DEFAULT_IMAGES+name+".png").convert_alpha()
             self.imported_images[name] = image
@@ -967,7 +998,7 @@ class AnimationC:
 
 
 # SYSTEMS
-class GridSystem(ECS.System):
+class GridSystem(ecs.System):
     def __init__(self):
         super().__init__()
         self.gridwidth = 40
@@ -996,16 +1027,13 @@ class GridSystem(ECS.System):
             self.BlockerGrid[comp[0].x][comp[0].y] = entity
 
 
-class InitiativeSystem(ECS.System):
-    def __init__(self):
-        super().__init__()
-
+class InitiativeSystem(ecs.System):
     def update(self, **args):
 
         try:
             if self.world.has_component(self.world.tags.player, MyTurnC):
                 return
-        except:
+        except KeyError:
             pass
 
         # Only run if not player's turn
@@ -1029,10 +1057,7 @@ class InitiativeSystem(ECS.System):
             '''
 
 
-class PlayerInputSystem(ECS.System):
-    def __init__(self):
-        super().__init__()
-
+class PlayerInputSystem(ecs.System):
     def update(self, **args):
         playerinput = args["playerinput"]
         if playerinput in DIRECTIONS:
@@ -1042,7 +1067,7 @@ class PlayerInputSystem(ECS.System):
                 self.world.add_component(entity, BumpC(*bumppos))
 
 
-class AISystem(ECS.System):
+class AISystem(ecs.System):
     def __init__(self):
         super().__init__()
 
@@ -1124,7 +1149,7 @@ class AISystem(ECS.System):
                             entity, BumpC(pos.x+movex, pos.y+movey))
 
 
-class FreezingSystem(ECS.System):
+class FreezingSystem(ecs.System):
     def __init__(self):
         super().__init__()
 
@@ -1139,7 +1164,7 @@ class FreezingSystem(ECS.System):
             pass
 
 
-class BumpSystem(ECS.System):
+class BumpSystem(ecs.System):
     def __init__(self):
         super().__init__()
 
@@ -1166,7 +1191,8 @@ class BumpSystem(ECS.System):
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    attack = self.world.entity_component(entity, AttackC).damage
+                    attack = self.world.entity_component(
+                        entity, AttackC).damage
                     targethealth = self.world.entity_component(
                         targetent, HealthC)
                     self.world.create_entity(
@@ -1183,7 +1209,7 @@ class BumpSystem(ECS.System):
             self.world.remove_component(entity, BumpC)
 
 
-class DamageSystem(ECS.System):
+class DamageSystem(ecs.System):
     def __init__(self):
         super().__init__()
 
@@ -1204,10 +1230,11 @@ class DamageSystem(ECS.System):
 
                 if damage.freeze and not self.world.has_component(damage.target, IceElementC):
                     self.world.add_component(damage.target, FrozenC())
-            
+
             self.world.delete_entity(entity)
 
-class PickupSystem(ECS.System):
+
+class PickupSystem(ecs.System):
     def __init__(self):
         super().__init__()
 
@@ -1225,7 +1252,7 @@ class PickupSystem(ECS.System):
                             eInv.entities.append(item)
 
 
-class AnimationSystem(ECS.System):
+class AnimationSystem(ecs.System):
     def __init__(self):
         super().__init__()
         self.t_last_frame = 0
