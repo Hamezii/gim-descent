@@ -9,12 +9,11 @@ To Do:
 - Add fire damage back into the game.
 '''
 
-import cProfile as profile
+#import cProfile as profile
 import glob
 import random
 import sys
-import time
-from math import floor, hypot
+from math import hypot
 
 import pygame
 
@@ -106,7 +105,7 @@ class DynamicPos:
         self.current = (self.current[0]+x, self.current[1] + y)
 
     @property
-    def x(self): 
+    def x(self):
         """Get x value of vector."""
         return self.current[0]
 
@@ -309,7 +308,7 @@ class Game:
                         if choice == 2:
                             entity = self.world.create_entity(
                                 AnimationC(idle=["snake-i", "snake-i", "snake-i2", "snake-i2"], ready=[
-                                           "snake-r", "snake-r", "snake-r2", "snake-r2"]),
+                                    "snake-r", "snake-r", "snake-r2", "snake-r2"]),
                                 RenderC(),
                                 TilePositionC(x, y),
                                 AIC(),
@@ -340,7 +339,7 @@ class Game:
                             self.world.add_component(entity, IceElementC())
 
 
-class UI:
+class UserInterface:
     """Stores all the menu instances.
 
     Used to update, draw and send messages to the menus.
@@ -402,6 +401,8 @@ class Menu:
 
 
 class MainMenuTitle:
+    """The game title."""
+
     def __init__(self):
         self.pos = DynamicPos((WIDTH//2, -200), 0)
         self.y_goal = HEIGHT/2 - 50*MENU_SCALE
@@ -411,17 +412,17 @@ class MainMenuTitle:
         self.shake = 0
         self.lastshake = 1000/60
 
-    def update(self, ms):
+    def update(self, delta):
         """Update the title."""
         if self.pos.y < self.y_goal:
-            self.speed += ms*0.001
+            self.speed += delta*0.001
             self.pos.move(
-                (self.pos.x, min(self.pos.y+self.speed*ms, self.y_goal)), instant=True)
+                (self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
             if self.pos.y == self.y_goal:
                 self.shake = 15*MENU_SCALE
         else:
             if self.shake > 0:
-                self.lastshake += ms
+                self.lastshake += delta
                 while self.lastshake > 1000/60:
                     self.lastshake -= 1000/60
                     self.shake_x = random.uniform(-self.shake, self.shake)
@@ -432,26 +433,28 @@ class MainMenuTitle:
 
     def draw(self):
         """Draw the title."""
-        renderer.draw_centered_image(screen, renderer.get_image(
+        RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(
             name="title", scale=MENU_SCALE/2), (self.pos.x+self.shake_x, self.pos.y+self.shake_y))
 
 
 class MainMenu(Menu):
+    """The starting menu of the game."""
+
     def __init__(self, game):
         super().__init__(game)
         self.title = MainMenuTitle()
         self.active = False
         if WIDTH/1920 > HEIGHT/1080:  # Logic to get title image to scale on differently sized monitors
-            self.title_background = pygame.transform.scale(renderer.get_image(
+            self.title_background = pygame.transform.scale(RENDERER.get_image(
                 name="title_background"), (WIDTH, int(WIDTH/1920*1080)))
         else:
-            self.title_background = pygame.transform.scale(renderer.get_image(
+            self.title_background = pygame.transform.scale(RENDERER.get_image(
                 name="title_background"), (int(HEIGHT/1080*1920), HEIGHT))
 
     def get_event(self, event):
         if event[0] == "update":
-            ms = event[1]
-            self.title.update(ms)
+            delta = event[1]
+            self.title.update(delta)
 
             if not self.active:
                 if self.title.pos.y == self.title.y_goal:
@@ -460,16 +463,16 @@ class MainMenu(Menu):
             keypress = event[2]
             if self.active:
                 if keypress:
-                    ui.add_menu(GameMenu(self.game), focus=True)
-                    ui.remove_menu(self)
+                    UI.add_menu(GameMenu(self.game), focus=True)
+                    UI.remove_menu(self)
 
     def draw(self):
         # Logic to get title image to show in the right place
-        renderer.draw_image(screen, self.title_background,
+        RENDERER.draw_image(SCREEN, self.title_background,
                             (0, HEIGHT-self.title_background.get_height()))
         # for different sized sceens
         if self.active:
-            renderer.draw_text(screen, (random.randint(0, 5)*50, 122, 0), (WIDTH //
+            RENDERER.draw_text(SCREEN, (random.randint(0, 5)*50, 122, 0), (WIDTH //
                                                                            2, HEIGHT//2), "Press any key to begin", MENU_SCALE*5, centered=True)
         self.title.draw()
 
@@ -484,16 +487,16 @@ class GameMenu(Menu):
 
     def get_event(self, event):
         if event[0] == "update":
-            ms = event[1]
+            delta = event[1]
             cameragoal = self.game.world.entity_component(
                 self.game.world.tags.focus, TilePositionC)
             cameragoal = self.game.camera.tile_to_camera_pos(
                 cameragoal.x, cameragoal.y)
-            self.game.camera.update(ms, cameragoal)
+            self.game.camera.update(delta, cameragoal)
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == pygame.K_z:
-                ui.add_menu(Inventory(self.game), focus=True)
+                UI.add_menu(Inventory(self.game), focus=True)
             if keypress in DIRECTIONS:
                 self.game.world.update(playerinput=keypress, t_frame=0)
 
@@ -512,10 +515,10 @@ class GameMenu(Menu):
                 (gridwidth*camerazoom, gridheight*camerazoom))
             for x in range(0, gridwidth):
                 for y in range(0, gridheight):
-                    self._floor_cache.blit(renderer.get_image(
+                    self._floor_cache.blit(RENDERER.get_image(
                         name="floor", scale=camerascale), (x*camerazoom, y*camerazoom))
 
-        screen.blit(self._floor_cache, (0, 0), (camerarect.x,
+        SCREEN.blit(self._floor_cache, (0, 0), (camerarect.x,
                                                 camerarect.y, camerarect.width, camerarect.height))
 
         for entity, comps in self.game.world.get_components(RenderC, TilePositionC):
@@ -528,21 +531,21 @@ class GameMenu(Menu):
             drawing = rect.colliderect(camerarect)
 
             if drawing:
-                image = renderer.entity_image(entity, scale=camerascale)
+                image = RENDERER.entity_image(entity, scale=camerascale)
                 rect = image.get_rect()
                 pixelpos = (pixelpos[0] - camerarect.x,
                             pixelpos[1] - camerarect.y)
                 rect.center = pixelpos
-                screen.blit(image, rect)
+                SCREEN.blit(image, rect)
 
                 if self.game.world.has_component(entity, FireElementC):
-                    screen.blit(renderer.get_image(
+                    SCREEN.blit(RENDERER.get_image(
                         name="elementFire", scale=camerascale), rect)
                 if self.game.world.has_component(entity, IceElementC):
-                    screen.blit(renderer.get_image(
+                    SCREEN.blit(RENDERER.get_image(
                         name="elementIce", scale=camerascale), rect)
                 if self.game.world.has_component(entity, FrozenC):
-                    renderer.draw_centered_image(screen, renderer.get_image(
+                    RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(
                         name="ice-cube", scale=camerascale), pixelpos)
 
                 if self.game.world.has_component(entity, HealthC):    # Healthbar
@@ -551,16 +554,18 @@ class GameMenu(Menu):
                     bary = pixelpos[1] + camerazoom*0.4
                     barwidth = camerazoom*0.8
                     barheight = camerazoom*0.1
-                    pygame.draw.rect(screen, DARK_RED,
+                    pygame.draw.rect(SCREEN, DARK_RED,
                                      (barx, bary, barwidth, barheight))
                     try:
                         pygame.draw.rect(
-                            screen, DARK_GREEN, (barx, bary, barwidth*(health.current / health.max), barheight))
+                            SCREEN, DARK_GREEN, (barx, bary, barwidth*(health.current / health.max), barheight))
                     except ZeroDivisionError:
                         pass
 
 
 class Inventory(Menu):
+    """Main inventory menu."""
+
     def __init__(self, game):
         super().__init__(game)
         self.cursorpos = [0, 0]
@@ -570,23 +575,25 @@ class Inventory(Menu):
         self.show()
 
     def show(self):
+        """Tell inventory to move onscreen."""
         self.pos.move((40, self.pos.y))
 
     def hide(self):
+        """Tell inventory to move offscreen."""
         self.pos.move((-TILE_SIZE*MENU_SCALE*2-21, self.pos.y))
 
     def get_event(self, event):
 
         if event[0] == "update":
-            ms = event[1]
-            self.pos.update(ms)
+            delta = event[1]
+            self.pos.update(delta)
             if self.pos.x < -TILE_SIZE*MENU_SCALE*2-20:
-                ui.remove_menu(self)
+                UI.remove_menu(self)
 
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == pygame.K_x:
-                ui.unfocus_menu(self)
+                UI.unfocus_menu(self)
                 self.hide()
 
             if keypress == UP:
@@ -604,38 +611,42 @@ class Inventory(Menu):
                 items = self.game.world.entity_component(
                     self.game.world.tags.player, CarrierC).entities
                 if itempos < len(items):
-                    ui.add_menu(InventoryOptions(
+                    UI.add_menu(InventoryOptions(
                         self.game, items[itempos]), focus=True)
 
     def draw(self):
         drawposx = round(self.pos.x)
         drawposy = round(self.pos.y)
 
-        pygame.draw.rect(screen, BLACK, (drawposx-5*MENU_SCALE, drawposy-5*MENU_SCALE, TILE_SIZE *
+        pygame.draw.rect(SCREEN, BLACK, (drawposx-5*MENU_SCALE, drawposy-5*MENU_SCALE, TILE_SIZE *
                                          self.size[0]*MENU_SCALE+10*MENU_SCALE, TILE_SIZE*self.size[1]*MENU_SCALE+10*MENU_SCALE))
 
-        Carrier = self.game.world.entity_component(
+        inventory = self.game.world.entity_component(
             self.game.world.tags.player, CarrierC)
 
         for x in range(self.size[0]):
             for y in range(self.size[1]):
-                screen.blit(renderer.get_image(name="inventory-slot", scale=MENU_SCALE),
+                SCREEN.blit(RENDERER.get_image(name="inventory-slot", scale=MENU_SCALE),
                             (drawposx+TILE_SIZE*MENU_SCALE*x, drawposy+TILE_SIZE*MENU_SCALE*y))
 
-        for i, entity in enumerate(Carrier.entities):
-            renderer.draw_centered_image(screen, renderer.entity_image(entity, scale=MENU_SCALE), (
+        for i, entity in enumerate(inventory.entities):
+            RENDERER.draw_centered_image(SCREEN, RENDERER.entity_image(entity, scale=MENU_SCALE), (
                 drawposx+TILE_SIZE*MENU_SCALE*(i//self.size[1]+0.5), drawposy+TILE_SIZE*MENU_SCALE*(i % self.size[1]+0.5)))
 
-        screen.blit(renderer.get_image(name="inventory-cursor-box", scale=MENU_SCALE), (drawposx +
-                                                                                        TILE_SIZE*MENU_SCALE*self.cursorpos[0], drawposy+TILE_SIZE*MENU_SCALE*self.cursorpos[1]))
+        inv_cursor_screenpos = (drawposx + TILE_SIZE * MENU_SCALE *
+                                self.cursorpos[0], drawposy + TILE_SIZE * MENU_SCALE * self.cursorpos[1])
+        SCREEN.blit(RENDERER.get_image(name="inventory-cursor-box",
+                                       scale=MENU_SCALE), inv_cursor_screenpos)
 
-        renderer.draw_text(screen, WHITE, (drawposx, drawposy -
+        RENDERER.draw_text(SCREEN, WHITE, (drawposx, drawposy -
                                            19*MENU_SCALE), "Z to select", 5*MENU_SCALE)
-        renderer.draw_text(screen, WHITE, (drawposx, drawposy -
+        RENDERER.draw_text(SCREEN, WHITE, (drawposx, drawposy -
                                            12*MENU_SCALE), "X to return", 5*MENU_SCALE)
 
 
 class InventoryOptions(Menu):
+    """Option menu for item selected in menu."""
+
     def __init__(self, game, item):
         super().__init__(game)
         self.item = item
@@ -653,9 +664,9 @@ class InventoryOptions(Menu):
 
     def get_event(self, event):
         if event[0] == "update":
-            ms = event[1]
+            delta = event[1]
             for pos in self.options_pos:
-                pos.update(ms)
+                pos.update(delta)
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == DOWN:
@@ -663,11 +674,11 @@ class InventoryOptions(Menu):
             if keypress == UP:
                 self.cursorpos = max(self.cursorpos - 1, 0)
             if keypress == pygame.K_x:
-                ui.unfocus_menu(self)
-                ui.remove_menu(self)
+                UI.unfocus_menu(self)
+                UI.remove_menu(self)
             if keypress == pygame.K_z:
-                ui.unfocus_menu(self)
-                ui.remove_menu(self)
+                UI.unfocus_menu(self)
+                UI.remove_menu(self)
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":
@@ -680,7 +691,7 @@ class InventoryOptions(Menu):
                             self.game.world.tags.player, CarrierC).entities.remove(self.item)
                         self.game.world.delete_entity(self.item)
                 if selection == "throw":
-                    ui.add_menu(ThrowOptions(self.game, self.item), focus=True)
+                    UI.add_menu(ThrowOptions(self.game, self.item), focus=True)
 
                 if selection == "drop":
                     self.game.world.entity_component(
@@ -696,20 +707,27 @@ class InventoryOptions(Menu):
                 pos.move((self.pos[0]+24*MENU_SCALE, pos.y))
             else:
                 pos.move((self.pos[0]+12*MENU_SCALE, pos.y))
-            pygame.draw.rect(screen, (0, 0, 0), (pos.x, pos.y,
+            pygame.draw.rect(SCREEN, (0, 0, 0), (pos.x, pos.y,
                                                  60*MENU_SCALE, 12*MENU_SCALE), 0)
-            renderer.draw_text(screen, (255, 255, 255), (pos.x+30*MENU_SCALE, pos.y +
+            RENDERER.draw_text(SCREEN, (255, 255, 255), (pos.x+30*MENU_SCALE, pos.y +
                                                          6*MENU_SCALE), self.options[i], size=5 * MENU_SCALE, centered=True)
 
-        renderer.draw_centered_image(screen, renderer.get_image(name="cursor", color=(255, 255, 255, pygame.BLEND_ADD),
-                                                                scale=MENU_SCALE), (self.pos[0], self.pos[1]+12*MENU_SCALE*(self.cursorpos+0.5)+(TILE_SIZE*1.5+10)*MENU_SCALE))
-        renderer.draw_centered_image(screen, renderer.get_image(name="inventory-slot", scale=MENU_SCALE*1.5),
+        option_cursor_image = RENDERER.get_image(name="cursor", color=(
+            255, 255, 255, pygame.BLEND_ADD), scale=MENU_SCALE)
+        option_cursor_pos = (self.pos[0], self.pos[1]+12*MENU_SCALE *
+                             (self.cursorpos+0.5)+(TILE_SIZE*1.5+10)*MENU_SCALE)
+        RENDERER.draw_centered_image(
+            SCREEN, option_cursor_image, option_cursor_pos)
+
+        RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="inventory-slot", scale=MENU_SCALE*1.5),
                                      (self.pos[0]+TILE_SIZE*MENU_SCALE*0.75, self.pos[1]+TILE_SIZE*MENU_SCALE*0.75))
-        renderer.draw_centered_image(screen, renderer.entity_image(
+        RENDERER.draw_centered_image(SCREEN, RENDERER.entity_image(
             self.item, MENU_SCALE*1.5), (self.pos[0]+TILE_SIZE*MENU_SCALE*0.75, self.pos[1]+TILE_SIZE*MENU_SCALE*0.75))
 
 
 class ThrowOptions(Menu):
+    """Throw direction selector once an item has been chosen to throw."""
+
     def __init__(self, game, item):
         super().__init__(game)
         self.item = item
@@ -721,16 +739,16 @@ class ThrowOptions(Menu):
 
     def get_event(self, event):
         if event[0] == "update":
-            ms = event[1]
-            self.help_pos.update(ms)
+            delta = event[1]
+            self.help_pos.update(delta)
             if self.help_pos.y > HEIGHT+MENU_SCALE*2.5:
-                ui.remove_menu(self)
+                UI.remove_menu(self)
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == pygame.K_x:
-                ui.unfocus_menu(self)
-                ui.remove_menu(self)
-                ui.add_menu(InventoryOptions(self.game, self.item), focus=True)
+                UI.unfocus_menu(self)
+                UI.remove_menu(self)
+                UI.add_menu(InventoryOptions(self.game, self.item), focus=True)
 
             if keypress in DIRECTIONS:
                 self.dir = keypress
@@ -769,43 +787,47 @@ class ThrowOptions(Menu):
                         if self.game.world.entity_component(self.item, PickupC).consumable:
                             self.game.world.delete_entity(self.item)
 
-                    ui.unfocus_menu(self)
-                    ui.remove_menu(self)
+                    UI.unfocus_menu(self)
+                    UI.remove_menu(self)
 
     def draw(self):
-        if ui.get_focus() == self:
-            renderer.draw_centered_image(screen, renderer.entity_image(self.item, scale=self.game.camera.get_scale(
+        if UI.get_focus() == self:
+            RENDERER.draw_centered_image(SCREEN, RENDERER.entity_image(self.item, scale=self.game.camera.get_scale(
             )), (WIDTH//2+self.dir[0]*self.game.camera.get_zoom()/2, HEIGHT//2+self.dir[1]*self.game.camera.get_zoom()/2))
             if self.targettile is not None:
-                renderer.draw_centered_image(screen, renderer.get_image(
+                RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(
                     name="crosshair", scale=self.game.camera.get_scale()), self.game.camera.tile_to_screen_pos(*self.targettile))
-        renderer.draw_text(screen, (170, 170, 170), (self.help_pos.x,
+        RENDERER.draw_text(SCREEN, (170, 170, 170), (self.help_pos.x,
                                                      self.help_pos.y), "Pick a direction", 5*MENU_SCALE, centered=True)
-        renderer.draw_text(screen, (255, 255, 255), (self.help_pos.x,
+        RENDERER.draw_text(SCREEN, (255, 255, 255), (self.help_pos.x,
                                                      self.help_pos.y+7*MENU_SCALE), "Z to throw", 5*MENU_SCALE, centered=True)
-        renderer.draw_text(screen, (255, 255, 255), (self.help_pos.x, self.help_pos.y +
+        RENDERER.draw_text(SCREEN, (255, 255, 255), (self.help_pos.x, self.help_pos.y +
                                                      14*MENU_SCALE), "X to cancel", 5*MENU_SCALE, centered=True)
 
 
 class Renderer:
+    """Rendering wrapper which stores cached surfaces."""
+    SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
+                     "!": "exc", "/": "fwdslash", "?": "que", " ": "space"}
+
     def __init__(self):
-
-        self.SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
-                              "!": "exc", "/": "fwdslash", "?": "que", " ": "space"}
-
         self.images = {}
         self.imported_images = {}
         self.total_images = 0
-        self.t = 0
+        self.t_elapsed = 0
         self.world = None
 
     def get_image(self, **args):
-        if not "scale" in args:
+        """Get an image surface from the cache. If it does not exist, the image is created.
+
+        Optional modifier parameters like scale and color can be used.
+        """
+        if "scale" not in args:
             args["scale"] = 1
 
         key = str(args)
 
-        if not key in self.images:
+        if key not in self.images:
             self.total_images += 1
             self.images[key] = self._import_image(args["name"])
             if "scale" in args:
@@ -830,6 +852,7 @@ class Renderer:
         return self.imported_images[name].copy()
 
     def entity_image(self, entity, scale):
+        """Return the current image of an entity referred to by its id."""
         color = [0, 0, 0]
         if self.world.has_component(entity, FireElementC) or self.world.has_component(entity, BurningC):
             color[0] += 100
@@ -839,11 +862,15 @@ class Renderer:
             color[2] += 100
 
         ready = False
-        if self.t % BLINK_RATE < BLINK_RATE/2 and entity != self.world.tags.player:
+        if self.t_elapsed % BLINK_RATE < BLINK_RATE/2 and entity != self.world.tags.player:
             if self.world.has_component(entity, MyTurnC):
                 ready = True
             if self.world.has_component(entity, InitiativeC):
-                if self.world.entity_component(entity, InitiativeC).nextturn <= self.world.entity_component(self.world.tags.player, InitiativeC).nextturn:
+                entity_nextturn = self.world.entity_component(
+                    entity, InitiativeC).nextturn
+                player_nextturn = self.world.entity_component(
+                    self.world.tags.player, InitiativeC).nextturn
+                if entity_nextturn <= player_nextturn:
                     ready = True
 
         if ready:
@@ -860,35 +887,45 @@ class Renderer:
         return img
 
     def draw_text(self, surface, color, pos, text, size, centered=False):
+        """Draw text to a surface.
+
+        size refers to the height and width of each character in pixels.
+        """
         color = (color[0], color[1], color[2], pygame.BLEND_ADD)
 
         if centered:
             pos = (pos[0] - (len(text)/2)*size, pos[1] - size*0.5)
 
-        for i in range(len(text)):
-            if text[i] in self.SPECIAL_CHARS:
+        for i, character in enumerate(text):
+            if character in self.SPECIAL_CHARS:
                 surface.blit(self.get_image(
-                    name="txt_"+self.SPECIAL_CHARS[text[i]], scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
+                    name="txt_"+self.SPECIAL_CHARS[character], scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
             else:
                 surface.blit(self.get_image(
-                    name="txt-"+text[i], scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
+                    name="txt-"+character, scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
 
     def draw_image(self, surface, image, pos):
+        """Blit an image to a surface."""
         surface.blit(image, pos)
 
     def draw_centered_image(self, surface, image, centerpos):
+        """Blit an image to a surface, centering it at centerpos."""
         surface.blit(
             image, (centerpos[0] - image.get_width()//2, centerpos[1] - image.get_height()//2))
 
 
 # COMPONENTS
 class TilePositionC:
+    """Stores position of an entity."""
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
 
 class HealthC:
+    """Stores health of an entity."""
+
     def __init__(self, health=None):
         self.max = health
         self.current = health
@@ -999,35 +1036,44 @@ class AnimationC:
 
 # SYSTEMS
 class GridSystem(ecs.System):
+    """Stores grid attributes and a grid of blocker entities."""
+
     def __init__(self):
         super().__init__()
         self.gridwidth = 40
         self.gridheight = 40
-        self.BlockerGrid = None
+        self.blocker_grid = None
 
     def get_blocker_at(self, pos):
-        return self.BlockerGrid[pos[0]][pos[1]]
+        """Get id of blocker entity at a certain position.
+
+        Returns 0 if there is no blocker entity at this position.
+        """
+        return self.blocker_grid[pos[0]][pos[1]]
 
     def move_entity(self, entity, pos):
-        Pos = self.world.entity_component(entity, TilePositionC)
+        """Move an entity to a position, raising an error if not possible."""
+        entity_pos = self.world.entity_component(entity, TilePositionC)
 
-        if self.BlockerGrid[Pos.x][Pos.y] == entity:
-            if self.BlockerGrid[pos[0]][pos[1]] == 0:
-                self.BlockerGrid[Pos.x][Pos.y] = 0
-                self.BlockerGrid[pos[0]][pos[1]] = entity
+        if self.blocker_grid[entity_pos.x][entity_pos.y] == entity:
+            if self.blocker_grid[pos[0]][pos[1]] == 0:
+                self.blocker_grid[entity_pos.x][entity_pos.y] = 0
+                self.blocker_grid[pos[0]][pos[1]] = entity
             else:
                 raise IndexError("Entity moving to an occupied tile")
 
-        Pos.x, Pos.y = pos
+        entity_pos.x, entity_pos.y = pos
 
     def update(self, **args):
-        self.BlockerGrid = [
+        self.blocker_grid = [
             [0 for y in range(self.gridheight)] for x in range(self.gridwidth)]
         for entity, comp in self.world.get_components(TilePositionC, BlockerC):
-            self.BlockerGrid[comp[0].x][comp[0].y] = entity
+            self.blocker_grid[comp[0].x][comp[0].y] = entity
 
 
 class InitiativeSystem(ecs.System):
+    """Acts on Initiative components once a turn passes and hands out MyTurn components."""
+
     def update(self, **args):
 
         try:
@@ -1058,6 +1104,8 @@ class InitiativeSystem(ecs.System):
 
 
 class PlayerInputSystem(ecs.System):
+    """Interprets input from the player, applying it to all entities with a PlayerInput component."""
+
     def update(self, **args):
         playerinput = args["playerinput"]
         if playerinput in DIRECTIONS:
@@ -1068,11 +1116,10 @@ class PlayerInputSystem(ecs.System):
 
 
 class AISystem(ecs.System):
-    def __init__(self):
-        super().__init__()
+    """Lets all entities with an AI component decide what action to make."""
 
     def update(self, **args):
-        Grid = self.world.get_system(GridSystem)
+        grid = self.world.get_system(GridSystem)
 
         for entity, comps in self.world.get_components(MovementC, TilePositionC, AIC, MyTurnC):
             movement = comps[0]
@@ -1102,7 +1149,7 @@ class AISystem(ecs.System):
                         movey = 1
                     if pos.y > targetpos.y:
                         movey = -1
-                    if Grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
+                    if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
                         self.world.add_component(
                             entity, BumpC(pos.x+movex, pos.y+movey))
@@ -1123,7 +1170,7 @@ class AISystem(ecs.System):
                         if movex > 0:
                             movex = 1
 
-                    if Grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
+                    if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
                         self.world.add_component(
                             entity, BumpC(pos.x+movex, pos.y+movey))
@@ -1143,15 +1190,14 @@ class AISystem(ecs.System):
                             movex = -1
                         if movex > 0:
                             movex = 1
-                    if Grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
+                    if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
                         self.world.add_component(
                             entity, BumpC(pos.x+movex, pos.y+movey))
 
 
 class FreezingSystem(ecs.System):
-    def __init__(self):
-        super().__init__()
+    """Cancels the action of frozen entities attempting to move, defreezing them instead."""
 
     def update(self, **args):
 
@@ -1165,8 +1211,7 @@ class FreezingSystem(ecs.System):
 
 
 class BumpSystem(ecs.System):
-    def __init__(self):
-        super().__init__()
+    """Carries out bump actions, then deletes the Bump components."""
 
     def update(self, **args):
         for entity, comps in self.world.get_components(TilePositionC, BumpC, MyTurnC):
@@ -1182,21 +1227,19 @@ class BumpSystem(ecs.System):
             if targetent == 0:
                 if self.world.has_component(entity, BlockerC):
                     self.world.get_system(
-                        GridSystem).BlockerGrid[pos.x][pos.y] = 0
+                        GridSystem).blocker_grid[pos.x][pos.y] = 0
                     self.world.get_system(
-                        GridSystem).BlockerGrid[bump.x][bump.y] = entity
+                        GridSystem).blocker_grid[bump.x][bump.y] = entity
                 pos.x = bump.x
                 pos.y = bump.y
                 self.world.remove_component(entity, MyTurnC)
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    attack = self.world.entity_component(
+                    damage = self.world.entity_component(
                         entity, AttackC).damage
-                    targethealth = self.world.entity_component(
-                        targetent, HealthC)
                     self.world.create_entity(
-                        DamageC(targetent, attack, burn=self.world.has_component(
+                        DamageC(targetent, damage, burn=self.world.has_component(
                             entity, FireElementC), freeze=self.world.has_component(entity, IceElementC))
                     )
 
@@ -1210,8 +1253,7 @@ class BumpSystem(ecs.System):
 
 
 class DamageSystem(ecs.System):
-    def __init__(self):
-        super().__init__()
+    """Manages damage events, applying the damage and then deleting the message entity."""
 
     def update(self, **args):
         for entity, damage in self.world.get_component(DamageC):
@@ -1235,24 +1277,25 @@ class DamageSystem(ecs.System):
 
 
 class PickupSystem(ecs.System):
-    def __init__(self):
-        super().__init__()
+    """Allows carrier entities to pick up entities with a Pickup component as long it is not their turn."""
 
     def update(self, **args):
         for entity, comps in self.world.get_components(TilePositionC, CarrierC):
             if not self.world.has_component(entity, MyTurnC):
-                ePos = comps[0]
-                eInv = comps[1]
-                for item, comps in self.world.get_components(TilePositionC, PickupC):
-                    if len(eInv.entities) < eInv.capacity:
-                        iPos = comps[0]
-                        if (iPos.x, iPos.y) == (ePos.x, ePos.y):
+                pos = comps[0]
+                inventory = comps[1]
+                for item, item_comps in self.world.get_components(TilePositionC, PickupC):
+                    if len(inventory.entities) < inventory.capacity:
+                        item_pos = item_comps[0]
+                        if (item_pos.x, item_pos.y) == (pos.x, pos.y):
                             self.world.remove_component(item, TilePositionC)
 
-                            eInv.entities.append(item)
+                            inventory.entities.append(item)
 
 
 class AnimationSystem(ecs.System):
+    """Updates Render components on entities with an Animation component."""
+
     def __init__(self):
         super().__init__()
         self.t_last_frame = 0
@@ -1262,38 +1305,42 @@ class AnimationSystem(ecs.System):
 
         self.t_last_frame += args["t_frame"]
 
-        numFrames = self.t_last_frame // ANIMATION_RATE
+        frames_elapsed = self.t_last_frame // ANIMATION_RATE
         if self.start:
-            numFrames += 1
+            frames_elapsed += 1
             self.start = False
 
         self.t_last_frame = self.t_last_frame % ANIMATION_RATE
 
         for entity, comps in self.world.get_components(AnimationC, RenderC):
-            Anim = comps[0]
-            Render = comps[1]
+            animation = comps[0]
+            render = comps[1]
 
-            animation = Anim.animations["idle"]
+            playing_animation = animation.animations["idle"]
             if self.world.has_component(entity, MyTurnC):
-                animation = Anim.animations["ready"]
+                playing_animation = animation.animations["ready"]
             if self.world.has_component(entity, InitiativeC):
-                if self.world.entity_component(entity, InitiativeC).nextturn <= self.world.entity_component(self.world.tags.player, InitiativeC).nextturn:
-                    animation = Anim.animations["ready"]
+                entity_nextturn = self.world.entity_component(
+                    entity, InitiativeC).nextturn
+                player_nextturn = self.world.entity_component(
+                    self.world.tags.player, InitiativeC).nextturn
+                if entity_nextturn <= player_nextturn:
+                    playing_animation = animation.animations["ready"]
 
-            if Anim.current_animation != animation:
-                Anim.current_animation = animation
-                Anim.pos = 0
+            if animation.current_animation != playing_animation:
+                animation.current_animation = playing_animation
+                animation.pos = 0
             else:
-                Anim.pos = int((Anim.pos + numFrames) %
-                               len(Anim.current_animation))
+                animation.pos = int((animation.pos + frames_elapsed) %
+                                    len(animation.current_animation))
 
-            Render.imagename = Anim.current_animation[Anim.pos]
+            render.imagename = animation.current_animation[animation.pos]
 
 
 # MAIN
 
 def get_input():
-    # ----------------------------------- INPUTS ----
+    """Return the key that was just pressed."""
     keypress = None
 
     for event in pygame.event.get():
@@ -1322,6 +1369,7 @@ def get_input():
 
 
 def main():
+    """Run the game."""
     game = Game()
 
     game.world.add_system(GridSystem())
@@ -1350,19 +1398,19 @@ def main():
         AttackC(5)
     )
 
-    renderer.world = game.world
-    ui.add_menu(MainMenu(game), focus=True)
+    RENDERER.world = game.world
+    UI.add_menu(MainMenu(game), focus=True)
 
     while True:
 
-        ms = clock.tick()
-        fps = clock.get_fps()
+        delta = CLOCK.tick()
+        fps = CLOCK.get_fps()
         if fps != 0:
             avgms = 1000/fps
         else:
-            avgms = ms
+            avgms = delta
 
-        screen.fill(BLACK)
+        SCREEN.fill(BLACK)
 
         keypress = get_input()
 
@@ -1372,56 +1420,59 @@ def main():
         if keypress == pygame.K_EQUALS:  # Zooming in
             game.camera.zoom(20)
 
-        ui.send_event(("input", ui.get_focus(), keypress))
+        UI.send_event(("input", UI.get_focus(), keypress))
 
         done = False
-        t_frame = ms
+        t_frame = delta
         while not done:
             game.world.update(playerinput=None, t_frame=t_frame)
             t_frame = 0
-            try:
-                for entity, component in game.world.get_component(MyTurnC):
-                    if entity == game.world.tags.player:
-                        done = True
-            except:
-                pass
+            if game.world.has_component(game.world.tags.player, MyTurnC):
+                done = True
 
-        renderer.t += ms
-        ui.send_event(("update", avgms))
-        ui.draw_menus()
+        RENDERER.t_elapsed += delta
+        UI.send_event(("update", avgms))
+        UI.draw_menus()
 
-        renderer.draw_text(screen, (200, 50, 50), (0, 0),
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 0),
                            "FPS: " + str(int(fps)), 10)
-        renderer.draw_text(screen, (200, 50, 50), (0, 12),
-                           "TOTAL IMAGES: " + str(renderer.total_images), 10)
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12),
+                           "TOTAL IMAGES: " + str(RENDERER.total_images), 10)
         pygame.display.update()
 
 
+def init_screen():
+    """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
+    if FULLSCREEN_MODE:
+        info_object = pygame.display.Info()
+        width = info_object.current_w
+        height = info_object.current_h
+        screen = pygame.display.set_mode(
+            (width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+    else:
+        width = 1200
+        height = 800
+        screen = pygame.display.set_mode((width, height))
+
+    return (screen, width, height)
+
+
 if __name__ == "__main__":
-    clock = pygame.time.Clock()
+    CLOCK = pygame.time.Clock()
 
     # VARIABLES
-    if FULLSCREEN_MODE:
-        infoObject = pygame.display.Info()
-        WIDTH = infoObject.current_w
-        HEIGHT = infoObject.current_h
-        screen = pygame.display.set_mode(
-            (WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
-    else:
-        WIDTH = 1200
-        HEIGHT = 800
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    SCREEN, WIDTH, HEIGHT = init_screen()
 
     MENU_SCALE = round(WIDTH/600)
 
     # Initialising audio
-    audio = {}
+    AUDIO = {}
     for au in glob.glob(AUDIO+"*.wav"):
         auname = au[len(AUDIO):-4]
-        audio[auname] = pygame.mixer.Sound(au)
+        AUDIO[auname] = pygame.mixer.Sound(au)
 
-    renderer = Renderer()
-    ui = UI()
+    RENDERER = Renderer()
+    UI = UserInterface()
 
     # Playing music
     pygame.mixer.music.load(random.choice(glob.glob(MUSIC+"*")))
