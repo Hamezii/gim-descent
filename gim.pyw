@@ -1466,10 +1466,10 @@ if __name__ == "__main__":
     MENU_SCALE = round(WIDTH/600)
 
     # Initialising audio
-    AUDIO = {}
+    SOUNDS = {}
     for au in glob.glob(AUDIO+"*.wav"):
         auname = au[len(AUDIO):-4]
-        AUDIO[auname] = pygame.mixer.Sound(au)
+        SOUNDS[auname] = pygame.mixer.Sound(au)
 
     RENDERER = Renderer()
     UI = UserInterface()
