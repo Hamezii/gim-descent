@@ -10,7 +10,7 @@ class TagManager:
 class System:
     '''Contains logic acting on components.'''
     def __init__(self):
-        self.world = None
+        self.world: World
         self.game = None
 
     def update(self, **args):

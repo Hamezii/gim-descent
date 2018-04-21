@@ -136,10 +136,8 @@ class Camera:
 
         Rect position and size is in pixels.
         """
-        x = (self._pos.x + random.uniform(-self._shake_x,
-                                          self._shake_x)) * self._ppt / TILE_SIZE
-        y = (self._pos.y + random.uniform(-self._shake_y,
-                                          self._shake_y)) * self._ppt / TILE_SIZE
+        x = (self._pos.x + random.uniform(-self._shake_x, self._shake_x)) * self._ppt / TILE_SIZE
+        y = (self._pos.y + random.uniform(-self._shake_y, self._shake_y)) * self._ppt / TILE_SIZE
         rect = pygame.Rect(0, 0, WIDTH, HEIGHT)
         rect.center = (x, y)
         return rect
@@ -221,8 +219,7 @@ class Game:
                        pos.y+random.randint(-amount, amount))
             if self.on_grid(randpos):
                 if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
-                    self.world.get_system(
-                        GridSystem).move_entity(entity, randpos)
+                    self.world.get_system(GridSystem).move_entity(entity, randpos)
                     return
 
     def speed_entity(self, entity, amount):
@@ -416,8 +413,7 @@ class MainMenuTitle:
         """Update the title."""
         if self.pos.y < self.y_goal:
             self.speed += delta*0.001
-            self.pos.move(
-                (self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
+            self.pos.move((self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
             if self.pos.y == self.y_goal:
                 self.shake = 15*MENU_SCALE
         else:
@@ -445,11 +441,9 @@ class MainMenu(Menu):
         self.title = MainMenuTitle()
         self.active = False
         if WIDTH/1920 > HEIGHT/1080:  # Logic to get title image to scale on differently sized monitors
-            self.title_background = pygame.transform.scale(RENDERER.get_image(
-                name="title_background"), (WIDTH, int(WIDTH/1920*1080)))
+            self.title_background = pygame.transform.scale(RENDERER.get_image(name="title_background"), (WIDTH, int(WIDTH/1920*1080)))
         else:
-            self.title_background = pygame.transform.scale(RENDERER.get_image(
-                name="title_background"), (int(HEIGHT/1080*1920), HEIGHT))
+            self.title_background = pygame.transform.scale(RENDERER.get_image(name="title_background"), (int(HEIGHT/1080*1920), HEIGHT))
 
     def get_event(self, event):
         if event[0] == "update":
@@ -774,8 +768,7 @@ class ThrowOptions(Menu):
                 if self.targettile is not None:
                     self.game.world.entity_component(
                         self.game.world.tags.player, CarrierC).entities.remove(self.item)
-                    self.game.world.add_component(
-                        self.item, TilePositionC(*self.targettile))
+                    self.game.world.add_component(self.item, TilePositionC(*self.targettile))
 
                     target = self.game.world.get_system(
                         GridSystem).get_blocker_at(self.targettile)
@@ -861,22 +854,16 @@ class Renderer:
             color[1] += 50
             color[2] += 100
 
-        ready = False
         if self.t_elapsed % BLINK_RATE < BLINK_RATE/2 and entity != self.world.tags.player:
-            if self.world.has_component(entity, MyTurnC):
-                ready = True
             if self.world.has_component(entity, InitiativeC):
                 entity_nextturn = self.world.entity_component(
                     entity, InitiativeC).nextturn
                 player_nextturn = self.world.entity_component(
                     self.world.tags.player, InitiativeC).nextturn
                 if entity_nextturn <= player_nextturn:
-                    ready = True
-
-        if ready:
-            color[0] += 50
-            color[1] += 50
-            color[2] += 50
+                    color[0] += 50
+                    color[1] += 50
+                    color[2] += 50
 
         if any(color):
             img = self.get_image(name=self.world.entity_component(
@@ -1116,7 +1103,7 @@ class PlayerInputSystem(ecs.System):
 
 
 class AISystem(ecs.System):
-    """Lets all entities with an AI component decide what action to make."""
+    """Lets all AI controlled entities decide what action to make."""
 
     def update(self, **args):
         grid = self.world.get_system(GridSystem)
@@ -1126,16 +1113,14 @@ class AISystem(ecs.System):
             pos = comps[1]
             ai = comps[2]
 
-            playerpos = self.world.entity_component(
-                self.world.tags.player, TilePositionC)
+            playerpos = self.world.entity_component(self.world.tags.player, TilePositionC)
             if dist(pos, playerpos) <= 15:
                 ai.target = self.world.tags.player
             else:
                 ai.target = 0
 
             if ai.target:
-                targetpos = self.world.entity_component(
-                    ai.target, TilePositionC)
+                targetpos = self.world.entity_component(ai.target, TilePositionC)
 
                 movex = 0
                 movey = 0
@@ -1151,8 +1136,7 @@ class AISystem(ecs.System):
                         movey = -1
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(
-                            entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
 
                 if not moved:
                     movex = targetpos.x - pos.x
@@ -1172,8 +1156,7 @@ class AISystem(ecs.System):
 
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(
-                            entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
 
                 if not moved:
                     if movex != 0:
@@ -1192,8 +1175,7 @@ class AISystem(ecs.System):
                             movex = 1
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(
-                            entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
 
 
 class FreezingSystem(ecs.System):
@@ -1226,21 +1208,20 @@ class BumpSystem(ecs.System):
 
             if targetent == 0:
                 if self.world.has_component(entity, BlockerC):
-                    self.world.get_system(
-                        GridSystem).blocker_grid[pos.x][pos.y] = 0
-                    self.world.get_system(
-                        GridSystem).blocker_grid[bump.x][bump.y] = entity
+                    self.world.get_system(GridSystem).blocker_grid[pos.x][pos.y] = 0
+                    self.world.get_system(GridSystem).blocker_grid[bump.x][bump.y] = entity
                 pos.x = bump.x
                 pos.y = bump.y
                 self.world.remove_component(entity, MyTurnC)
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    damage = self.world.entity_component(
-                        entity, AttackC).damage
+                    damage = self.world.entity_component(entity, AttackC).damage
                     self.world.create_entity(
-                        DamageC(targetent, damage, burn=self.world.has_component(
-                            entity, FireElementC), freeze=self.world.has_component(entity, IceElementC))
+                        DamageC(targetent, damage,
+                                burn=self.world.has_component(entity, FireElementC),
+                                freeze=self.world.has_component(entity, IceElementC)
+                               )
                     )
 
                     if entity == self.world.tags.player:
@@ -1293,6 +1274,16 @@ class PickupSystem(ecs.System):
                             inventory.entities.append(item)
 
 
+class IdleSystem(ecs.System):
+    """Makes AI controlled entities idle for a turn if no action was taken."""
+
+    def update(self, **args):
+        for entity, _ in self.world.get_components(AIC, MyTurnC):
+            self.world.remove_component(entity, MyTurnC)
+            if self.world.has_component(entity, InitiativeC):
+                self.world.entity_component(entity, InitiativeC).nextturn = 1
+
+
 class AnimationSystem(ecs.System):
     """Updates Render components on entities with an Animation component."""
 
@@ -1317,8 +1308,7 @@ class AnimationSystem(ecs.System):
             render = comps[1]
 
             playing_animation = animation.animations["idle"]
-            if self.world.has_component(entity, MyTurnC):
-                playing_animation = animation.animations["ready"]
+
             if self.world.has_component(entity, InitiativeC):
                 entity_nextturn = self.world.entity_component(
                     entity, InitiativeC).nextturn
@@ -1381,6 +1371,7 @@ def main():
     game.world.add_system(BumpSystem())
     game.world.add_system(DamageSystem())
     game.world.add_system(PickupSystem())
+    game.world.add_system(IdleSystem())
 
     game.world.add_system(AnimationSystem())
 
@@ -1434,10 +1425,8 @@ def main():
         UI.send_event(("update", avgms))
         UI.draw_menus()
 
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 0),
-                           "FPS: " + str(int(fps)), 10)
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12),
-                           "TOTAL IMAGES: " + str(RENDERER.total_images), 10)
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 0), "FPS: " + str(int(fps)), 10)
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12), "TOTAL IMAGES: " + str(RENDERER.total_images), 10)
         pygame.display.update()
 
 
