@@ -136,10 +136,8 @@ class Camera:
 
         Rect position and size is in pixels.
         """
-        x = (self._pos.x + random.uniform(-self._shake_x,
-                                          self._shake_x)) * self._ppt / TILE_SIZE
-        y = (self._pos.y + random.uniform(-self._shake_y,
-                                          self._shake_y)) * self._ppt / TILE_SIZE
+        x = (self._pos.x + random.uniform(-self._shake_x, self._shake_x)) * self._ppt / TILE_SIZE
+        y = (self._pos.y + random.uniform(-self._shake_y, self._shake_y)) * self._ppt / TILE_SIZE
         rect = pygame.Rect(0, 0, WIDTH, HEIGHT)
         rect.center = (x, y)
         return rect
@@ -221,8 +219,7 @@ class Game:
                        pos.y+random.randint(-amount, amount))
             if self.on_grid(randpos):
                 if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
-                    self.world.get_system(
-                        GridSystem).move_entity(entity, randpos)
+                    self.world.get_system(GridSystem).move_entity(entity, randpos)
                     return
 
     def speed_entity(self, entity, amount):
@@ -416,8 +413,7 @@ class MainMenuTitle:
         """Update the title."""
         if self.pos.y < self.y_goal:
             self.speed += delta*0.001
-            self.pos.move(
-                (self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
+            self.pos.move((self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
             if self.pos.y == self.y_goal:
                 self.shake = 15*MENU_SCALE
         else:
@@ -445,11 +441,9 @@ class MainMenu(Menu):
         self.title = MainMenuTitle()
         self.active = False
         if WIDTH/1920 > HEIGHT/1080:  # Logic to get title image to scale on differently sized monitors
-            self.title_background = pygame.transform.scale(RENDERER.get_image(
-                name="title_background"), (WIDTH, int(WIDTH/1920*1080)))
+            self.title_background = pygame.transform.scale(RENDERER.get_image(name="title_background"), (WIDTH, int(WIDTH/1920*1080)))
         else:
-            self.title_background = pygame.transform.scale(RENDERER.get_image(
-                name="title_background"), (int(HEIGHT/1080*1920), HEIGHT))
+            self.title_background = pygame.transform.scale(RENDERER.get_image(name="title_background"), (int(HEIGHT/1080*1920), HEIGHT))
 
     def get_event(self, event):
         if event[0] == "update":
@@ -774,8 +768,7 @@ class ThrowOptions(Menu):
                 if self.targettile is not None:
                     self.game.world.entity_component(
                         self.game.world.tags.player, CarrierC).entities.remove(self.item)
-                    self.game.world.add_component(
-                        self.item, TilePositionC(*self.targettile))
+                    self.game.world.add_component(self.item, TilePositionC(*self.targettile))
 
                     target = self.game.world.get_system(
                         GridSystem).get_blocker_at(self.targettile)
