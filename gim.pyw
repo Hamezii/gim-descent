@@ -4,7 +4,7 @@ GIM Descent 4
 James Lecomte
 
 To Do:
-- Stop enemies hitting each other.
+- Add explosions.
 
 - Add fire damage back into the game.
 '''
@@ -33,8 +33,6 @@ pygame.mixer.init()
 # CONSTANTS
 
 TILE_SIZE = 40
-ANIMATION_RATE = 1000/4
-BLINK_RATE = 250
 
 FOLDER = "gimstuff/"
 IMAGES = FOLDER + "images/"
@@ -42,8 +40,8 @@ AUDIO = FOLDER + "audio/"
 MUSIC = AUDIO + "music/"
 DEFAULT_IMAGES = FOLDER + "images/"
 
-LIBRARY = FOLDER + "lib/"
-sys.path.insert(0, './'+LIBRARY)  # So the program can import from lib folder
+#LIBRARY = FOLDER + "lib/"
+#sys.path.insert(0, './'+LIBRARY)  # So the program can import from lib folder
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -336,7 +334,7 @@ class Game:
                             self.world.add_component(entity, IceElementC())
 
 
-class UserInterface:
+class MenuManager:
     """Stores all the menu instances.
 
     Used to update, draw and send messages to the menus.
@@ -603,7 +601,7 @@ class Inventory(Menu):
             if keypress == pygame.K_z:
                 itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
                 items = self.game.world.entity_component(
-                    self.game.world.tags.player, CarrierC).entities
+                    self.game.world.tags.player, InventoryC).contents
                 if itempos < len(items):
                     UI.add_menu(InventoryOptions(
                         self.game, items[itempos]), focus=True)
@@ -616,14 +614,14 @@ class Inventory(Menu):
                                          self.size[0]*MENU_SCALE+10*MENU_SCALE, TILE_SIZE*self.size[1]*MENU_SCALE+10*MENU_SCALE))
 
         inventory = self.game.world.entity_component(
-            self.game.world.tags.player, CarrierC)
+            self.game.world.tags.player, InventoryC)
 
         for x in range(self.size[0]):
             for y in range(self.size[1]):
                 SCREEN.blit(RENDERER.get_image(name="inventory-slot", scale=MENU_SCALE),
                             (drawposx+TILE_SIZE*MENU_SCALE*x, drawposy+TILE_SIZE*MENU_SCALE*y))
 
-        for i, entity in enumerate(inventory.entities):
+        for i, entity in enumerate(inventory.contents):
             RENDERER.draw_centered_image(SCREEN, RENDERER.entity_image(entity, scale=MENU_SCALE), (
                 drawposx+TILE_SIZE*MENU_SCALE*(i//self.size[1]+0.5), drawposy+TILE_SIZE*MENU_SCALE*(i % self.size[1]+0.5)))
 
@@ -682,14 +680,14 @@ class InventoryOptions(Menu):
                         effect[0](self.game.world.tags.player, *effect[1:])
                     if self.game.world.entity_component(self.item, PickupC).consumable:
                         self.game.world.entity_component(
-                            self.game.world.tags.player, CarrierC).entities.remove(self.item)
+                            self.game.world.tags.player, InventoryC).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
                 if selection == "throw":
                     UI.add_menu(ThrowOptions(self.game, self.item), focus=True)
 
                 if selection == "drop":
                     self.game.world.entity_component(
-                        self.game.world.tags.player, CarrierC).entities.remove(self.item)
+                        self.game.world.tags.player, InventoryC).contents.remove(self.item)
                     pos = self.game.world.entity_component(
                         self.game.world.tags.player, TilePositionC)
                     self.game.world.add_component(
@@ -767,7 +765,7 @@ class ThrowOptions(Menu):
             if keypress == pygame.K_z:
                 if self.targettile is not None:
                     self.game.world.entity_component(
-                        self.game.world.tags.player, CarrierC).entities.remove(self.item)
+                        self.game.world.tags.player, InventoryC).contents.remove(self.item)
                     self.game.world.add_component(self.item, TilePositionC(*self.targettile))
 
                     target = self.game.world.get_system(
@@ -800,6 +798,7 @@ class ThrowOptions(Menu):
 
 class Renderer:
     """Rendering wrapper which stores cached surfaces."""
+    BLINK_RATE = 250
     SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
                      "!": "exc", "/": "fwdslash", "?": "que", " ": "space"}
 
@@ -854,7 +853,7 @@ class Renderer:
             color[1] += 50
             color[2] += 100
 
-        if self.t_elapsed % BLINK_RATE < BLINK_RATE/2 and entity != self.world.tags.player:
+        if self.t_elapsed % self.BLINK_RATE < self.BLINK_RATE/2 and entity != self.world.tags.player:
             if self.world.has_component(entity, InitiativeC):
                 entity_nextturn = self.world.entity_component(
                     entity, InitiativeC).nextturn
@@ -926,7 +925,7 @@ class InitiativeC:
 
 class AIC:
     def __init__(self):
-        self.target = None  # An entity id
+        self.target = 0  # An entity id
 
 
 class PlayerInputC:
@@ -968,10 +967,10 @@ class PickupC:
         self.consumable = consumable
 
 
-class CarrierC:
+class InventoryC:
     def __init__(self, capacity):
         self.capacity = capacity
-        self.entities = []
+        self.contents = []
 
 
 class MovementC:
@@ -1060,17 +1059,21 @@ class GridSystem(ecs.System):
 
 class InitiativeSystem(ecs.System):
     """Acts on Initiative components once a turn passes and hands out MyTurn components."""
+    def __init__(self):
+        super().__init__()
+        self.tick = False
 
     def update(self, **args):
 
         try:
-            if self.world.has_component(self.world.tags.player, MyTurnC):
+            for _ in self.world.get_component(MyTurnC):
+                self.tick = False
                 return
         except KeyError:
             pass
 
         # Only run if not player's turn
-
+        self.tick = True
         #self.game.turns += 1
         for entity, initiative in self.world.get_component(InitiativeC):
             if not self.world.has_component(entity, MyTurnC):
@@ -1079,15 +1082,7 @@ class InitiativeSystem(ecs.System):
                 initiative.nextturn += initiative.speed
                 self.world.add_component(entity, MyTurnC())
 
-            '''
-            if self.world.has_component(entity,BurningC):
-                self.world.entity_component(entity,BurningC).life -= 1
-                if self.world.has_component(entity,HealthC):
-                    self.game.hurt_entity(entity,1)
-                    
-                if self.world.entity_component(entity,BurningC).life <= 0:
-                    self.world.remove_component(entity,BurningC)
-            '''
+
 
 
 class PlayerInputSystem(ecs.System):
@@ -1191,6 +1186,27 @@ class FreezingSystem(ecs.System):
         except ValueError:
             pass
 
+class BurningSystem(ecs.System):
+    """Damages burning players, with the fire dying after a certain amount of time."""
+
+    def update(self, **args):
+
+        if not self.world.get_system(InitiativeSystem).tick:
+            return
+
+        dead_components = set()
+        for entity, burning in self.world.get_component(BurningC):
+
+            if self.world.has_component(entity, HealthC):
+                self.world.create_entity(DamageC(entity, 1))
+
+            burning.life -= 1
+            if burning.life <= 0:
+                dead_components.add(entity)
+
+        for entity in dead_components:
+            self.world.remove_component(entity, BurningC)
+
 
 class BumpSystem(ecs.System):
     """Carries out bump actions, then deletes the Bump components."""
@@ -1216,28 +1232,28 @@ class BumpSystem(ecs.System):
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    damage = self.world.entity_component(entity, AttackC).damage
-                    self.world.create_entity(
-                        DamageC(targetent, damage,
-                                burn=self.world.has_component(entity, FireElementC),
-                                freeze=self.world.has_component(entity, IceElementC)
-                               )
-                    )
+                    if entity == self.world.tags.player or targetent == self.world.tags.player:   # Stops AI from attacking each other accidentally
+                        damage = self.world.entity_component(entity, AttackC).damage
+                        self.world.create_entity(
+                            DamageC(targetent, damage,
+                                    burn=self.world.has_component(entity, FireElementC),
+                                    freeze=self.world.has_component(entity, IceElementC)
+                                   )
+                        )
 
-                    if entity == self.world.tags.player:
-                        self.game.camera.shake(5)
+                        if entity == self.world.tags.player:
+                            self.game.camera.shake(5)
 
-                    self.world.remove_component(entity, MyTurnC)
+                        self.world.remove_component(entity, MyTurnC)
 
         for entity, comps in self.world.get_components(BumpC):
             self.world.remove_component(entity, BumpC)
-
 
 class DamageSystem(ecs.System):
     """Manages damage events, applying the damage and then deleting the message entity."""
 
     def update(self, **args):
-        for entity, damage in self.world.get_component(DamageC):
+        for message_entity, damage in self.world.get_component(DamageC):
             if self.world.has_component(damage.target, HealthC):
                 targethealth = self.world.entity_component(
                     damage.target, HealthC)
@@ -1254,24 +1270,24 @@ class DamageSystem(ecs.System):
                 if damage.freeze and not self.world.has_component(damage.target, IceElementC):
                     self.world.add_component(damage.target, FrozenC())
 
-            self.world.delete_entity(entity)
+            self.world.delete_entity(message_entity)
 
 
 class PickupSystem(ecs.System):
     """Allows carrier entities to pick up entities with a Pickup component as long it is not their turn."""
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(TilePositionC, CarrierC):
+        for entity, comps in self.world.get_components(TilePositionC, InventoryC):
             if not self.world.has_component(entity, MyTurnC):
                 pos = comps[0]
                 inventory = comps[1]
                 for item, item_comps in self.world.get_components(TilePositionC, PickupC):
-                    if len(inventory.entities) < inventory.capacity:
+                    if len(inventory.contents) < inventory.capacity:
                         item_pos = item_comps[0]
                         if (item_pos.x, item_pos.y) == (pos.x, pos.y):
                             self.world.remove_component(item, TilePositionC)
 
-                            inventory.entities.append(item)
+                            inventory.contents.append(item)
 
 
 class IdleSystem(ecs.System):
@@ -1287,6 +1303,8 @@ class IdleSystem(ecs.System):
 class AnimationSystem(ecs.System):
     """Updates Render components on entities with an Animation component."""
 
+    ANIMATION_RATE = 1000/4
+
     def __init__(self):
         super().__init__()
         self.t_last_frame = 0
@@ -1296,12 +1314,12 @@ class AnimationSystem(ecs.System):
 
         self.t_last_frame += args["t_frame"]
 
-        frames_elapsed = self.t_last_frame // ANIMATION_RATE
+        frames_elapsed = self.t_last_frame // self.ANIMATION_RATE
         if self.start:
             frames_elapsed += 1
             self.start = False
 
-        self.t_last_frame = self.t_last_frame % ANIMATION_RATE
+        self.t_last_frame = self.t_last_frame % self.ANIMATION_RATE
 
         for entity, comps in self.world.get_components(AnimationC, RenderC):
             animation = comps[0]
@@ -1368,6 +1386,7 @@ def main():
     game.world.add_system(PlayerInputSystem())
     game.world.add_system(AISystem())
     game.world.add_system(FreezingSystem())
+    game.world.add_system(BurningSystem())
     game.world.add_system(BumpSystem())
     game.world.add_system(DamageSystem())
     game.world.add_system(PickupSystem())
@@ -1385,7 +1404,7 @@ def main():
         InitiativeC(1),
         BlockerC(),
         HealthC(50),
-        CarrierC(10),
+        InventoryC(10),
         AttackC(5)
     )
 
@@ -1461,7 +1480,7 @@ if __name__ == "__main__":
         SOUNDS[auname] = pygame.mixer.Sound(au)
 
     RENDERER = Renderer()
-    UI = UserInterface()
+    UI = MenuManager()
 
     # Playing music
     pygame.mixer.music.load(random.choice(glob.glob(MUSIC+"*")))
