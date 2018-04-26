@@ -3,10 +3,8 @@ GIM Descent 4
 
 James Lecomte
 
-To Do:
-- Add explosions.
-
-- Add fire damage back into the game.
+TODO:
+- Add an explosive icon with a countdown that appears next to anything thats about to explode
 '''
 
 #import cProfile as profile
@@ -28,13 +26,13 @@ pygame.mixer.pre_init(44100, -16, 8, 2048)
 pygame.init()
 pygame.mixer.init()
 
-# random.seed(1)
+random.seed(1)
 
 # CONSTANTS
 
 TILE_SIZE = 40
 
-FOLDER = "gimstuff/"
+FOLDER = "assets/"
 IMAGES = FOLDER + "images/"
 AUDIO = FOLDER + "audio/"
 MUSIC = AUDIO + "music/"
@@ -260,6 +258,7 @@ class Game:
                         RenderC(random.choice(("wall1", "wall2"))),
                         TilePositionC(x, y),
                         BlockerC(),
+                        DestructibleC(),
                     )
                 else:
                     if random.randint(1, 45) == 1:      # Creating potions
@@ -686,12 +685,12 @@ class InventoryOptions(Menu):
                     UI.add_menu(ThrowOptions(self.game, self.item), focus=True)
 
                 if selection == "drop":
-                    self.game.world.entity_component(
-                        self.game.world.tags.player, InventoryC).contents.remove(self.item)
-                    pos = self.game.world.entity_component(
-                        self.game.world.tags.player, TilePositionC)
-                    self.game.world.add_component(
-                        self.item, TilePositionC(pos.x, pos.y))
+                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, StoredC)
+
+                    pos = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
+                    self.game.world.add_component(self.item, TilePositionC(pos.x, pos.y))
+
 
     def draw(self):
         for i, pos in enumerate(self.options_pos):
@@ -766,6 +765,7 @@ class ThrowOptions(Menu):
                 if self.targettile is not None:
                     self.game.world.entity_component(
                         self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, StoredC)
                     self.game.world.add_component(self.item, TilePositionC(*self.targettile))
 
                     target = self.game.world.get_system(
@@ -928,6 +928,23 @@ class AIC:
         self.target = 0  # An entity id
 
 
+class ExplosiveC:
+    def __init__(self, fuse):
+        self.fuse = fuse
+        self.primed = False
+
+
+class ExplodeC:
+    def __init__(self):
+        self.radius = 1
+        self.damage = 10
+
+
+class DestructibleC:
+    def __init__(self):
+        pass
+
+
 class PlayerInputC:
     def __init__(self):
         pass
@@ -942,11 +959,6 @@ class BumpC:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-
-
-class AttackingC:  # Not used yet
-    def __init__(self, target):
-        self.target = target  # An entity id
 
 
 class DamageC:
@@ -971,6 +983,11 @@ class InventoryC:
     def __init__(self, capacity):
         self.capacity = capacity
         self.contents = []
+
+
+class StoredC:
+    def __init__(self, carrier):
+        self.carrier = carrier
 
 
 class MovementC:
@@ -1249,6 +1266,44 @@ class BumpSystem(ecs.System):
         for entity, comps in self.world.get_components(BumpC):
             self.world.remove_component(entity, BumpC)
 
+class ExplosionSystem(ecs.System):
+    """Manages explosives and makes anything with an ExplodeC component explode."""
+
+    def update(self, **args):
+
+        if self.world.get_system(InitiativeSystem).tick:
+            for entity, explosive in self.world.get_component(ExplosiveC):
+                if explosive.primed:
+                    explosive.fuse -= 1
+                    if explosive.fuse <= 0:
+                        self.world.add_component(entity, ExplodeC())
+
+
+        for entity, explode in self.world.get_component(ExplodeC):
+            self.world.delete_entity(entity)
+
+            iterentity = entity
+            while self.world.has_component(iterentity, StoredC):  # Getting carrier entity
+                iterentity = self.world.entity_component(iterentity, StoredC).carrier
+
+            if self.world.has_component(iterentity, TilePositionC):             # Damaging things around it
+                pos = self.world.entity_component(iterentity, TilePositionC)
+                for x in range(pos.x - explode.radius, pos.x + explode.radius + 1):
+                    for y in range(pos.y - explode.radius, pos.y + explode.radius + 1):
+                        target_entity = self.world.get_system(GridSystem).get_blocker_at((x, y))
+                        if target_entity != 0:
+
+                            if self.world.has_component(target_entity, DestructibleC) and not self.world.has_component(target_entity, HealthC):
+                                self.world.delete_entity(target_entity)
+                            else:
+                                self.world.create_entity(
+                                    DamageC(target_entity, explode.damage)
+                                )
+
+                explosion_distance = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
+                if explosion_distance < 10:
+                    self.game.camera.shake(40 - explosion_distance * 3)
+
 class DamageSystem(ecs.System):
     """Manages damage events, applying the damage and then deleting the message entity."""
 
@@ -1260,7 +1315,7 @@ class DamageSystem(ecs.System):
 
                 targethealth.current -= damage.amount
                 if damage.target == self.world.tags.player:
-                    self.game.camera.shake(damage.amount*3)
+                    self.game.camera.shake(5 + damage.amount*2)
                 if targethealth.current <= 0:
                     self.world.delete_entity(damage.target)
 
@@ -1269,6 +1324,9 @@ class DamageSystem(ecs.System):
 
                 if damage.freeze and not self.world.has_component(damage.target, IceElementC):
                     self.world.add_component(damage.target, FrozenC())
+
+            if self.world.has_component(damage.target, ExplosiveC):
+                self.world.entity_component(damage.target, ExplosiveC).primed = True
 
             self.world.delete_entity(message_entity)
 
@@ -1286,7 +1344,7 @@ class PickupSystem(ecs.System):
                         item_pos = item_comps[0]
                         if (item_pos.x, item_pos.y) == (pos.x, pos.y):
                             self.world.remove_component(item, TilePositionC)
-
+                            self.world.add_component(item, StoredC(entity))
                             inventory.contents.append(item)
 
 
@@ -1388,6 +1446,7 @@ def main():
     game.world.add_system(FreezingSystem())
     game.world.add_system(BurningSystem())
     game.world.add_system(BumpSystem())
+    game.world.add_system(ExplosionSystem())
     game.world.add_system(DamageSystem())
     game.world.add_system(PickupSystem())
     game.world.add_system(IdleSystem())
