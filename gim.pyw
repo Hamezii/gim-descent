@@ -3,7 +3,7 @@ GIM Descent 4
 
 James Lecomte
 
-TODO:
+To do:
 - Add an explosive icon with a countdown that appears next to anything thats about to explode
 '''
 
@@ -26,7 +26,7 @@ pygame.mixer.pre_init(44100, -16, 8, 2048)
 pygame.init()
 pygame.mixer.init()
 
-random.seed(1)
+#random.seed(1)
 
 # CONSTANTS
 
@@ -42,6 +42,7 @@ DEFAULT_IMAGES = FOLDER + "images/"
 #sys.path.insert(0, './'+LIBRARY)  # So the program can import from lib folder
 
 BLACK = (0, 0, 0)
+ALMOST_BLACK = (10, 10, 10)
 WHITE = (255, 255, 255)
 GRAY = (122, 122, 122)
 DARK_RED = (150, 0, 0)
@@ -118,7 +119,7 @@ class Camera:
     """
 
     def __init__(self, speed):
-        self._ppt = MENU_SCALE*30
+        self._ppt = round(MENU_SCALE*1.5)*20
         self._shake = 0
         self._shake_x = 0
         self._shake_y = 0
@@ -220,9 +221,7 @@ class Game:
 
     def speed_entity(self, entity, amount):
         """Give an entity free turns."""
-        for target, initiative in self.world.get_component(InitiativeC):
-            if target != entity:
-                initiative.nextturn += amount
+        self.world.add_component(entity, FreeTurnC(amount))
 
     def heal_entity(self, entity, amount):
         """Heal an entity for a certain amount of health."""
@@ -298,6 +297,7 @@ class Game:
                                 BlockerC(),
                                 HealthC(10),
                                 AttackC(10),
+                                #ExplosiveC(3)
                             )
                         if choice == 2:
                             entity = self.world.create_entity(
@@ -523,21 +523,35 @@ class GameMenu(Menu):
 
             if drawing:
                 image = RENDERER.entity_image(entity, scale=camerascale)
-                rect = image.get_rect()
                 pixelpos = (pixelpos[0] - camerarect.x,
                             pixelpos[1] - camerarect.y)
-                rect.center = pixelpos
-                SCREEN.blit(image, rect)
+                RENDERER.draw_centered_image(SCREEN, image, pixelpos)
 
-                if self.game.world.has_component(entity, FireElementC):
-                    SCREEN.blit(RENDERER.get_image(
-                        name="elementFire", scale=camerascale), rect)
-                if self.game.world.has_component(entity, IceElementC):
-                    SCREEN.blit(RENDERER.get_image(
-                        name="elementIce", scale=camerascale), rect)
+
                 if self.game.world.has_component(entity, FrozenC):
                     RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(
                         name="ice-cube", scale=camerascale), pixelpos)
+
+                icon_pos = [pixelpos[0] - camerazoom*0.25, pixelpos[1] + camerazoom*0.2]
+                if self.game.world.has_component(entity, FireElementC):
+                    RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="elementFire", scale=camerascale), icon_pos)
+                    icon_pos[0] += camerazoom*0.2
+                if self.game.world.has_component(entity, IceElementC):
+                    RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="elementIce", scale=camerascale), icon_pos)
+                    icon_pos[0] += camerazoom*0.2
+
+                if self.game.world.has_component(entity, ExplosiveC):
+                    explosive = self.game.world.entity_component(entity, ExplosiveC)
+                    if explosive.primed:
+                        RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="explosive", scale=camerascale), icon_pos)
+                        RENDERER.draw_text(SCREEN, WHITE, (icon_pos[0], icon_pos[1]-camerazoom*0.3), str(explosive.fuse), 10 * camerascale, centered=True)
+                        icon_pos[0] += camerazoom*0.2
+
+                if self.game.world.has_component(entity, FreeTurnC):
+                    RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="free-turn", scale=camerascale), icon_pos)
+                    RENDERER.draw_text(SCREEN, WHITE, (icon_pos[0], icon_pos[1]-camerazoom*0.3), str(self.game.world.entity_component(entity, FreeTurnC).life), 10 * camerascale, centered=True)
+                    icon_pos[0] += camerazoom*0.2
+
 
                 if self.game.world.has_component(entity, HealthC):    # Healthbar
                     health = self.game.world.entity_component(entity, HealthC)
@@ -848,7 +862,7 @@ class Renderer:
         color = [0, 0, 0]
         if self.world.has_component(entity, FireElementC) or self.world.has_component(entity, BurningC):
             color[0] += 100
-        if self.world.has_component(entity, IceElementC) or self.world.has_component(entity, FrozenC):
+        if self.world.has_component(entity, IceElementC):
             color[0] += 0
             color[1] += 50
             color[2] += 100
@@ -880,7 +894,7 @@ class Renderer:
         color = (color[0], color[1], color[2], pygame.BLEND_ADD)
 
         if centered:
-            pos = (pos[0] - (len(text)/2)*size, pos[1] - size*0.5)
+            pos = (pos[0] - (len(text)/2)*size + 0.2*size, pos[1] - size*0.5)
 
         for i, character in enumerate(text):
             if character in self.SPECIAL_CHARS:
@@ -1020,6 +1034,11 @@ class BurningC:
         self.life = life
 
 
+class FreeTurnC:
+    def __init__(self, life):
+        self.life = life
+
+
 class UseEffectC:
     def __init__(self, *effects):
         self.effects = effects
@@ -1082,22 +1101,38 @@ class InitiativeSystem(ecs.System):
 
     def update(self, **args):
 
+        self.tick = True
         try:
             for _ in self.world.get_component(MyTurnC):
                 self.tick = False
-                return
         except KeyError:
             pass
 
-        # Only run if not player's turn
-        self.tick = True
         #self.game.turns += 1
+        for entity, freeturn in self.world.get_component(FreeTurnC):
+            if self.world.has_component(entity, InitiativeC):
+                if self.tick:
+                    freeturn.life -= 1
+                    if freeturn.life <= 0:
+                        self.world.remove_component(entity, FreeTurnC)
+
+                    initiative = self.world.entity_component(entity, InitiativeC)
+                    initiative.nextturn -= 1
+                    if initiative.nextturn <= 0:
+                        initiative.nextturn += initiative.speed
+                        self.world.add_component(entity, MyTurnC())
+                self.tick = False
+            else:
+                self.world.remove_component(entity, FreeTurnC)
+            return
+
         for entity, initiative in self.world.get_component(InitiativeC):
             if not self.world.has_component(entity, MyTurnC):
-                initiative.nextturn -= 1
-            if initiative.nextturn <= 0:
-                initiative.nextturn += initiative.speed
-                self.world.add_component(entity, MyTurnC())
+                if self.tick:
+                    initiative.nextturn -= 1
+                if initiative.nextturn <= 0:
+                    initiative.nextturn += initiative.speed
+                    self.world.add_component(entity, MyTurnC())
 
 
 
@@ -1457,7 +1492,7 @@ def main():
 
     game.world.tags.focus = game.world.tags.player = game.world.create_entity(
         RenderC("magnum"),
-        TilePositionC(20, 20),
+        TilePositionC(0, 0),
         PlayerInputC(),
         MovementC(),
         InitiativeC(1),
@@ -1466,6 +1501,8 @@ def main():
         InventoryC(10),
         AttackC(5)
     )
+    game.world.get_system(GridSystem).update()
+    game.teleport_entity(game.world.tags.player, game.world.get_system(GridSystem).gridwidth)
 
     RENDERER.world = game.world
     UI.add_menu(MainMenu(game), focus=True)
@@ -1484,7 +1521,8 @@ def main():
         keypress = get_input()
 
         if keypress == pygame.K_MINUS:  # Zooming out
-            game.camera.zoom(-20)
+            if game.camera.get_zoom() > 20:
+                game.camera.zoom(-20)
 
         if keypress == pygame.K_EQUALS:  # Zooming in
             game.camera.zoom(20)
@@ -1505,6 +1543,8 @@ def main():
 
         RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 0), "FPS: " + str(int(fps)), 10)
         RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12), "TOTAL IMAGES: " + str(RENDERER.total_images), 10)
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 24), "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, InitiativeC).nextturn), 10)
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 36), "TICK: " + str(game.world.get_system(InitiativeSystem).tick), 10)
         pygame.display.update()
 
 

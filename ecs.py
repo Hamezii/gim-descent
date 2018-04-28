@@ -152,10 +152,10 @@ class World:
 
     def update(self, **args):
         '''Run a tick of the ECS.'''
+        for system in self._systems:
+            system.update(**args)
+
         if self._dead_entities:
             for entity in self._dead_entities:
                 self.delete_entity(entity, instant=True)
             self._dead_entities.clear()
-
-        for system in self._systems:
-            system.update(**args)
