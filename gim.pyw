@@ -4,7 +4,7 @@ GIM Descent 4
 James Lecomte
 
 To do:
-- Add an explosive icon with a countdown that appears next to anything thats about to explode
+
 '''
 
 #import cProfile as profile
@@ -201,27 +201,23 @@ class Game:
         self.camera = Camera(speed=10)
         self.world = ecs.World(self)
 
-    def on_grid(self, pos):
-        """Return True if a position is on the grid."""
-        if clamp(0, pos[0], self.world.get_system(GridSystem).gridwidth-1) == pos[0]:
-            if clamp(0, pos[1], self.world.get_system(GridSystem).gridheight-1) == pos[1]:
-                return True
-        return False
-
     def teleport_entity(self, entity, amount):
         """Teleport an entity to a random position in a specific radius."""
         pos = self.world.entity_component(entity, TilePositionC)
         while True:
             randpos = (pos.x+random.randint(-amount, amount),
                        pos.y+random.randint(-amount, amount))
-            if self.on_grid(randpos):
+            if self.world.get_system(GridSystem).on_grid(randpos):
                 if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
                     self.world.get_system(GridSystem).move_entity(entity, randpos)
                     return
 
     def speed_entity(self, entity, amount):
         """Give an entity free turns."""
-        self.world.add_component(entity, FreeTurnC(amount))
+        if self.world.has_component(entity, FreeTurnC):
+            self.world.entity_component(entity, FreeTurnC).life += amount
+        else:
+            self.world.add_component(entity, FreeTurnC(amount))
 
     def heal_entity(self, entity, amount):
         """Heal an entity for a certain amount of health."""
@@ -766,7 +762,7 @@ class ThrowOptions(Menu):
                     distance += 1
                     self.targettile[0] += self.dir[0]
                     self.targettile[1] += self.dir[1]
-                    if not self.game.on_grid(self.targettile):
+                    if not self.game.world.get_system(GridSystem).on_grid(self.targettile):
                         self.targettile[0] -= self.dir[0]
                         self.targettile[1] -= self.dir[1]
                         hitblocker = True
@@ -892,17 +888,18 @@ class Renderer:
         size refers to the height and width of each character in pixels.
         """
         color = (color[0], color[1], color[2], pygame.BLEND_ADD)
+        character_width = size * 0.8
 
         if centered:
-            pos = (pos[0] - (len(text)/2)*size + 0.2*size, pos[1] - size*0.5)
+            pos = (pos[0] - (len(text)/2) * character_width + 0.1 * size, pos[1] - size * 0.5)
 
         for i, character in enumerate(text):
             if character in self.SPECIAL_CHARS:
                 surface.blit(self.get_image(
-                    name="txt_"+self.SPECIAL_CHARS[character], scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
+                    name="txt_"+self.SPECIAL_CHARS[character], scale=size*0.2, color=color), (pos[0] + i * character_width, pos[1]))
             else:
                 surface.blit(self.get_image(
-                    name="txt-"+character, scale=size*0.2, color=color), (pos[0] + i*size, pos[1]))
+                    name="txt-"+character, scale=size*0.2, color=color), (pos[0] + i * character_width, pos[1]))
 
     def draw_image(self, surface, image, pos):
         """Blit an image to a surface."""
@@ -1065,6 +1062,13 @@ class GridSystem(ecs.System):
         self.gridwidth = 40
         self.gridheight = 40
         self.blocker_grid = None
+
+    def on_grid(self, pos):
+        """Return True if a position is on the grid."""
+        if clamp(0, pos[0], self.gridwidth-1) == pos[0]:
+            if clamp(0, pos[1], self.gridheight-1) == pos[1]:
+                return True
+        return False
 
     def get_blocker_at(self, pos):
         """Get id of blocker entity at a certain position.
@@ -1269,10 +1273,10 @@ class BumpSystem(ecs.System):
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
-            targetent = self.world.get_system(
-                GridSystem).get_blocker_at(bumppos)
-            if targetent == entity:
-                return
+            if not self.world.get_system(GridSystem).on_grid(bumppos):
+                continue
+
+            targetent = self.world.get_system(GridSystem).get_blocker_at(bumppos)
 
             if targetent == 0:
                 if self.world.has_component(entity, BlockerC):
