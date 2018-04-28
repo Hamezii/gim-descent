@@ -69,7 +69,7 @@ def dist(pos1, pos2):
     return hypot(abs(pos1.x-pos2.x), abs(pos1.y-pos2.y))
 
 
-def clamp(minimum, value, maximum):
+def clamp(value, minimum, maximum):
     """Return the value clamped between a range."""
     return min(max(minimum, value), maximum)
 
@@ -293,7 +293,7 @@ class Game:
                                 BlockerC(),
                                 HealthC(10),
                                 AttackC(10),
-                                #ExplosiveC(3)
+                                ExplosiveC(3)
                             )
                         if choice == 2:
                             entity = self.world.create_entity(
@@ -540,12 +540,15 @@ class GameMenu(Menu):
                     explosive = self.game.world.entity_component(entity, ExplosiveC)
                     if explosive.primed:
                         RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="explosive", scale=camerascale), icon_pos)
-                        RENDERER.draw_text(SCREEN, WHITE, (icon_pos[0], icon_pos[1]-camerazoom*0.3), str(explosive.fuse), 10 * camerascale, centered=True)
+                        text_pos = (icon_pos[0], icon_pos[1]-camerazoom*0.3)
+                        RENDERER.draw_text(SCREEN, WHITE, text_pos, str(explosive.fuse), 10 * camerascale, centered=True)
                         icon_pos[0] += camerazoom*0.2
 
                 if self.game.world.has_component(entity, FreeTurnC):
+                    freeturn = self.game.world.entity_component(entity, FreeTurnC)
                     RENDERER.draw_centered_image(SCREEN, RENDERER.get_image(name="free-turn", scale=camerascale), icon_pos)
-                    RENDERER.draw_text(SCREEN, WHITE, (icon_pos[0], icon_pos[1]-camerazoom*0.3), str(self.game.world.entity_component(entity, FreeTurnC).life), 10 * camerascale, centered=True)
+                    text_pos = (icon_pos[0], icon_pos[1]-camerazoom*0.3)
+                    RENDERER.draw_text(SCREEN, WHITE, text_pos, str(freeturn.life), 10 * camerascale, centered=True)
                     icon_pos[0] += camerazoom*0.2
 
 
@@ -773,8 +776,7 @@ class ThrowOptions(Menu):
 
             if keypress == pygame.K_z:
                 if self.targettile is not None:
-                    self.game.world.entity_component(
-                        self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
                     self.game.world.remove_component(self.item, StoredC)
                     self.game.world.add_component(self.item, TilePositionC(*self.targettile))
 
@@ -939,6 +941,11 @@ class AIC:
         self.target = 0  # An entity id
 
 
+class RegenC:
+    def __init__(self):
+        self.amount = 1
+
+
 class ExplosiveC:
     def __init__(self, fuse):
         self.fuse = fuse
@@ -1065,8 +1072,8 @@ class GridSystem(ecs.System):
 
     def on_grid(self, pos):
         """Return True if a position is on the grid."""
-        if clamp(0, pos[0], self.gridwidth-1) == pos[0]:
-            if clamp(0, pos[1], self.gridheight-1) == pos[1]:
+        if clamp(pos[0], 0, self.gridwidth-1) == pos[0]:
+            if clamp(pos[1], 0, self.gridheight-1) == pos[1]:
                 return True
         return False
 
@@ -1128,6 +1135,7 @@ class InitiativeSystem(ecs.System):
                 self.tick = False
             else:
                 self.world.remove_component(entity, FreeTurnC)
+
             return
 
         for entity, initiative in self.world.get_component(InitiativeC):
@@ -1250,7 +1258,6 @@ class BurningSystem(ecs.System):
         if not self.world.get_system(InitiativeSystem).tick:
             return
 
-        dead_components = set()
         for entity, burning in self.world.get_component(BurningC):
 
             if self.world.has_component(entity, HealthC):
@@ -1258,10 +1265,7 @@ class BurningSystem(ecs.System):
 
             burning.life -= 1
             if burning.life <= 0:
-                dead_components.add(entity)
-
-        for entity in dead_components:
-            self.world.remove_component(entity, BurningC)
+                self.world.remove_component(entity, BurningC)
 
 
 class BumpSystem(ecs.System):
@@ -1368,6 +1372,16 @@ class DamageSystem(ecs.System):
                 self.world.entity_component(damage.target, ExplosiveC).primed = True
 
             self.world.delete_entity(message_entity)
+
+class RegenSystem(ecs.System):
+    """Heals creatures with a RegenC component when they are injured."""
+    def update(self, **args):
+        if self.world.get_system(InitiativeSystem).tick:
+            for entity, regen in self.world.get_component(RegenC):
+                if self.world.has_component(entity, HealthC):
+                    health = self.world.entity_component(entity, HealthC)
+                    if health.current < health.max:
+                        health.current = min(health.current + regen.amount, health.max)
 
 
 class PickupSystem(ecs.System):
@@ -1487,6 +1501,7 @@ def main():
     game.world.add_system(BumpSystem())
     game.world.add_system(ExplosionSystem())
     game.world.add_system(DamageSystem())
+    game.world.add_system(RegenSystem())
     game.world.add_system(PickupSystem())
     game.world.add_system(IdleSystem())
 
@@ -1545,11 +1560,21 @@ def main():
         UI.send_event(("update", avgms))
         UI.draw_menus()
 
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 0), "FPS: " + str(int(fps)), 10)
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12), "TOTAL IMAGES: " + str(RENDERER.total_images), 10)
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 24), "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, InitiativeC).nextturn), 10)
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 36), "TICK: " + str(game.world.get_system(InitiativeSystem).tick), 10)
+        print_debug_info(game)
+
         pygame.display.update()
+
+def print_debug_info(game):
+    """Show debug info in the topleft corner."""
+    fps = CLOCK.get_fps()
+    infos = (
+        "FPS: " + str(int(fps)),
+        "TOTAL IMAGES: " + str(RENDERER.total_images),
+        "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, InitiativeC).nextturn),
+        "TICK: " + str(game.world.get_system(InitiativeSystem).tick)
+    )
+    for i, info in enumerate(infos):
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), info, 10)
 
 
 def init_screen():

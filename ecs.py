@@ -131,7 +131,7 @@ class World:
     def get_component(self, component_type):
         '''Get all components of a specific type.'''
         try:
-            comp_db = self._components[component_type].items()
+            comp_db = list(self._components[component_type].items())
         except KeyError:
             raise StopIteration
 
