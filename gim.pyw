@@ -293,7 +293,7 @@ class Game:
                                 BlockerC(),
                                 HealthC(10),
                                 AttackC(10),
-                                ExplosiveC(3)
+                                #ExplosiveC(3)
                             )
                         if choice == 2:
                             entity = self.world.create_entity(
@@ -554,15 +554,10 @@ class GameMenu(Menu):
 
                 if self.game.world.has_component(entity, HealthC):    # Healthbar
                     health = self.game.world.entity_component(entity, HealthC)
-                    barx = pixelpos[0] - camerazoom*0.4
-                    bary = pixelpos[1] + camerazoom*0.4
-                    barwidth = camerazoom*0.8
-                    barheight = camerazoom*0.1
-                    pygame.draw.rect(SCREEN, DARK_RED,
-                                     (barx, bary, barwidth, barheight))
+                    barrect = pygame.Rect(pixelpos[0] - camerazoom*0.35, pixelpos[1] + camerazoom*0.4, camerazoom*0.7, camerazoom*0.05)
+                    pygame.draw.rect(SCREEN, BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
                     try:
-                        pygame.draw.rect(
-                            SCREEN, DARK_GREEN, (barx, bary, barwidth*(health.current / health.max), barheight))
+                        pygame.draw.rect(SCREEN, DARK_GREEN, (barrect.topleft, (barrect.width*(health.current / health.max), barrect.height)))
                     except ZeroDivisionError:
                         pass
 
