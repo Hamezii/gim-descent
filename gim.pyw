@@ -262,21 +262,21 @@ class Game:
                             self.world.create_entity(
                                 RenderC("potion-red"),
                                 TilePositionC(x, y),
-                                PickupC(consumable=True),
+                                ItemC(consumable=True),
                                 UseEffectC((self.heal_entity, 20))
                             )
                         if potion == 2:
                             self.world.create_entity(
                                 RenderC("potion-green"),
                                 TilePositionC(x, y),
-                                PickupC(consumable=True),
+                                ItemC(consumable=True),
                                 UseEffectC((self.speed_entity, 8))
                             )
                         if potion == 3:
                             self.world.create_entity(
                                 RenderC("potion-blue"),
                                 TilePositionC(x, y),
-                                PickupC(consumable=True),
+                                ItemC(consumable=True),
                                 UseEffectC((self.teleport_entity, 15))
                             )
                     if random.randint(1, 30) == 1:       # Creating enemies
@@ -685,7 +685,7 @@ class InventoryOptions(Menu):
                         self.item, UseEffectC)
                     for effect in use.effects:
                         effect[0](self.game.world.tags.player, *effect[1:])
-                    if self.game.world.entity_component(self.item, PickupC).consumable:
+                    if self.game.world.entity_component(self.item, ItemC).consumable:
                         self.game.world.entity_component(
                             self.game.world.tags.player, InventoryC).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
@@ -782,7 +782,7 @@ class ThrowOptions(Menu):
                             self.item, UseEffectC)
                         for effect in use.effects:
                             effect[0](target, *effect[1:])
-                        if self.game.world.entity_component(self.item, PickupC).consumable:
+                        if self.game.world.entity_component(self.item, ItemC).consumable:
                             self.game.world.delete_entity(self.item)
 
                     UI.unfocus_menu(self)
@@ -911,7 +911,6 @@ class Renderer:
 # COMPONENTS
 class TilePositionC:
     """Stores position of an entity."""
-
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -919,62 +918,74 @@ class TilePositionC:
 
 class HealthC:
     """Stores health of an entity."""
-
     def __init__(self, health=None):
         self.max = health
         self.current = health
 
 
 class InitiativeC:
+    """Makes an entity able to take turns."""
     def __init__(self, speed=None):
         self.speed = speed
         self.nextturn = random.randint(1, speed)
 
 
 class AIC:
+    """Tags an entity as controlled by the computer. Stores id of entity to attack."""
     def __init__(self):
-        self.target = 0  # An entity id
+        self.target = 0
 
 
 class RegenC:
+    """Tags an entity as able to passively regenerate."""
     def __init__(self):
         self.amount = 1
 
 
 class ExplosiveC:
+    """Tags an entity as an explosive. Stores whether it is primed and how close it is to exploding."""
     def __init__(self, fuse):
         self.fuse = fuse
         self.primed = False
 
 
 class ExplodeC:
+    """An explode event put on the entity which is to explode."""
     def __init__(self):
         self.radius = 1
         self.damage = 10
 
 
 class DestructibleC:
+    """Tags an entity with no Health component as able to be destroyed by explosives."""
     def __init__(self):
         pass
 
 
 class PlayerInputC:
+    """Tags an entity as controlled by the player."""
     def __init__(self):
         pass
 
 
 class MyTurnC:
+    """Tags an entity as ready to take a turn."""
     def __init__(self):
         pass
 
 
 class BumpC:
+    """A bump event which is put on the entity which is bumping."""
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
 
 class DamageC:
+    """A damage message which is put on a message entity.
+
+    Stores target id of damage, the amount of damage to inflict and any elemental properties.
+    """
     def __init__(self, target, amount, burn=False, freeze=False):
         self.target = target
         self.amount = amount
@@ -983,72 +994,95 @@ class DamageC:
 
 
 class BlockerC:
+    """Tags an entity as solid and can't pass through other solid entities."""
     def __init__(self):
         pass
 
 
-class PickupC:
+class ItemC:
+    """Tags that an entity can be carried/stored and whether it is a consumable."""
     def __init__(self, consumable):
         self.consumable = consumable
 
 
 class InventoryC:
+    """Gives an entity an inventory. Stores current entities carried and maximum capacity."""
     def __init__(self, capacity):
         self.capacity = capacity
         self.contents = []
 
 
 class StoredC:
+    """Stores what entity is currently carrying/storing this entity."""
     def __init__(self, carrier):
         self.carrier = carrier
 
 
 class MovementC:
+    """Tags that an entity can move and stores whether it can move diagonally."""
     def __init__(self, diagonal=False):
         self.diagonal = diagonal
 
 
 class AttackC:
+    """Tags that an entity can attack and stores for how much damage."""
     def __init__(self, damage):
         self.damage = damage
 
 
 class IceElementC:
+    """Tags an entity as an ice elemental.
+
+    Applies frozen when attacking and is immune to freezing.
+    """
     def __init__(self):
         pass
 
 
 class FrozenC:
+    """Tags an entity as frozen in ice.
+
+    It requires a one-turn action to break free of the ice.
+    """
     def __init__(self):
         pass
 
 
 class FireElementC:
+    """Tags an entity as a fire elemental.
+
+    Applies burning when attacking and is immune to burning.
+    """
     def __init__(self):
         pass
 
 
 class BurningC:
+    """Tags an entity as burning, stores how many turns left."""
     def __init__(self, life):
         self.life = life
 
 
 class FreeTurnC:
+    """Lets an entity get initiative and move for free for a limited time."""
     def __init__(self, life):
         self.life = life
 
 
 class UseEffectC:
+    """Stores names of methods that are called when this entity is 'used'"""
     def __init__(self, *effects):
         self.effects = effects
 
 
 class RenderC:
-    def __init__(self, imagename="shadow"):
+    """Stores imagename of image to render."""
+    def __init__(self, imagename=None):
         self.imagename = imagename
 
 
 class AnimationC:
+    """Stores entity animations."""
     def __init__(self, **args):
         self.animations = args
         self.current_animation = None
@@ -1387,7 +1421,7 @@ class PickupSystem(ecs.System):
             if not self.world.has_component(entity, MyTurnC):
                 pos = comps[0]
                 inventory = comps[1]
-                for item, item_comps in self.world.get_components(TilePositionC, PickupC):
+                for item, item_comps in self.world.get_components(TilePositionC, ItemC):
                     if len(inventory.contents) < inventory.capacity:
                         item_pos = item_comps[0]
                         if (item_pos.x, item_pos.y) == (pos.x, pos.y):
