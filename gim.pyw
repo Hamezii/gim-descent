@@ -4,6 +4,7 @@ GIM Descent 4
 James Lecomte
 
 To do:
+- Make enemies do different things when attacking ie. goblins explode when attacking
 
 '''
 
@@ -38,9 +39,6 @@ AUDIO = FOLDER + "audio/"
 MUSIC = AUDIO + "music/"
 DEFAULT_IMAGES = FOLDER + "images/"
 
-#LIBRARY = FOLDER + "lib/"
-#sys.path.insert(0, './'+LIBRARY)  # So the program can import from lib folder
-
 BLACK = (0, 0, 0)
 ALMOST_BLACK = (10, 10, 10)
 WHITE = (255, 255, 255)
@@ -50,9 +48,6 @@ DARK_GREEN = (0, 150, 0)
 RED = (255, 50, 50)
 GREEN = (50, 255, 50)
 ORANGE = (255, 170, 50)
-
-BORDER_COLOR = BLACK
-BG_COLOR = (50, 50, 50)
 
 
 LEFT = (-1, 0)
@@ -555,7 +550,7 @@ class GameMenu(Menu):
                 if self.game.world.has_component(entity, HealthC):    # Healthbar
                     health = self.game.world.entity_component(entity, HealthC)
                     barrect = pygame.Rect(pixelpos[0] - camerazoom*0.35, pixelpos[1] + camerazoom*0.4, camerazoom*0.7, camerazoom*0.05)
-                    pygame.draw.rect(SCREEN, BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
+                    pygame.draw.rect(SCREEN, ALMOST_BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
                     try:
                         pygame.draw.rect(SCREEN, DARK_GREEN, (barrect.topleft, (barrect.width*(health.current / health.max), barrect.height)))
                     except ZeroDivisionError:
@@ -1148,7 +1143,6 @@ class InitiativeSystem(ecs.System):
         except KeyError:
             pass
 
-        #self.game.turns += 1
         for entity, freeturn in self.world.get_component(FreeTurnC):
             if self.world.has_component(entity, InitiativeC):
                 if self.tick:
