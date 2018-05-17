@@ -344,7 +344,7 @@ class MenuManager:
         for menu in self.menus:
             menu.draw()
 
-    def add_menu(self, menu, focus=False):
+    def add_menu(self, menu, focus=True):
         """Add a menu instance.
 
         If focus is True, focus will change to the new menu.
@@ -356,6 +356,8 @@ class MenuManager:
     def remove_menu(self, menu):
         """Remove a menu instance."""
         self.menus.remove(menu)
+        if menu in self.focuses:
+            self.unfocus_menu(menu)
 
     def unfocus_menu(self, menu):
         """Remove a menu from the focuses."""
@@ -445,7 +447,7 @@ class MainMenu(Menu):
             keypress = event[2]
             if self.active:
                 if keypress:
-                    UI.add_menu(GameMenu(self.game), focus=True)
+                    UI.add_menu(GameMenu(self.game))
                     UI.remove_menu(self)
 
     def draw(self):
@@ -478,7 +480,7 @@ class GameMenu(Menu):
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == pygame.K_z:
-                UI.add_menu(Inventory(self.game), focus=True)
+                UI.add_menu(Inventory(self.game))
             if keypress in DIRECTIONS:
                 self.game.world.update(playerinput=keypress, t_frame=0)
 
@@ -605,8 +607,7 @@ class Inventory(Menu):
                 items = self.game.world.entity_component(
                     self.game.world.tags.player, InventoryC).contents
                 if itempos < len(items):
-                    UI.add_menu(InventoryOptions(
-                        self.game, items[itempos]), focus=True)
+                    UI.add_menu(InventoryOptions(self.game, items[itempos]))
 
     def draw(self):
         drawposx = round(self.pos.x)
@@ -668,24 +669,20 @@ class InventoryOptions(Menu):
             if keypress == UP:
                 self.cursorpos = max(self.cursorpos - 1, 0)
             if keypress == pygame.K_x:
-                UI.unfocus_menu(self)
                 UI.remove_menu(self)
             if keypress == pygame.K_z:
-                UI.unfocus_menu(self)
                 UI.remove_menu(self)
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":
-                    use = self.game.world.entity_component(
-                        self.item, UseEffectC)
+                    use = self.game.world.entity_component(self.item, UseEffectC)
                     for effect in use.effects:
                         effect[0](self.game.world.tags.player, *effect[1:])
                     if self.game.world.entity_component(self.item, ItemC).consumable:
-                        self.game.world.entity_component(
-                            self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                        self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
                 if selection == "throw":
-                    UI.add_menu(ThrowOptions(self.game, self.item), focus=True)
+                    UI.add_menu(ThrowOptions(self.game, self.item))
 
                 if selection == "drop":
                     self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
@@ -740,9 +737,8 @@ class ThrowOptions(Menu):
         if event[0] == "input" and event[1] is self:
             keypress = event[2]
             if keypress == pygame.K_x:
-                UI.unfocus_menu(self)
                 UI.remove_menu(self)
-                UI.add_menu(InventoryOptions(self.game, self.item), focus=True)
+                UI.add_menu(InventoryOptions(self.game, self.item))
 
             if keypress in DIRECTIONS:
                 self.dir = keypress
@@ -780,7 +776,6 @@ class ThrowOptions(Menu):
                         if self.game.world.entity_component(self.item, ItemC).consumable:
                             self.game.world.delete_entity(self.item)
 
-                    UI.unfocus_menu(self)
                     UI.remove_menu(self)
 
     def draw(self):
@@ -1300,6 +1295,8 @@ class BumpSystem(ecs.System):
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
+            self.world.remove_component(entity, BumpC)
+
             if not self.world.get_system(GridSystem).on_grid(bumppos):
                 continue
 
@@ -1315,7 +1312,9 @@ class BumpSystem(ecs.System):
 
             else:
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
-                    if entity == self.world.tags.player or targetent == self.world.tags.player:   # Stops AI from attacking each other accidentally
+                    if entity == self.world.tags.player or targetent == self.world.tags.player:
+                        # The player must be involved for damage to be inflicted in a bump.
+                        # This is so that AI don't attack each other by accident.
                         damage = self.world.entity_component(entity, AttackC).damage
                         self.world.create_entity(
                             DamageC(targetent, damage,
@@ -1328,9 +1327,6 @@ class BumpSystem(ecs.System):
                             self.game.camera.shake(5)
 
                         self.world.remove_component(entity, MyTurnC)
-
-        for entity, comps in self.world.get_components(BumpC):
-            self.world.remove_component(entity, BumpC)
 
 class ExplosionSystem(ecs.System):
     """Manages explosives and makes anything with an ExplodeC component explode."""
@@ -1547,7 +1543,7 @@ def main():
     game.teleport_entity(game.world.tags.player, game.world.get_system(GridSystem).gridwidth)
 
     RENDERER.world = game.world
-    UI.add_menu(MainMenu(game), focus=True)
+    UI.add_menu(MainMenu(game))
 
     while True:
 
@@ -1615,6 +1611,7 @@ def init_screen():
 
     return (screen, width, height)
 
+UI: MenuManager
 
 if __name__ == "__main__":
     CLOCK = pygame.time.Clock()
