@@ -1545,6 +1545,8 @@ def main():
     RENDERER.world = game.world
     UI.add_menu(MainMenu(game))
 
+    debugging = False
+
     while True:
 
         delta = CLOCK.tick()
@@ -1565,6 +1567,9 @@ def main():
         if keypress == pygame.K_EQUALS:  # Zooming in
             game.camera.zoom(20)
 
+        if keypress == pygame.K_F12:
+            debugging = not debugging
+
         UI.send_event(("input", UI.get_focus(), keypress))
 
         done = False
@@ -1579,7 +1584,8 @@ def main():
         UI.send_event(("update", avgms))
         UI.draw_menus()
 
-        print_debug_info(game)
+        if debugging:
+            print_debug_info(game)
 
         pygame.display.update()
 
