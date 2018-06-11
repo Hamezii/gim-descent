@@ -251,28 +251,35 @@ class Game:
                         DestructibleC(),
                     )
                 else:
-                    if random.randint(1, 45) == 1:      # Creating potions
-                        potion = random.randint(1, 3)
-                        if potion == 1:
+                    if random.randint(1, 45) == 1:      # Creating items
+                        item = random.randint(1, 4)
+                        if item == 1:
                             self.world.create_entity(
                                 RenderC("potion-red"),
                                 TilePositionC(x, y),
                                 ItemC(consumable=True),
                                 UseEffectC((self.heal_entity, 20))
                             )
-                        if potion == 2:
+                        if item == 2:
                             self.world.create_entity(
                                 RenderC("potion-green"),
                                 TilePositionC(x, y),
                                 ItemC(consumable=True),
                                 UseEffectC((self.speed_entity, 8))
                             )
-                        if potion == 3:
+                        if item == 3:
                             self.world.create_entity(
                                 RenderC("potion-blue"),
                                 TilePositionC(x, y),
                                 ItemC(consumable=True),
                                 UseEffectC((self.teleport_entity, 15))
+                            )
+                        if item == 4:
+                            self.world.create_entity(
+                                RenderC("bomb"),
+                                TilePositionC(x, y),
+                                ItemC(consumable=False),
+                                ExplosiveC(3)
                             )
                     if random.randint(1, 30) == 1:       # Creating enemies
                         choice = random.randint(1, 3)
@@ -371,7 +378,7 @@ class MenuManager:
 class Menu:
     """A class that can be interacted with and drawn to the screen."""
 
-    def __init__(self, game):
+    def __init__(self, game: Game):
         self.game = game
 
     def get_event(self, event):
@@ -648,6 +655,8 @@ class InventoryOptions(Menu):
         self.options = []
         if self.game.world.has_component(item, UseEffectC):
             self.options.append("use")
+        if self.game.world.has_component(item, ExplosiveC):
+            self.options.append("prime")
         self.options.append("throw")
         self.options.append("drop")
         self.size = len(self.options)
@@ -681,6 +690,10 @@ class InventoryOptions(Menu):
                     if self.game.world.entity_component(self.item, ItemC).consumable:
                         self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
+
+                if selection == "prime":
+                    self.game.world.entity_component(self.item, ExplosiveC).primed = True
+
                 if selection == "throw":
                     UI.add_menu(ThrowOptions(self.game, self.item))
 
@@ -769,10 +782,11 @@ class ThrowOptions(Menu):
                     target = self.game.world.get_system(
                         GridSystem).get_blocker_at(self.targettile)
                     if target:
-                        use = self.game.world.entity_component(
-                            self.item, UseEffectC)
-                        for effect in use.effects:
-                            effect[0](target, *effect[1:])
+                        if self.game.world.has_component(self.item, UseEffectC):
+                            use = self.game.world.entity_component(
+                                self.item, UseEffectC)
+                            for effect in use.effects:
+                                effect[0](target, *effect[1:])
                         if self.game.world.entity_component(self.item, ItemC).consumable:
                             self.game.world.delete_entity(self.item)
 
