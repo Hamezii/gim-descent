@@ -516,7 +516,7 @@ class GameMenu(Menu):
             pos = comps[1]
 
             pixelpos = self.game.camera.tile_to_pixel_pos(pos.x, pos.y)
-            rect = pygame.Rect(0, 0, camerazoom*2, camerazoom*2)
+            rect = pygame.Rect(0, 0, camerazoom*1.5, camerazoom*1.5)
             rect.center = pixelpos
 
             drawing = rect.colliderect(camerarect)
@@ -1309,8 +1309,6 @@ class BumpSystem(ecs.System):
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
-            self.world.remove_component(entity, BumpC)
-
             if not self.world.get_system(GridSystem).on_grid(bumppos):
                 continue
 
@@ -1341,6 +1339,8 @@ class BumpSystem(ecs.System):
                             self.game.camera.shake(5)
 
                         self.world.remove_component(entity, MyTurnC)
+        for entity, _ in self.world.get_component(BumpC):
+            self.world.remove_component(entity, BumpC)
 
 class ExplosionSystem(ecs.System):
     """Manages explosives and makes anything with an ExplodeC component explode."""
@@ -1366,6 +1366,8 @@ class ExplosionSystem(ecs.System):
                 pos = self.world.entity_component(iterentity, TilePositionC)
                 for x in range(pos.x - explode.radius, pos.x + explode.radius + 1):
                     for y in range(pos.y - explode.radius, pos.y + explode.radius + 1):
+                        if not self.world.get_system(GridSystem).on_grid((x, y)):
+                            continue
                         target_entity = self.world.get_system(GridSystem).get_blocker_at((x, y))
                         if target_entity != 0:
 
