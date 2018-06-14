@@ -96,6 +96,10 @@ class World:
         '''Get all components belonging to an entity.'''
         return (self._components[comp][entity] for comp in self._entities[entity])
 
+    def has_entity(self, entity):
+        '''Return true if entity exists.'''
+        return entity in self._entities
+
     def has_component(self, entity, component_type):
         '''Return true if entity has a component of a specific type.'''
         return component_type in self._entities[entity]
