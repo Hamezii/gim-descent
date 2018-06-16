@@ -745,6 +745,7 @@ class ThrowOptions(Menu):
         self.item = item
         self.dir = (0, 0)
         self.targettile = None
+        self.droptile = None
 
         self.help_pos = DynamicPos((WIDTH//2, HEIGHT+MENU_SCALE*2.5), speed=10)
         self.help_pos.move((self.help_pos.x, HEIGHT/2+TILE_SIZE*MENU_SCALE))
@@ -766,27 +767,31 @@ class ThrowOptions(Menu):
                 playerpos = self.game.world.entity_component(
                     self.game.world.tags.player, TilePositionC)
                 self.targettile = [playerpos.x, playerpos.y]
-                hitblocker = False
+                stopped = False
                 distance = 0
-                while not hitblocker:
-                    distance += 1
+                while not stopped:
                     self.targettile[0] += self.dir[0]
                     self.targettile[1] += self.dir[1]
+                    distance += 1
                     if not self.game.world.get_system(GridSystem).on_grid(self.targettile):
                         self.targettile[0] -= self.dir[0]
                         self.targettile[1] -= self.dir[1]
-                        hitblocker = True
+                        distance -= 1
+                        stopped = True
                     if self.game.world.get_system(GridSystem).get_blocker_at(self.targettile) != 0:
-                        hitblocker = True
+                        distance -= 1
+                        stopped = True
                     if distance == 5:
-                        hitblocker = True
+                        stopped = True
+
+                self.droptile = [playerpos.x + self.dir[0] * distance, playerpos.y + self.dir[1] * distance]
 
             if keypress == pygame.K_z:
-                if self.targettile is not None:
+                if self.droptile is not None:
                     self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
                     self.game.world.remove_component(self.item, StoredC)
-                    self.game.world.add_component(self.item, TilePositionC(*self.targettile))
-
+                    self.game.world.add_component(self.item, TilePositionC(*self.droptile))
+                if self.targettile is not None:
                     target = self.game.world.get_system(
                         GridSystem).get_blocker_at(self.targettile)
                     if target:
@@ -1350,7 +1355,6 @@ class BumpSystem(ecs.System):
 
     def update(self, **args):
         for entity, comps in self.world.get_components(TilePositionC, BumpC, MyTurnC):
-            pos = comps[0]
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
