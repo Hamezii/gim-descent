@@ -6,9 +6,17 @@ James Lecomte
 To do:
 - Make enemies do different things when attacking ie. goblins explode when attacking
 
+- Maybe implement an event system, where Systems emit events which other Systems recieve
+
+- Fix the grid cache system
+ - I think this is done
+
+
 '''
 
-#import cProfile as profile
+# VV Do this to profile VV
+# py -m cProfile -s tottime gim.pyw
+
 import glob
 import random
 import sys
@@ -1094,6 +1102,8 @@ class AnimationC:
 
 
 # SYSTEMS
+
+
 class GridSystem(ecs.System):
     """Stores grid attributes and a grid of blocker entities."""
 
@@ -1101,7 +1111,9 @@ class GridSystem(ecs.System):
         super().__init__()
         self.gridwidth = 40
         self.gridheight = 40
-        self.blocker_grid = None
+        self.blocker_grid = self.blocker_grid = [[0 for y in range(self.gridheight)] for x in range(self.gridwidth)]
+        self.grid = self.grid = [[set() for y in range(self.gridheight)] for x in range(self.gridwidth)]
+        self._cached_pos = {}
 
     def on_grid(self, pos):
         """Return True if a position is on the grid."""
@@ -1125,16 +1137,51 @@ class GridSystem(ecs.System):
             if self.blocker_grid[pos[0]][pos[1]] == 0:
                 self.blocker_grid[entity_pos.x][entity_pos.y] = 0
                 self.blocker_grid[pos[0]][pos[1]] = entity
+
             else:
                 raise IndexError("Entity moving to an occupied tile")
 
+        self.grid[entity_pos.x][entity_pos.y].remove(entity)
         entity_pos.x, entity_pos.y = pos
+        self.grid[entity_pos.x][entity_pos.y].add(entity)
+        self._cached_pos[entity] = pos
+
+    def _remove_pos(self, entity):
+        """Remove an entity from the grid."""
+        cache_x, cache_y = self._cached_pos[entity]
+        self.grid[cache_x][cache_y].remove(entity)
+        if self.blocker_grid[cache_x][cache_y] == entity:
+            self.blocker_grid[cache_x][cache_y] = 0
+        del self._cached_pos[entity]
 
     def update(self, **args):
-        self.blocker_grid = [
-            [0 for y in range(self.gridheight)] for x in range(self.gridwidth)]
-        for entity, comp in self.world.get_components(TilePositionC, BlockerC):
-            self.blocker_grid[comp[0].x][comp[0].y] = entity
+        for entity, pos in self.world.get_component(TilePositionC):
+            if not entity in self._cached_pos:
+                self._cached_pos[entity] = (pos.x, pos.y)
+                self.grid[pos.x][pos.y].add(entity)
+                if self.world.has_component(entity, BlockerC):
+                    self.blocker_grid[pos.x][pos.y] = entity
+
+        for entity in tuple(self._cached_pos):
+            if not self.world.has_entity(entity):
+                self._remove_pos(entity)
+                continue
+            if not self.world.has_component(entity, TilePositionC):
+                self._remove_pos(entity)
+                continue
+
+            pos = self.world.entity_component(entity, TilePositionC)
+            if (pos.x, pos.y) != self._cached_pos[entity]:
+                cache_x, cache_y = self._cached_pos[entity]
+                self._cached_pos[entity] = (pos.x, pos.y)
+
+                self.grid[cache_x][cache_y].remove(entity)
+                self.grid[pos.x][pos.y].add(entity)
+
+
+                if self.blocker_grid[cache_x][cache_y] == entity:
+                    self.blocker_grid[cache_x][cache_y] = 0
+                    self.blocker_grid[pos.x][pos.y] = entity
 
 
 class InitiativeSystem(ecs.System):
@@ -1177,8 +1224,6 @@ class InitiativeSystem(ecs.System):
                 if initiative.nextturn <= 0:
                     initiative.nextturn += initiative.speed
                     self.world.add_component(entity, MyTurnC())
-
-
 
 
 class PlayerInputSystem(ecs.System):
@@ -1315,11 +1360,8 @@ class BumpSystem(ecs.System):
             targetent = self.world.get_system(GridSystem).get_blocker_at(bumppos)
 
             if targetent == 0:
-                if self.world.has_component(entity, BlockerC):
-                    self.world.get_system(GridSystem).blocker_grid[pos.x][pos.y] = 0
-                    self.world.get_system(GridSystem).blocker_grid[bump.x][bump.y] = entity
-                pos.x = bump.x
-                pos.y = bump.y
+
+                self.world.get_system(GridSystem).move_entity(entity, bumppos)
                 self.world.remove_component(entity, MyTurnC)
 
             else:
@@ -1341,6 +1383,7 @@ class BumpSystem(ecs.System):
                         self.world.remove_component(entity, MyTurnC)
         for entity, _ in self.world.get_component(BumpC):
             self.world.remove_component(entity, BumpC)
+
 
 class ExplosionSystem(ecs.System):
     """Manages explosives and makes anything with an ExplodeC component explode."""
@@ -1454,16 +1497,12 @@ class AnimationSystem(ecs.System):
     def __init__(self):
         super().__init__()
         self.t_last_frame = 0
-        self.start = True
 
     def update(self, **args):
 
         self.t_last_frame += args["t_frame"]
 
         frames_elapsed = self.t_last_frame // self.ANIMATION_RATE
-        if self.start:
-            frames_elapsed += 1
-            self.start = False
 
         self.t_last_frame = self.t_last_frame % self.ANIMATION_RATE
 
@@ -1534,6 +1573,7 @@ def main():
     game.world.add_system(FreezingSystem())
     game.world.add_system(BurningSystem())
     game.world.add_system(BumpSystem())
+
     game.world.add_system(ExplosionSystem())
     game.world.add_system(DamageSystem())
     game.world.add_system(RegenSystem())
@@ -1658,7 +1698,3 @@ if __name__ == "__main__":
     pygame.mixer.music.play(-1)
 
     main()
-    # profile.run('main()')
-
-    # VV Do this to profile VV
-    # py -m cProfile -s tottime  <NAME OF FILE>
