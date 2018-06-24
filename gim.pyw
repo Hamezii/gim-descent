@@ -7,6 +7,7 @@ To do:
 - Make enemies do different things when attacking ie. goblins explode when attacking
 
 - Maybe implement an event system, where Systems emit events which other Systems recieve
+ - This one might be a bad idea though
 
 - Fix the grid cache system
  - I think this is done
@@ -23,11 +24,10 @@ import sys
 
 import pygame
 
-import ecs
-import ui
-import renderer
 import constants
-
+import ecs
+import renderer
+import ui
 
 FULLSCREEN_MODE = True
 MUSIC_VOLUME = 1
@@ -165,7 +165,7 @@ class Game:
     """The game. Can perform functions on the ECS."""
 
     def __init__(self):
-        self.camera = Camera(speed=10)
+        self.camera = Camera(speed=5)
         self.world = ecs.World(self)
 
     def entity_image(self, entity, scale):
@@ -193,34 +193,6 @@ class Game:
                 player_nextturn = self.world.entity_component(self.world.tags.player, ecs.InitiativeC).nextturn
                 if entity_nextturn <= player_nextturn:
                     args["blinking"] = True
-
-        '''
-
-        if self.world.has_component(entity, ecs.FrozenC):
-            args["frozen"] = True
-
-
-        # Icons
-        icons = []
-
-        if self.world.has_component(entity, ecs.FireElementC):
-            icons.append(("elementFire", None))
-
-        if self.world.has_component(entity, ecs.IceElementC):
-            icons.append(("elementIce", None))
-
-        if self.world.has_component(entity, ecs.ExplosiveC):
-            explosive = self.world.entity_component(entity, ecs.ExplosiveC)
-            if explosive.primed:
-                icons.append(("explosive", explosive.fuse))
-
-        if self.world.has_component(entity, ecs.FreeTurnC):
-            freeturn = self.world.entity_component(entity, ecs.FreeTurnC)
-            icons.append(("free-turn", freeturn.life))
-
-        if icons:
-            args["icons"] = icons
-        '''
 
         # Getting image
         img = RENDERER.get_image(name=name, scale=scale, **args)
@@ -354,8 +326,10 @@ class Game:
                         choice = random.randint(1, 3)
                         if choice == 1:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(idle=["ogre-i", "ogre-i", "ogre-i", "ogre-i2", "ogre-i3", "ogre-i3",
-                                                 "ogre-i3", "ogre-i4"], ready=["ogre-r", "ogre-r", "ogre-i", "ogre-i"]),
+                                ecs.AnimationC(
+                                    idle=["ogre-i", "ogre-i", "ogre-i", "ogre-i2", "ogre-i3", "ogre-i3", "ogre-i3", "ogre-i4"],
+                                    ready=["ogre-r", "ogre-r", "ogre-i", "ogre-i"]
+                                    ),
                                 ecs.RenderC(),
                                 ecs.TilePositionC(x, y),
                                 ecs.AIC(),
@@ -364,12 +338,13 @@ class Game:
                                 ecs.BlockerC(),
                                 ecs.HealthC(10),
                                 ecs.AttackC(10),
-                                ecs.ExplosiveC(3)
                             )
                         if choice == 2:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(idle=["snake-i", "snake-i", "snake-i2", "snake-i2"], ready=[
-                                    "snake-r", "snake-r", "snake-r2", "snake-r2"]),
+                                ecs.AnimationC(
+                                    idle=["snake-i", "snake-i", "snake-i2", "snake-i2"],
+                                    ready=["snake-r", "snake-r", "snake-r2", "snake-r2"]
+                                    ),
                                 ecs.RenderC(),
                                 ecs.TilePositionC(x, y),
                                 ecs.AIC(),
@@ -382,8 +357,10 @@ class Game:
 
                         if choice == 3:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(idle=["golem-stone-i", "golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r",
-                                                 "golem-stone-r"], ready=["golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r"]),
+                                ecs.AnimationC(
+                                    idle=["golem-stone-i", "golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r", "golem-stone-r"],
+                                    ready=["golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r"]
+                                    ),
                                 ecs.RenderC(),
                                 ecs.TilePositionC(x, y),
                                 ecs.AIC(),
@@ -463,7 +440,8 @@ def main():
         ecs.BlockerC(),
         ecs.HealthC(50),
         ecs.InventoryC(10),
-        ecs.AttackC(5)
+        ecs.AttackC(5),
+        ecs.FreeTurnC(1)      # TEMPORARY: stops player from getting hit at the beginning of the level.
     )
     game.world.get_system(ecs.GridSystem).update()
     game.teleport_entity(game.world.tags.player, game.world.get_system(ecs.GridSystem).gridwidth)

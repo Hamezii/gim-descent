@@ -22,8 +22,6 @@ class Renderer:
 
         self.t_elapsed = 0
 
-        
-
     def get_image(self, **args):
         """Get an image surface from the cache. If it does not exist, the image is created.
 

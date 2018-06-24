@@ -94,7 +94,7 @@ class Menu:
     def __init__(self, game):
         self.game = game
         self.renderer = None
-        self.menu_manager = None 
+        self.menu_manager = None
 
     def get_event(self, event):
         """React to an event.
@@ -222,14 +222,12 @@ class GameMenu(Menu):
             gridwidth = self.game.world.get_system(ecs.GridSystem).gridwidth
             gridheight = self.game.world.get_system(ecs.GridSystem).gridheight
 
-            self._floor_cache = pygame.surface.Surface(
-                (gridwidth*camerazoom, gridheight*camerazoom))
+            self._floor_cache = pygame.surface.Surface((gridwidth*camerazoom, gridheight*camerazoom))
             for x in range(0, gridwidth):
                 for y in range(0, gridheight):
                     self._floor_cache.blit(self.renderer.get_image(name="floor", scale=camerascale), (x*camerazoom, y*camerazoom))
 
-        screen.blit(self._floor_cache, (0, 0), (camerarect.x,
-                                                camerarect.y, camerarect.width, camerarect.height))
+        screen.blit(self._floor_cache, (0, 0), (camerarect.x, camerarect.y, camerarect.width, camerarect.height))
 
         for entity, comps in self.game.world.get_components(ecs.RenderC, ecs.TilePositionC):
             pos = comps[1]
@@ -241,8 +239,7 @@ class GameMenu(Menu):
             drawing = rect.colliderect(camerarect)
 
             if drawing:
-                pixelpos = (pixelpos[0] - camerarect.x,
-                            pixelpos[1] - camerarect.y)
+                pixelpos = (pixelpos[0] - camerarect.x, pixelpos[1] - camerarect.y)
                 self.game.draw_centered_entity(screen, entity, camerascale, pixelpos)
 
                 if self.game.world.has_component(entity, ecs.HealthC):    # Healthbar
@@ -263,8 +260,8 @@ class Inventory(Menu):
         super().__init__(game)
         self.cursorpos = [0, 0]
         self.size = [2, 5]
-        self.pos = DynamicPos(
-            (-constants.TILE_SIZE*constants.MENU_SCALE*2-21, constants.HEIGHT/2-constants.TILE_SIZE*constants.MENU_SCALE*3), speed=10)
+        self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
+        self.pos = DynamicPos((-self.slot_size*2-21, constants.HEIGHT/2-self.slot_size*3), speed=10)
         self.show()
 
     def show(self):
@@ -273,14 +270,14 @@ class Inventory(Menu):
 
     def hide(self):
         """Tell inventory to move offscreen."""
-        self.pos.move((-constants.TILE_SIZE*constants.MENU_SCALE*2-21, self.pos.y))
+        self.pos.move((-self.slot_size*2-21, self.pos.y))
 
     def get_event(self, event):
 
         if event[0] == "update":
             delta = event[1]
             self.pos.update(delta)
-            if self.pos.x < -constants.TILE_SIZE*constants.MENU_SCALE*2-20:
+            if self.pos.x < -self.slot_size*2-20:
                 self.menu_manager.remove_menu(self)
 
         if event[0] == "input" and event[1] is self:
@@ -301,37 +298,34 @@ class Inventory(Menu):
 
             if keypress == pygame.K_z:
                 itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
-                items = self.game.world.entity_component(
-                    self.game.world.tags.player, ecs.InventoryC).contents
+                items = self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC).contents
                 if itempos < len(items):
                     self.menu_manager.add_menu(InventoryOptions(self.game, items[itempos]))
 
     def draw(self, screen):
         drawposx = round(self.pos.x)
         drawposy = round(self.pos.y)
+
         black_box_pos = (drawposx-5*constants.MENU_SCALE, drawposy-5*constants.MENU_SCALE)
-        black_box_size = tuple(constants.TILE_SIZE * self.size[i]*constants.MENU_SCALE+10*constants.MENU_SCALE for i in range(2))
+        black_box_size = tuple(self.slot_size * self.size[i] +10*constants.MENU_SCALE for i in range(2))
         pygame.draw.rect(screen, constants.BLACK, (black_box_pos, black_box_size))
 
         inventory = self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC)
 
+        inventory_slot = self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)
         for x in range(self.size[0]):
             for y in range(self.size[1]):
-                screen.blit(self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE),
-                            (drawposx+constants.TILE_SIZE*constants.MENU_SCALE*x, drawposy+constants.TILE_SIZE*constants.MENU_SCALE*y))
+                screen.blit(inventory_slot, (drawposx+self.slot_size*x, drawposy+self.slot_size*y))
 
         for i, entity in enumerate(inventory.contents):
-            pos = (drawposx+constants.TILE_SIZE*constants.MENU_SCALE*(i//self.size[1]+0.5), drawposy+constants.TILE_SIZE*constants.MENU_SCALE*(i % self.size[1]+0.5))
+            pos = (drawposx+self.slot_size*(i//self.size[1]+0.5), drawposy+self.slot_size*(i % self.size[1]+0.5))
             self.game.draw_centered_entity(screen, entity, constants.MENU_SCALE, pos)
 
-        inv_cursor_screenpos = (drawposx + constants.TILE_SIZE * constants.MENU_SCALE *
-                                self.cursorpos[0], drawposy + constants.TILE_SIZE * constants.MENU_SCALE * self.cursorpos[1])
+        inv_cursor_screenpos = (drawposx + self.slot_size * self.cursorpos[0], drawposy + self.slot_size * self.cursorpos[1])
         screen.blit(self.renderer.get_image(name="inventory-cursor-box", scale=constants.MENU_SCALE), inv_cursor_screenpos)
 
-        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy -
-                                           19*constants.MENU_SCALE), "Z to select", 5*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy -
-                                           12*constants.MENU_SCALE), "X to return", 5*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy - 19*constants.MENU_SCALE), "Z to select", 5*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy - 12*constants.MENU_SCALE), "X to return", 5*constants.MENU_SCALE)
 
 
 class InventoryOptions(Menu):
@@ -348,10 +342,11 @@ class InventoryOptions(Menu):
         self.options.append("throw")
         self.options.append("drop")
         self.size = len(self.options)
-        self.pos = (40+constants.TILE_SIZE*constants.MENU_SCALE*2+12*constants.MENU_SCALE,
-                    constants.HEIGHT/2-constants.TILE_SIZE*constants.MENU_SCALE*3)
-        self.options_pos = [DynamicPos((self.pos[0], self.pos[1]+i*12*constants.MENU_SCALE+(
-            constants.TILE_SIZE*1.5+10)*constants.MENU_SCALE), speed=20) for i in range(self.size)]
+
+        inv_slot_size = constants.TILE_SIZE*constants.MENU_SCALE
+        self.pos = (40 + inv_slot_size*2 + 12*constants.MENU_SCALE, constants.HEIGHT/2 - inv_slot_size*3)
+        image_bottom = self.pos[1]+inv_slot_size*1.5
+        self.options_pos = [DynamicPos((self.pos[0], image_bottom + (10 + i*12)*constants.MENU_SCALE), speed=20) for i in range(self.size)]
         self.cursorpos = 0
 
     def get_event(self, event):
@@ -399,10 +394,9 @@ class InventoryOptions(Menu):
                 pos.move((self.pos[0]+24*constants.MENU_SCALE, pos.y))
             else:
                 pos.move((self.pos[0]+12*constants.MENU_SCALE, pos.y))
-            pygame.draw.rect(screen, (0, 0, 0), (pos.x, pos.y,
-                                                 60*constants.MENU_SCALE, 12*constants.MENU_SCALE), 0)
-            self.renderer.draw_text(screen, (255, 255, 255), (pos.x+30*constants.MENU_SCALE, pos.y +
-                                                         6*constants.MENU_SCALE), self.options[i], size=5 * constants.MENU_SCALE, centered=True)
+            pygame.draw.rect(screen, (0, 0, 0), (pos.x, pos.y, 60*constants.MENU_SCALE, 12*constants.MENU_SCALE), 0)
+            text_pos = (pos.x+30*constants.MENU_SCALE, pos.y + 6*constants.MENU_SCALE)
+            self.renderer.draw_text(screen, (255, 255, 255), text_pos, self.options[i], size=5 * constants.MENU_SCALE, centered=True)
 
         option_cursor_image = self.renderer.get_image(name="cursor", color=(
             255, 255, 255, pygame.BLEND_ADD), scale=constants.MENU_SCALE)
@@ -490,9 +484,11 @@ class ThrowOptions(Menu):
             if self.targettile is not None:
                 self.renderer.draw_centered_image(screen, self.renderer.get_image(
                     name="crosshair", scale=self.game.camera.get_scale()), self.game.camera.tile_to_screen_pos(*self.targettile))
-        self.renderer.draw_text(screen, (170, 170, 170), (self.help_pos.x,
-                                                     self.help_pos.y), "Pick a direction", 5*constants.MENU_SCALE, centered=True)
-        self.renderer.draw_text(screen, (255, 255, 255), (self.help_pos.x,
-                                                     self.help_pos.y+7*constants.MENU_SCALE), "Z to throw", 5*constants.MENU_SCALE, centered=True)
-        self.renderer.draw_text(screen, (255, 255, 255), (self.help_pos.x, self.help_pos.y +
-                                                     14*constants.MENU_SCALE), "X to cancel", 5*constants.MENU_SCALE, centered=True)
+
+        text_size = 5*constants.MENU_SCALE
+        y_off = 0
+        self.renderer.draw_text(screen, constants.LIGHT_GRAY, (self.help_pos.x, self.help_pos.y), "Pick a direction", text_size, centered=True)
+        y_off += 7*constants.MENU_SCALE
+        self.renderer.draw_text(screen, constants.WHITE, (self.help_pos.x, self.help_pos.y + y_off), "Z to throw", text_size, centered=True)
+        y_off += 7*constants.MENU_SCALE
+        self.renderer.draw_text(screen, constants.WHITE, (self.help_pos.x, self.help_pos.y + y_off), "X to cancel", text_size, centered=True)
