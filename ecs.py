@@ -3,6 +3,7 @@
 import random
 from math import hypot
 
+import audio
 import constants
 
 
@@ -643,6 +644,7 @@ class BumpSystem(System):
 
                         if entity == self.world.tags.player:
                             self.game.camera.shake(5)
+                            audio.play("punch", 0.5)
 
                         self.world.remove_component(entity, MyTurnC)
         for entity, _ in self.world.get_component(BumpC):
@@ -688,6 +690,7 @@ class ExplosionSystem(System):
                 explosion_distance = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
                 if explosion_distance < 10:
                     self.game.camera.shake(40 - explosion_distance * 3)
+                    audio.play("explosion", 0.6 - explosion_distance * 0.05)
 
 class DamageSystem(System):
     """Manages damage events, applying the damage and then deleting the message entity."""
@@ -695,12 +698,12 @@ class DamageSystem(System):
     def update(self, **args):
         for message_entity, damage in self.world.get_component(DamageC):
             if self.world.has_component(damage.target, HealthC):
-                targethealth = self.world.entity_component(
-                    damage.target, HealthC)
+                targethealth = self.world.entity_component(damage.target, HealthC)
 
                 targethealth.current -= damage.amount
                 if damage.target == self.world.tags.player:
                     self.game.camera.shake(5 + damage.amount*2)
+                    audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.delete_entity(damage.target)
 

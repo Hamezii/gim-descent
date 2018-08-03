@@ -8,7 +8,7 @@ import pygame
 
 import ecs
 import constants
-
+import audio
 
 class DynamicPos:
     """A vector value which linearly interpolates to a position."""
@@ -267,10 +267,14 @@ class Inventory(Menu):
     def show(self):
         """Tell inventory to move onscreen."""
         self.pos.move((40, self.pos.y))
+        audio.play("snap1", replace=True)
+        audio.dim_music()
 
     def hide(self):
         """Tell inventory to move offscreen."""
         self.pos.move((-self.slot_size*2-21, self.pos.y))
+        audio.play("drop", replace=True)
+        audio.undim_music()
 
     def get_event(self, event):
 
@@ -287,13 +291,17 @@ class Inventory(Menu):
                 self.hide()
 
             if keypress == constants.UP:
+                audio.play("click3", replace=True)
                 self.cursorpos[1] = max(self.cursorpos[1] - 1, 0)
             if keypress == constants.DOWN:
+                audio.play("click3", replace=True)
                 self.cursorpos[1] = min(self.cursorpos[1] + 1, self.size[1]-1)
 
             if keypress == constants.LEFT:
+                audio.play("click3", replace=True)
                 self.cursorpos[0] = max(self.cursorpos[0] - 1, 0)
             if keypress == constants.RIGHT:
+                audio.play("click3", replace=True)
                 self.cursorpos[0] = min(self.cursorpos[0] + 1, self.size[0]-1)
 
             if keypress == pygame.K_z:
@@ -349,6 +357,8 @@ class InventoryOptions(Menu):
         self.options_pos = [DynamicPos((self.pos[0], image_bottom + (10 + i*12)*constants.MENU_SCALE), speed=20) for i in range(self.size)]
         self.cursorpos = 0
 
+        audio.play("snap2", replace=True)
+
     def get_event(self, event):
         if event[0] == "update":
             delta = event[1]
@@ -358,12 +368,16 @@ class InventoryOptions(Menu):
             keypress = event[2]
             if keypress == constants.DOWN:
                 self.cursorpos = min(self.cursorpos + 1, self.size-1)
+                audio.play("click2", replace=True)
             if keypress == constants.UP:
                 self.cursorpos = max(self.cursorpos - 1, 0)
+                audio.play("click2", replace=True)
             if keypress == pygame.K_x:
                 self.menu_manager.remove_menu(self)
+                audio.play("drop", replace=True)
             if keypress == pygame.K_z:
                 self.menu_manager.remove_menu(self)
+                audio.play("snap1", replace=True)
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":

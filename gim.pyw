@@ -18,7 +18,6 @@ To do:
 # VV Do this to profile VV
 # py -m cProfile -s tottime gim.pyw
 
-import glob
 import random
 import sys
 
@@ -28,14 +27,16 @@ import constants
 import ecs
 import renderer
 import ui
+import audio
 
 FULLSCREEN_MODE = True
-MUSIC_VOLUME = 1
 
-
-pygame.mixer.pre_init(44100, -16, 8, 2048)
+pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
-pygame.mixer.init()
+
+pygame.mixer.set_num_channels(8)
+
+audio.init_cache()
 
 #random.seed(1)
 
@@ -529,18 +530,10 @@ if __name__ == "__main__":
 
     constants.MENU_SCALE = round(constants.WIDTH/600)
 
-    # Initialising audio
-    SOUNDS = {}
-    for au in glob.glob(constants.AUDIO+"*.wav"):
-        auname = au[len(constants.AUDIO):-4]
-        SOUNDS[auname] = pygame.mixer.Sound(au)
-
     RENDERER = renderer.Renderer()
     UI = ui.MenuManager(RENDERER)
 
     # Playing music
-    pygame.mixer.music.load(random.choice(glob.glob(constants.MUSIC+"*")))
-    pygame.mixer.music.set_volume(MUSIC_VOLUME)
-    pygame.mixer.music.play(-1)
+    audio.play_music()
 
     main()
