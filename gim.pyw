@@ -427,6 +427,7 @@ def main():
     game.world.add_system(ecs.RegenSystem())
     game.world.add_system(ecs.PickupSystem())
     game.world.add_system(ecs.IdleSystem())
+    game.world.add_system(ecs.DeadSystem())
 
     game.world.add_system(ecs.AnimationSystem())
 
@@ -497,14 +498,14 @@ def main():
 def print_debug_info(game):
     """Show debug info in the topleft corner."""
     fps = CLOCK.get_fps()
-    infos = (
+    info = (
         "FPS: " + str(int(fps)),
         "TOTAL IMAGES: " + str(RENDERER.total_images),
         "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, ecs.InitiativeC).nextturn),
         "TICK: " + str(game.world.get_system(ecs.InitiativeSystem).tick)
     )
-    for i, info in enumerate(infos):
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), info, 10)
+    for i, line in enumerate(info):
+        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), line, 10)
 
 
 def init_screen():

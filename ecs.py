@@ -188,12 +188,16 @@ class World:
 
 # Components
 
+class LevelC:
+    """Stores data about the current level."""
+    def __init__(self, level_num):
+        self.level_num = level_num
+
 class TilePositionC:
     """Stores position of an entity."""
     def __init__(self, x, y):
         self.x = x
         self.y = y
-
 
 class HealthC:
     """Stores health of an entity."""
@@ -308,6 +312,10 @@ class AttackC:
     def __init__(self, damage):
         self.damage = damage
 
+class DeadC:
+    """Tags an entity as dead."""
+    def __init__(self):
+        pass
 
 class IceElementC:
     """Tags an entity as an ice elemental.
@@ -367,8 +375,6 @@ class AnimationC:
         self.current_animation = None
         self.pos = 0
 
-# Systems
-
 # SYSTEMS
 class GridSystem(System):
     """Stores grid attributes and a grid of blocker entities."""
@@ -395,6 +401,10 @@ class GridSystem(System):
         """
         return self.blocker_grid[pos[0]][pos[1]]
 
+    def get_entities_at(self, pos):
+        """Get ids of all entities at a certain position."""
+        return self.grid[pos[0]][pos[1]]
+
     def move_entity(self, entity, pos):
         """Move an entity to a position, raising an error if not possible."""
         entity_pos = self.world.entity_component(entity, TilePositionC)
@@ -412,7 +422,7 @@ class GridSystem(System):
         self.grid[entity_pos.x][entity_pos.y].add(entity)
         self._cached_pos[entity] = pos
 
-    def _remove_pos(self, entity):
+    def remove_pos(self, entity):
         """Remove an entity from the grid."""
         cache_x, cache_y = self._cached_pos[entity]
         self.grid[cache_x][cache_y].remove(entity)
@@ -429,11 +439,8 @@ class GridSystem(System):
                     self.blocker_grid[pos.x][pos.y] = entity
 
         for entity in tuple(self._cached_pos):
-            if not self.world.has_entity(entity):
-                self._remove_pos(entity)
-                continue
             if not self.world.has_component(entity, TilePositionC):
-                self._remove_pos(entity)
+                self.remove_pos(entity)
                 continue
 
             pos = self.world.entity_component(entity, TilePositionC)
@@ -633,7 +640,7 @@ class BumpSystem(System):
                 if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
                     if entity == self.world.tags.player or targetent == self.world.tags.player:
                         # The player must be involved for damage to be inflicted in a bump.
-                        # This is so that AI don't attack each other by accident.
+                        # This is so that AI don't attack each other when trying to move.
                         damage = self.world.entity_component(entity, AttackC).damage
                         self.world.create_entity(
                             DamageC(targetent, damage,
@@ -665,7 +672,7 @@ class ExplosionSystem(System):
 
 
         for entity, explode in self.world.get_component(ExplodeC):
-            self.world.delete_entity(entity)
+            self.world.add_component(entity, DeadC())
 
             iterentity = entity
             while self.world.has_component(iterentity, StoredC):  # Getting carrier entity
@@ -677,20 +684,18 @@ class ExplosionSystem(System):
                     for y in range(pos.y - explode.radius, pos.y + explode.radius + 1):
                         if not self.world.get_system(GridSystem).on_grid((x, y)):
                             continue
-                        target_entity = self.world.get_system(GridSystem).get_blocker_at((x, y))
-                        if target_entity != 0:
-
+                        for target_entity in self.world.get_system(GridSystem).get_entities_at((x, y)):
                             if self.world.has_component(target_entity, DestructibleC) and not self.world.has_component(target_entity, HealthC):
-                                self.world.delete_entity(target_entity)
+                                self.world.add_component(target_entity, DeadC())
+                            if self.world.has_component(target_entity, ItemC):
+                                self.world.add_component(target_entity, DeadC())
                             else:
-                                self.world.create_entity(
-                                    DamageC(target_entity, explode.damage)
-                                )
+                                self.world.create_entity(DamageC(target_entity, explode.damage))
 
-                explosion_distance = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
-                if explosion_distance < 10:
-                    self.game.camera.shake(40 - explosion_distance * 3)
-                    audio.play("explosion", 0.6 - explosion_distance * 0.05)
+                dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
+                if dist_to_player < 10:
+                    self.game.camera.shake(40 - dist_to_player * 3)
+                    audio.play("explosion", 0.6 - dist_to_player * 0.05)
 
 class DamageSystem(System):
     """Manages damage events, applying the damage and then deleting the message entity."""
@@ -705,7 +710,7 @@ class DamageSystem(System):
                     self.game.camera.shake(5 + damage.amount*2)
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
-                    self.world.delete_entity(damage.target)
+                    self.world.add_component(damage.target, DeadC())
 
                 if damage.burn and not self.world.has_component(damage.target, FireElementC):
                     self.world.add_component(damage.target, BurningC(5))
@@ -755,6 +760,17 @@ class IdleSystem(System):
             if self.world.has_component(entity, InitiativeC):
                 self.world.entity_component(entity, InitiativeC).nextturn = 1
 
+class DeadSystem(System):
+    """Handles any entities that have been tagged as dead and queues them for deletion."""
+
+    def update(self, **args):
+        for entity, _ in self.world.get_component(DeadC):
+            self.world.delete_entity(entity)
+            if self.world.has_component(entity, StoredC): # Removes entity from inventories
+                carrier = self.world.entity_component(entity, StoredC).carrier
+                self.world.entity_component(carrier, InventoryC).contents.remove(entity)
+            if self.world.has_component(entity, TilePositionC):
+                self.world.get_system(GridSystem).remove_pos(entity)
 
 class AnimationSystem(System):
     """Updates Render components on entities with an Animation component."""

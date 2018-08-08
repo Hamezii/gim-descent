@@ -482,12 +482,11 @@ class ThrowOptions(Menu):
                     target = self.game.world.get_system(ecs.GridSystem).get_blocker_at(self.targettile)
                     if target:
                         if self.game.world.has_component(self.item, ecs.UseEffectC):
-                            use = self.game.world.entity_component(
-                                self.item, ecs.UseEffectC)
+                            use = self.game.world.entity_component(self.item, ecs.UseEffectC)
                             for effect in use.effects:
                                 effect[0](target, *effect[1:])
                         if self.game.world.entity_component(self.item, ecs.ItemC).consumable:
-                            self.game.world.delete_entity(self.item)
+                            self.game.world.add_component(self.item, ecs.DeadC())
 
                     self.menu_manager.remove_menu(self)
 
