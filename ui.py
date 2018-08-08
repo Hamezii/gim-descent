@@ -6,7 +6,7 @@ import random
 
 import pygame
 
-import ecs
+from systems import *
 import constants
 import audio
 
@@ -200,7 +200,7 @@ class GameMenu(Menu):
     def get_event(self, event):
         if event[0] == "update":
             delta = event[1]
-            cameragoal = self.game.world.entity_component(self.game.world.tags.focus, ecs.TilePositionC)
+            cameragoal = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
             cameragoal = self.game.camera.tile_to_camera_pos(
                 cameragoal.x, cameragoal.y)
             self.game.camera.update(delta, cameragoal)
@@ -219,8 +219,8 @@ class GameMenu(Menu):
         if self._zoom_cache != camerazoom:
             self._zoom_cache = camerazoom
 
-            gridwidth = self.game.world.get_system(ecs.GridSystem).gridwidth
-            gridheight = self.game.world.get_system(ecs.GridSystem).gridheight
+            gridwidth = self.game.world.get_system(GridSystem).gridwidth
+            gridheight = self.game.world.get_system(GridSystem).gridheight
 
             self._floor_cache = pygame.surface.Surface((gridwidth*camerazoom, gridheight*camerazoom))
             for x in range(0, gridwidth):
@@ -229,7 +229,7 @@ class GameMenu(Menu):
 
         screen.blit(self._floor_cache, (0, 0), (camerarect.x, camerarect.y, camerarect.width, camerarect.height))
 
-        for entity, comps in self.game.world.get_components(ecs.RenderC, ecs.TilePositionC):
+        for entity, comps in self.game.world.get_components(RenderC, TilePositionC):
             pos = comps[1]
 
             pixelpos = self.game.camera.tile_to_pixel_pos(pos.x, pos.y)
@@ -242,8 +242,8 @@ class GameMenu(Menu):
                 pixelpos = (pixelpos[0] - camerarect.x, pixelpos[1] - camerarect.y)
                 self.game.draw_centered_entity(screen, entity, camerascale, pixelpos)
 
-                if self.game.world.has_component(entity, ecs.HealthC):    # Healthbar
-                    health = self.game.world.entity_component(entity, ecs.HealthC)
+                if self.game.world.has_component(entity, HealthC):    # Healthbar
+                    health = self.game.world.entity_component(entity, HealthC)
                     barrect = pygame.Rect(pixelpos[0] - camerazoom*0.35, pixelpos[1] + camerazoom*0.4, camerazoom*0.7, camerazoom*0.05)
                     pygame.draw.rect(screen, constants.ALMOST_BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
                     try:
@@ -306,7 +306,7 @@ class Inventory(Menu):
 
             if keypress == pygame.K_z:
                 itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
-                items = self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC).contents
+                items = self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents
                 if itempos < len(items):
                     self.menu_manager.add_menu(InventoryOptions(self.game, items[itempos]))
 
@@ -318,7 +318,7 @@ class Inventory(Menu):
         black_box_size = tuple(self.slot_size * self.size[i] +10*constants.MENU_SCALE for i in range(2))
         pygame.draw.rect(screen, constants.BLACK, (black_box_pos, black_box_size))
 
-        inventory = self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC)
+        inventory = self.game.world.entity_component(self.game.world.tags.player, InventoryC)
 
         inventory_slot = self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)
         for x in range(self.size[0]):
@@ -343,9 +343,9 @@ class InventoryOptions(Menu):
         super().__init__(game)
         self.item = item
         self.options = []
-        if self.game.world.has_component(item, ecs.UseEffectC):
+        if self.game.world.has_component(item, UseEffectC):
             self.options.append("use")
-        if self.game.world.has_component(item, ecs.ExplosiveC):
+        if self.game.world.has_component(item, ExplosiveC):
             self.options.append("prime")
         self.options.append("throw")
         self.options.append("drop")
@@ -381,25 +381,25 @@ class InventoryOptions(Menu):
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":
-                    use = self.game.world.entity_component(self.item, ecs.UseEffectC)
+                    use = self.game.world.entity_component(self.item, UseEffectC)
                     for effect in use.effects:
                         effect[0](self.game.world.tags.player, *effect[1:])
-                    if self.game.world.entity_component(self.item, ecs.ItemC).consumable:
-                        self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC).contents.remove(self.item)
+                    if self.game.world.entity_component(self.item, ItemC).consumable:
+                        self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
 
                 if selection == "prime":
-                    self.game.world.entity_component(self.item, ecs.ExplosiveC).primed = True
+                    self.game.world.entity_component(self.item, ExplosiveC).primed = True
 
                 if selection == "throw":
                     self.menu_manager.add_menu(ThrowOptions(self.game, self.item))
 
                 if selection == "drop":
-                    self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC).contents.remove(self.item)
-                    self.game.world.remove_component(self.item, ecs.StoredC)
+                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, StoredC)
 
-                    pos = self.game.world.entity_component(self.game.world.tags.player, ecs.TilePositionC)
-                    self.game.world.add_component(self.item, ecs.TilePositionC(pos.x, pos.y))
+                    pos = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
+                    self.game.world.add_component(self.item, TilePositionC(pos.x, pos.y))
 
 
     def draw(self, screen):
@@ -452,7 +452,7 @@ class ThrowOptions(Menu):
             if keypress in constants.DIRECTIONS:
                 self.dir = keypress
                 playerpos = self.game.world.entity_component(
-                    self.game.world.tags.player, ecs.TilePositionC)
+                    self.game.world.tags.player, TilePositionC)
                 self.targettile = [playerpos.x, playerpos.y]
                 stopped = False
                 distance = 0
@@ -460,12 +460,12 @@ class ThrowOptions(Menu):
                     self.targettile[0] += self.dir[0]
                     self.targettile[1] += self.dir[1]
                     distance += 1
-                    if not self.game.world.get_system(ecs.GridSystem).on_grid(self.targettile):
+                    if not self.game.world.get_system(GridSystem).on_grid(self.targettile):
                         self.targettile[0] -= self.dir[0]
                         self.targettile[1] -= self.dir[1]
                         distance -= 1
                         stopped = True
-                    if self.game.world.get_system(ecs.GridSystem).get_blocker_at(self.targettile) != 0:
+                    if self.game.world.get_system(GridSystem).get_blocker_at(self.targettile) != 0:
                         distance -= 1
                         stopped = True
                     if distance == 5:
@@ -475,18 +475,18 @@ class ThrowOptions(Menu):
 
             if keypress == pygame.K_z:
                 if self.droptile is not None:
-                    self.game.world.entity_component(self.game.world.tags.player, ecs.InventoryC).contents.remove(self.item)
-                    self.game.world.remove_component(self.item, ecs.StoredC)
-                    self.game.world.add_component(self.item, ecs.TilePositionC(*self.droptile))
+                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, StoredC)
+                    self.game.world.add_component(self.item, TilePositionC(*self.droptile))
                 if self.targettile is not None:
-                    target = self.game.world.get_system(ecs.GridSystem).get_blocker_at(self.targettile)
+                    target = self.game.world.get_system(GridSystem).get_blocker_at(self.targettile)
                     if target:
-                        if self.game.world.has_component(self.item, ecs.UseEffectC):
-                            use = self.game.world.entity_component(self.item, ecs.UseEffectC)
+                        if self.game.world.has_component(self.item, UseEffectC):
+                            use = self.game.world.entity_component(self.item, UseEffectC)
                             for effect in use.effects:
                                 effect[0](target, *effect[1:])
-                        if self.game.world.entity_component(self.item, ecs.ItemC).consumable:
-                            self.game.world.add_component(self.item, ecs.DeadC())
+                        if self.game.world.entity_component(self.item, ItemC).consumable:
+                            self.game.world.add_component(self.item, DeadC())
 
                     self.menu_manager.remove_menu(self)
 

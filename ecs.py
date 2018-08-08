@@ -4,7 +4,6 @@ class TagManager:
     '''Stores tags about the world.'''
     def __init__(self):
         self.player = None
-        self.focus = None
 
 
 class System:

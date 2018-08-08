@@ -18,6 +18,7 @@ To do:
 # VV Do this to profile VV
 # py -m cProfile -s tottime gim.pyw
 
+import pickle
 import random
 import sys
 
@@ -30,7 +31,7 @@ import ui
 from ecs import World
 from systems import *
 
-FULLSCREEN_MODE = True
+FULLSCREEN_MODE = False
 
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
@@ -439,7 +440,7 @@ def main():
         LevelC(1)
     )
 
-    game.world.tags.focus = game.world.tags.player = game.world.create_entity(
+    game.world.tags.player = game.world.create_entity(
         RenderC("magnum"),
         TilePositionC(0, 0),
         PlayerInputC(),
@@ -482,6 +483,14 @@ def main():
         if keypress == pygame.K_F12:
             debugging = not debugging
 
+        if keypress == pygame.K_F10: # Save
+            with open("save.save", "wb") as save_file:
+                pickle.dump(game.world, save_file)
+        if keypress == pygame.K_F11: # Load
+            with open("save.save", "rb") as save_file:
+                game.world = pickle.load(save_file)
+
+
         UI.send_event(("input", UI.get_focus(), keypress))
 
         done = False
@@ -507,8 +516,6 @@ def print_debug_info(game):
     info = (
         "FPS: " + str(int(fps)),
         "TOTAL IMAGES: " + str(RENDERER.total_images),
-        "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, InitiativeC).nextturn),
-        "TICK: " + str(game.world.get_system(InitiativeSystem).tick)
     )
     for i, line in enumerate(info):
         RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), line, 10)
