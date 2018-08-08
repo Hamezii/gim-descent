@@ -23,11 +23,12 @@ import sys
 
 import pygame
 
+import audio
 import constants
-import ecs
 import renderer
 import ui
-import audio
+from ecs import World
+from systems import *
 
 FULLSCREEN_MODE = True
 
@@ -167,20 +168,20 @@ class Game:
 
     def __init__(self):
         self.camera = Camera(speed=5)
-        self.world = ecs.World(self)
+        self.world = World(self)
 
     def entity_image(self, entity, scale):
         """Return the current image of an entity referred to by its id."""
         args = {}
 
         # Name
-        name = self.world.entity_component(entity, ecs.RenderC).imagename
+        name = self.world.entity_component(entity, RenderC).imagename
 
         # Color
         color = [0, 0, 0]
-        if self.world.has_component(entity, ecs.FireElementC) or self.world.has_component(entity, ecs.BurningC):
+        if self.world.has_component(entity, FireElementC) or self.world.has_component(entity, BurningC):
             color[0] += 100
-        if self.world.has_component(entity, ecs.IceElementC):
+        if self.world.has_component(entity, IceElementC):
             color[0] += 0
             color[1] += 50
             color[2] += 100
@@ -189,9 +190,9 @@ class Game:
 
         # Blinking
         if entity != self.world.tags.player:
-            if self.world.has_component(entity, ecs.InitiativeC):
-                entity_nextturn = self.world.entity_component(entity, ecs.InitiativeC).nextturn
-                player_nextturn = self.world.entity_component(self.world.tags.player, ecs.InitiativeC).nextturn
+            if self.world.has_component(entity, InitiativeC):
+                entity_nextturn = self.world.entity_component(entity, InitiativeC).nextturn
+                player_nextturn = self.world.entity_component(self.world.tags.player, InitiativeC).nextturn
                 if entity_nextturn <= player_nextturn:
                     args["blinking"] = True
 
@@ -205,25 +206,25 @@ class Game:
 
         RENDERER.draw_centered_image(surface, entity_surface, pos)
 
-        if self.world.has_component(entity, ecs.FrozenC):
+        if self.world.has_component(entity, FrozenC):
             RENDERER.draw_centered_image(surface, RENDERER.get_image(name="ice-cube", scale=scale), pos)
 
         # Icons
         icons = []
 
-        if self.world.has_component(entity, ecs.FireElementC):
+        if self.world.has_component(entity, FireElementC):
             icons.append(("elementFire", None))
 
-        if self.world.has_component(entity, ecs.IceElementC):
+        if self.world.has_component(entity, IceElementC):
             icons.append(("elementIce", None))
 
-        if self.world.has_component(entity, ecs.ExplosiveC):
-            explosive = self.world.entity_component(entity, ecs.ExplosiveC)
+        if self.world.has_component(entity, ExplosiveC):
+            explosive = self.world.entity_component(entity, ExplosiveC)
             if explosive.primed:
                 icons.append(("explosive", explosive.fuse))
 
-        if self.world.has_component(entity, ecs.FreeTurnC):
-            freeturn = self.world.entity_component(entity, ecs.FreeTurnC)
+        if self.world.has_component(entity, FreeTurnC):
+            freeturn = self.world.entity_component(entity, FreeTurnC)
             icons.append(("free-turn", freeturn.life))
 
         ppt = scale * constants.TILE_SIZE
@@ -240,33 +241,33 @@ class Game:
 
     def teleport_entity(self, entity, amount):
         """Teleport an entity to a random position in a specific radius."""
-        pos = self.world.entity_component(entity, ecs.TilePositionC)
+        pos = self.world.entity_component(entity, TilePositionC)
         while True:
             randpos = (pos.x+random.randint(-amount, amount),
                        pos.y+random.randint(-amount, amount))
-            if self.world.get_system(ecs.GridSystem).on_grid(randpos):
-                if self.world.get_system(ecs.GridSystem).get_blocker_at(randpos) == 0:
-                    self.world.get_system(ecs.GridSystem).move_entity(entity, randpos)
+            if self.world.get_system(GridSystem).on_grid(randpos):
+                if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
+                    self.world.get_system(GridSystem).move_entity(entity, randpos)
                     return
 
     def speed_entity(self, entity, amount):
         """Give an entity free turns."""
-        if self.world.has_component(entity, ecs.FreeTurnC):
-            self.world.entity_component(entity, ecs.FreeTurnC).life += amount
+        if self.world.has_component(entity, FreeTurnC):
+            self.world.entity_component(entity, FreeTurnC).life += amount
         else:
-            self.world.add_component(entity, ecs.FreeTurnC(amount))
+            self.world.add_component(entity, FreeTurnC(amount))
 
     def heal_entity(self, entity, amount):
         """Heal an entity for a certain amount of health."""
-        if self.world.has_component(entity, ecs.HealthC):
-            health = self.world.entity_component(entity, ecs.HealthC)
+        if self.world.has_component(entity, HealthC):
+            health = self.world.entity_component(entity, HealthC)
             health.current = min(health.max, health.current+amount)
 
     def generate_level(self):
         """Initialise the entities in the ECS."""
         grid = []
-        gridwidth = self.world.get_system(ecs.GridSystem).gridwidth
-        gridheight = self.world.get_system(ecs.GridSystem).gridheight
+        gridwidth = self.world.get_system(GridSystem).gridwidth
+        gridheight = self.world.get_system(GridSystem).gridheight
 
         for y in range(0, gridheight):  # Walls
             grid.append([])
@@ -287,95 +288,95 @@ class Game:
             for x in range(0, gridwidth):
                 if grid[y][x]:                  # Creating walls on positions which have been marked
                     self.world.create_entity(
-                        ecs.RenderC(random.choice(("wall1", "wall2"))),
-                        ecs.TilePositionC(x, y),
-                        ecs.BlockerC(),
-                        ecs.DestructibleC(),
+                        RenderC(random.choice(("wall1", "wall2"))),
+                        TilePositionC(x, y),
+                        BlockerC(),
+                        DestructibleC(),
                     )
                 else:
                     if random.randint(1, 45) == 1:      # Creating items
                         item = random.randint(1, 4)
                         if item == 1:
                             self.world.create_entity(
-                                ecs.RenderC("potion-red"),
-                                ecs.TilePositionC(x, y),
-                                ecs.ItemC(consumable=True),
-                                ecs.UseEffectC((self.heal_entity, 20))
+                                RenderC("potion-red"),
+                                TilePositionC(x, y),
+                                ItemC(consumable=True),
+                                UseEffectC((self.heal_entity, 20))
                             )
                         if item == 2:
                             self.world.create_entity(
-                                ecs.RenderC("potion-green"),
-                                ecs.TilePositionC(x, y),
-                                ecs.ItemC(consumable=True),
-                                ecs.UseEffectC((self.speed_entity, 8))
+                                RenderC("potion-green"),
+                                TilePositionC(x, y),
+                                ItemC(consumable=True),
+                                UseEffectC((self.speed_entity, 8))
                             )
                         if item == 3:
                             self.world.create_entity(
-                                ecs.RenderC("potion-blue"),
-                                ecs.TilePositionC(x, y),
-                                ecs.ItemC(consumable=True),
-                                ecs.UseEffectC((self.teleport_entity, 15))
+                                RenderC("potion-blue"),
+                                TilePositionC(x, y),
+                                ItemC(consumable=True),
+                                UseEffectC((self.teleport_entity, 15))
                             )
                         if item == 4:
                             self.world.create_entity(
-                                ecs.RenderC("bomb"),
-                                ecs.TilePositionC(x, y),
-                                ecs.ItemC(consumable=False),
-                                ecs.ExplosiveC(3)
+                                RenderC("bomb"),
+                                TilePositionC(x, y),
+                                ItemC(consumable=False),
+                                ExplosiveC(3)
                             )
                     if random.randint(1, 30) == 1:       # Creating enemies
                         choice = random.randint(1, 3)
                         if choice == 1:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(
+                                AnimationC(
                                     idle=["ogre-i", "ogre-i", "ogre-i", "ogre-i2", "ogre-i3", "ogre-i3", "ogre-i3", "ogre-i4"],
                                     ready=["ogre-r", "ogre-r", "ogre-i", "ogre-i"]
                                     ),
-                                ecs.RenderC(),
-                                ecs.TilePositionC(x, y),
-                                ecs.AIC(),
-                                ecs.MovementC(diagonal=False),
-                                ecs.InitiativeC(3),
-                                ecs.BlockerC(),
-                                ecs.HealthC(10),
-                                ecs.AttackC(10),
+                                RenderC(),
+                                TilePositionC(x, y),
+                                AIC(),
+                                MovementC(diagonal=False),
+                                InitiativeC(3),
+                                BlockerC(),
+                                HealthC(10),
+                                AttackC(10),
                             )
                         if choice == 2:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(
+                                AnimationC(
                                     idle=["snake-i", "snake-i", "snake-i2", "snake-i2"],
                                     ready=["snake-r", "snake-r", "snake-r2", "snake-r2"]
                                     ),
-                                ecs.RenderC(),
-                                ecs.TilePositionC(x, y),
-                                ecs.AIC(),
-                                ecs.MovementC(diagonal=True),
-                                ecs.InitiativeC(2),
-                                ecs.BlockerC(),
-                                ecs.HealthC(5),
-                                ecs.AttackC(5),
+                                RenderC(),
+                                TilePositionC(x, y),
+                                AIC(),
+                                MovementC(diagonal=True),
+                                InitiativeC(2),
+                                BlockerC(),
+                                HealthC(5),
+                                AttackC(5),
                             )
 
                         if choice == 3:
                             entity = self.world.create_entity(
-                                ecs.AnimationC(
+                                AnimationC(
                                     idle=["golem-stone-i", "golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r", "golem-stone-r"],
                                     ready=["golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r"]
                                     ),
-                                ecs.RenderC(),
-                                ecs.TilePositionC(x, y),
-                                ecs.AIC(),
-                                ecs.MovementC(diagonal=False),
-                                ecs.InitiativeC(3),
-                                ecs.BlockerC(),
-                                ecs.HealthC(30),
-                                ecs.AttackC(10),
+                                RenderC(),
+                                TilePositionC(x, y),
+                                AIC(),
+                                MovementC(diagonal=False),
+                                InitiativeC(3),
+                                BlockerC(),
+                                HealthC(30),
+                                AttackC(10),
                             )
 
                         if random.randint(1, 5) == 1:
-                            self.world.add_component(entity, ecs.FireElementC())
+                            self.world.add_component(entity, FireElementC())
                         if random.randint(1, 5) == 1:
-                            self.world.add_component(entity, ecs.IceElementC())
+                            self.world.add_component(entity, IceElementC())
 
 
 # MAIN
@@ -413,40 +414,45 @@ def main():
     """Run the game."""
     game = Game()
 
-    game.world.add_system(ecs.GridSystem())
-    game.world.add_system(ecs.InitiativeSystem())
+    game.world.add_system(GridSystem())
+    game.world.add_system(InitiativeSystem())
 
-    game.world.add_system(ecs.PlayerInputSystem())
-    game.world.add_system(ecs.AISystem())
-    game.world.add_system(ecs.FreezingSystem())
-    game.world.add_system(ecs.BurningSystem())
-    game.world.add_system(ecs.BumpSystem())
+    game.world.add_system(PlayerInputSystem())
+    game.world.add_system(AISystem())
+    game.world.add_system(FreezingSystem())
+    game.world.add_system(BurningSystem())
+    game.world.add_system(BumpSystem())
 
-    game.world.add_system(ecs.ExplosionSystem())
-    game.world.add_system(ecs.DamageSystem())
-    game.world.add_system(ecs.RegenSystem())
-    game.world.add_system(ecs.PickupSystem())
-    game.world.add_system(ecs.IdleSystem())
-    game.world.add_system(ecs.DeadSystem())
+    game.world.add_system(ExplosionSystem())
+    game.world.add_system(DamageSystem())
+    game.world.add_system(RegenSystem())
+    game.world.add_system(PickupSystem())
+    game.world.add_system(IdleSystem())
+    game.world.add_system(DeadSystem())
 
-    game.world.add_system(ecs.AnimationSystem())
+    game.world.add_system(AnimationSystem())
 
     game.generate_level()
 
-    game.world.tags.focus = game.world.tags.player = game.world.create_entity(
-        ecs.RenderC("magnum"),
-        ecs.TilePositionC(0, 0),
-        ecs.PlayerInputC(),
-        ecs.MovementC(),
-        ecs.InitiativeC(1),
-        ecs.BlockerC(),
-        ecs.HealthC(50),
-        ecs.InventoryC(10),
-        ecs.AttackC(5),
-        ecs.FreeTurnC(1)      # TEMPORARY: stops player from getting hit at the beginning of the level.
+    # Level entity
+    game.world.create_entity(
+        LevelC(1)
     )
-    game.world.get_system(ecs.GridSystem).update()
-    game.teleport_entity(game.world.tags.player, game.world.get_system(ecs.GridSystem).gridwidth)
+
+    game.world.tags.focus = game.world.tags.player = game.world.create_entity(
+        RenderC("magnum"),
+        TilePositionC(0, 0),
+        PlayerInputC(),
+        MovementC(),
+        InitiativeC(1),
+        BlockerC(),
+        HealthC(50),
+        InventoryC(10),
+        AttackC(5),
+        FreeTurnC(1)      # TEMPORARY: stops player from getting hit at the beginning of the level.
+    )
+    game.world.get_system(GridSystem).update()
+    game.teleport_entity(game.world.tags.player, game.world.get_system(GridSystem).gridwidth)
 
     RENDERER.camera = game.camera
     UI.add_menu(ui.MainMenu(game))
@@ -483,7 +489,7 @@ def main():
         while not done:
             game.world.update(playerinput=None, t_frame=t_frame)
             t_frame = 0
-            if game.world.has_component(game.world.tags.player, ecs.MyTurnC):
+            if game.world.has_component(game.world.tags.player, MyTurnC):
                 done = True
 
         RENDERER.t_elapsed += delta
@@ -501,8 +507,8 @@ def print_debug_info(game):
     info = (
         "FPS: " + str(int(fps)),
         "TOTAL IMAGES: " + str(RENDERER.total_images),
-        "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, ecs.InitiativeC).nextturn),
-        "TICK: " + str(game.world.get_system(ecs.InitiativeSystem).tick)
+        "NEXTTURN: " + str(game.world.entity_component(game.world.tags.player, InitiativeC).nextturn),
+        "TICK: " + str(game.world.get_system(InitiativeSystem).tick)
     )
     for i, line in enumerate(info):
         RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), line, 10)
