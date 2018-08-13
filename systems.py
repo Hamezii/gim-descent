@@ -418,6 +418,7 @@ class StairsSystem(System):
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
 
                 entities_to_remove = []
+
                 if stair.direction == "down":
                     self.world.entity_component(player, LevelC).level_num += 1
                 player_entities = [player]
@@ -426,11 +427,9 @@ class StairsSystem(System):
                         player_entities.append(entity)
                 for entity, _ in self.world.get_component(TilePositionC):
                     if entity not in player_entities:
-                        #self.remove_entity(entity)
                         entities_to_remove.append(entity)
                 for entity, _ in self.world.get_component(StoredC):
                     if entity not in player_entities:
-                        #self.remove_entity(entity)
                         entities_to_remove.append(entity)
                 self.game.generate_level()
                 self.game.random_teleport_player()

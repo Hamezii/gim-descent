@@ -23,6 +23,7 @@ import random
 
 import pygame
 
+import animations
 import audio
 import constants
 import renderer
@@ -412,8 +413,8 @@ class Game:
                         if choice == 1:
                             entity = self.world.create_entity(
                                 AnimationC(
-                                    idle=["ogre-i", "ogre-i", "ogre-i", "ogre-i2", "ogre-i3", "ogre-i3", "ogre-i3", "ogre-i4"],
-                                    ready=["ogre-r", "ogre-r", "ogre-i", "ogre-i"]
+                                    idle=animations.OGRE_IDLE,
+                                    ready=animations.OGRE_READY
                                     ),
                                 RenderC(),
                                 TilePositionC(x, y),
@@ -427,8 +428,8 @@ class Game:
                         if choice == 2:
                             entity = self.world.create_entity(
                                 AnimationC(
-                                    idle=["snake-i", "snake-i", "snake-i2", "snake-i2"],
-                                    ready=["snake-r", "snake-r", "snake-r2", "snake-r2"]
+                                    idle=animations.SNAKE_IDLE,
+                                    ready=animations.SNAKE_READY
                                     ),
                                 RenderC(),
                                 TilePositionC(x, y),
@@ -443,8 +444,8 @@ class Game:
                         if choice == 3:
                             entity = self.world.create_entity(
                                 AnimationC(
-                                    idle=["golem-stone-i", "golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r", "golem-stone-r"],
-                                    ready=["golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r"]
+                                    idle=animations.GOLEM_IDLE,
+                                    ready=animations.GOLEM_READY
                                     ),
                                 RenderC(),
                                 TilePositionC(x, y),
