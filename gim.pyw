@@ -20,7 +20,6 @@ To do:
 
 import pickle
 import random
-import sys
 
 import pygame
 
@@ -31,7 +30,7 @@ import ui
 from ecs import World
 from systems import *
 
-FULLSCREEN_MODE = False
+FULLSCREEN_MODE = True
 
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
@@ -41,12 +40,6 @@ pygame.mixer.set_num_channels(8)
 audio.init_cache()
 
 #random.seed(1)
-
-
-
-def leave():
-    """Close the game."""
-    sys.exit(0)
 
 
 # CLASSES
@@ -264,8 +257,89 @@ class Game:
             health = self.world.entity_component(entity, HealthC)
             health.current = min(health.max, health.current+amount)
 
+    def spawn_player(self):
+        """Spawn the player entity into the level."""
+        components = (
+            RenderC("magnum"),
+            PlayerInputC(),
+            MovementC(),
+            InitiativeC(1),
+            BlockerC(),
+            HealthC(50),
+            InventoryC(10),
+            AttackC(5),
+            LevelC(1),
+            FreeTurnC(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
+            )
+
+        self.world.tags.player = self.world.create_entity(*components)
+        self.world.get_system(GridSystem).update()
+        self.random_teleport_player()
+
+        # Starting bombs
+        pos = self.world.entity_component(self.world.tags.player, TilePositionC)
+        for _ in range(3):
+            self.world.create_entity(
+                RenderC("bomb"),
+                TilePositionC(pos.x, pos.y),
+                ItemC(consumable=False),
+                ExplosiveC(3)
+            )
+
+    def random_teleport_player(self):
+        """Randomly teleports the player to somewhere on the level."""
+
+        while True:
+            randpos = (random.randrange(self.world.get_system(GridSystem).gridwidth),
+                       random.randrange(self.world.get_system(GridSystem).gridheight))
+            if self.world.get_system(GridSystem).on_grid(randpos):
+                if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
+                    self.world.add_component(self.world.tags.player, TilePositionC(*randpos))
+                    return
+
+    def random_loot(self, x, y):
+        """Spawn random loot at a certain position."""
+        item = random.randint(1, 4)
+        if item == 1:
+            self.world.create_entity(
+                RenderC("potion-red"),
+                TilePositionC(x, y),
+                ItemC(consumable=True),
+                UseEffectC((self.heal_entity, 20))
+            )
+        if item == 2:
+            self.world.create_entity(
+                RenderC("potion-green"),
+                TilePositionC(x, y),
+                ItemC(consumable=True),
+                UseEffectC((self.speed_entity, 8))
+            )
+        if item == 3:
+            self.world.create_entity(
+                RenderC("potion-blue"),
+                TilePositionC(x, y),
+                ItemC(consumable=True),
+                UseEffectC((self.teleport_entity, 15))
+            )
+        if item == 4:
+            self.world.create_entity(
+                RenderC("bomb"),
+                TilePositionC(x, y),
+                ItemC(consumable=False),
+                ExplosiveC(3)
+            )
+
     def generate_level(self):
         """Initialise the entities in the ECS."""
+        level_type = "normal"
+        if random.random() < 0.5:
+            level_type = random.choice(("ice", "fire"))
+
+        if self.world.tags.player:
+            level = self.world.entity_component(self.world.tags.player, LevelC).level_num
+        else:
+            level = 1
+
         grid = []
         gridwidth = self.world.get_system(GridSystem).gridwidth
         gridheight = self.world.get_system(GridSystem).gridheight
@@ -280,52 +354,60 @@ class Game:
             for roomx in range(0, gridwidth):
                 roomheight = random.randint(2, 6)
                 roomwidth = random.randint(2, 6)
-                if roomx + roomwidth <= gridwidth and roomy + roomheight <= gridheight and random.randint(1, 15) == 1:
+                if roomx + roomwidth <= gridwidth and roomy + roomheight <= gridheight and random.randint(1, max(5, 20-level)) == 1:
                     for y in range(0, roomheight):
                         for x in range(0, roomwidth):
                             grid[roomy+y][roomx+x] = 0
 
+        # Stairs down
+        exit_x = random.randrange(gridwidth)
+        exit_y = random.randrange(gridheight)
+        while grid[exit_y][exit_x]:
+            exit_x = random.randrange(gridwidth)
+            exit_y = random.randrange(gridheight)
+
+        self.world.create_entity(
+            RenderC("stairs-down"),
+            TilePositionC(exit_x, exit_y),
+            StairsC(),
+        )
+
+        # Loot
+        loot_x = random.randint(1, gridwidth-2)
+        loot_y = random.randint(1, gridheight-2)
+        while grid[loot_y][loot_x]:
+            loot_x = random.randint(1, gridwidth-2)
+            loot_y = random.randint(1, gridheight-2)
+        for y in range(loot_y - 1, loot_y + 2):
+            for x in range(loot_x - 1, loot_x + 2):
+                if not grid[y][x]:
+                    self.random_loot(x, y)
+
+        for _ in range(random.randint(2, 5)):
+            x = random.randrange(gridwidth)
+            y = random.randrange(gridheight)
+            while grid[loot_y][loot_x]:
+                x = random.randrange(gridwidth)
+                y = random.randrange(gridheight)
+            self.random_loot(x, y)
+
+
         for y in range(0, gridheight):
             for x in range(0, gridwidth):
                 if grid[y][x]:                  # Creating walls on positions which have been marked
-                    self.world.create_entity(
+                    wall = self.world.create_entity(
                         RenderC(random.choice(("wall1", "wall2"))),
                         TilePositionC(x, y),
                         BlockerC(),
                         DestructibleC(),
                     )
+                    if random.randint(1, 3) == 1:
+                        if level_type == "ice":
+                            self.world.add_component(wall, IceElementC())
+                        if level_type == "fire":
+                            self.world.add_component(wall, FireElementC())
                 else:
-                    if random.randint(1, 45) == 1:      # Creating items
-                        item = random.randint(1, 4)
-                        if item == 1:
-                            self.world.create_entity(
-                                RenderC("potion-red"),
-                                TilePositionC(x, y),
-                                ItemC(consumable=True),
-                                UseEffectC((self.heal_entity, 20))
-                            )
-                        if item == 2:
-                            self.world.create_entity(
-                                RenderC("potion-green"),
-                                TilePositionC(x, y),
-                                ItemC(consumable=True),
-                                UseEffectC((self.speed_entity, 8))
-                            )
-                        if item == 3:
-                            self.world.create_entity(
-                                RenderC("potion-blue"),
-                                TilePositionC(x, y),
-                                ItemC(consumable=True),
-                                UseEffectC((self.teleport_entity, 15))
-                            )
-                        if item == 4:
-                            self.world.create_entity(
-                                RenderC("bomb"),
-                                TilePositionC(x, y),
-                                ItemC(consumable=False),
-                                ExplosiveC(3)
-                            )
-                    if random.randint(1, 30) == 1:       # Creating enemies
+                    if random.randint(1, max(40-level*2, 10)) == 1:       # Creating enemies
                         choice = random.randint(1, 3)
                         if choice == 1:
                             entity = self.world.create_entity(
@@ -374,11 +456,13 @@ class Game:
                                 AttackC(10),
                             )
 
-                        if random.randint(1, 5) == 1:
-                            self.world.add_component(entity, FireElementC())
-                        if random.randint(1, 5) == 1:
-                            self.world.add_component(entity, IceElementC())
+                        if random.randint(1, 2) == 1:
+                            if level_type == "ice":
+                                self.world.add_component(entity, IceElementC())
+                            if level_type == "fire":
+                                self.world.add_component(entity, FireElementC())
 
+        self.world.get_system(GridSystem).update()
 
 # MAIN
 
@@ -388,13 +472,10 @@ def get_input():
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            leave()
+            pass # You can make this quit if you want
 
         if event.type == pygame.KEYDOWN:
             keypress = event.key
-
-            if event.key == pygame.K_ESCAPE:
-                leave()
 
             if event.key == pygame.K_w or event.key == pygame.K_UP:
                 keypress = constants.UP
@@ -429,31 +510,14 @@ def main():
     game.world.add_system(RegenSystem())
     game.world.add_system(PickupSystem())
     game.world.add_system(IdleSystem())
+    game.world.add_system(StairsSystem())
     game.world.add_system(DeadSystem())
 
     game.world.add_system(AnimationSystem())
 
     game.generate_level()
 
-    # Level entity
-    game.world.create_entity(
-        LevelC(1)
-    )
-
-    game.world.tags.player = game.world.create_entity(
-        RenderC("magnum"),
-        TilePositionC(0, 0),
-        PlayerInputC(),
-        MovementC(),
-        InitiativeC(1),
-        BlockerC(),
-        HealthC(50),
-        InventoryC(10),
-        AttackC(5),
-        FreeTurnC(1)      # TEMPORARY: stops player from getting hit at the beginning of the level.
-    )
-    game.world.get_system(GridSystem).update()
-    game.teleport_entity(game.world.tags.player, game.world.get_system(GridSystem).gridwidth)
+    game.spawn_player()
 
     RENDERER.camera = game.camera
     UI.add_menu(ui.MainMenu(game))

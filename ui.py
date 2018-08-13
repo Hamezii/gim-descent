@@ -3,12 +3,18 @@ Contains Menus and the MenuManager for Gim Descent.
 '''
 
 import random
+import sys
 
 import pygame
 
-from systems import *
-import constants
 import audio
+import constants
+from systems import *
+
+
+def leave():
+    """Close the game."""
+    sys.exit(0)
 
 class DynamicPos:
     """A vector value which linearly interpolates to a position."""
@@ -168,6 +174,9 @@ class MainMenu(Menu):
                 if keypress:
                     self.menu_manager.add_menu(GameMenu(self.game))
                     self.menu_manager.remove_menu(self)
+            if keypress == pygame.K_ESCAPE:
+                leave()
+
 
     def draw(self, screen: pygame.surface.SurfaceType):
         # Logic to get title background to show in the right place
@@ -188,7 +197,6 @@ class MainMenu(Menu):
 
         self.title.draw(self.renderer, screen)
 
-
 class GameMenu(Menu):
     """The main game menu. Takes player input and draws the game."""
 
@@ -201,15 +209,19 @@ class GameMenu(Menu):
         if event[0] == "update":
             delta = event[1]
             cameragoal = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
-            cameragoal = self.game.camera.tile_to_camera_pos(
-                cameragoal.x, cameragoal.y)
+            cameragoal = self.game.camera.tile_to_camera_pos(cameragoal.x, cameragoal.y)
             self.game.camera.update(delta, cameragoal)
-        if event[0] == "input" and event[1] is self:
+        if event[0] == "input":
             keypress = event[2]
-            if keypress == pygame.K_z:
-                self.menu_manager.add_menu(Inventory(self.game))
-            if keypress in constants.DIRECTIONS:
-                self.game.world.update(playerinput=keypress, t_frame=0)
+
+            if keypress == pygame.K_ESCAPE:
+                self.menu_manager.add_menu(ExitMenu(self.game))
+
+            if event[1] is self:
+                if keypress == pygame.K_z:
+                    self.menu_manager.add_menu(Inventory(self.game))
+                if keypress in constants.DIRECTIONS:
+                    self.game.world.update(playerinput=keypress, t_frame=0)
 
     def draw(self, screen):
         camerarect = self.game.camera.get_rect()
@@ -246,12 +258,53 @@ class GameMenu(Menu):
                     health = self.game.world.entity_component(entity, HealthC)
                     barrect = pygame.Rect(pixelpos[0] - camerazoom*0.35, pixelpos[1] + camerazoom*0.4, camerazoom*0.7, camerazoom*0.05)
                     pygame.draw.rect(screen, constants.ALMOST_BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
-                    try:
+                    if health.current > 0:
                         health_width = barrect.width*(health.current / health.max)
-                        pygame.draw.rect(screen, constants.DARK_GREEN, (barrect.topleft, (health_width, barrect.height)))
-                    except ZeroDivisionError:
-                        pass
+                        pygame.draw.rect(screen, self._get_health_bar_color(health), (barrect.topleft, (health_width, barrect.height)))
 
+
+        # Drawing HUD
+
+        # Health bar
+        health = self.game.world.entity_component(self.game.world.tags.player, HealthC)
+        health_color = self._get_health_bar_color(health)
+
+        health_bar_pos = constants.MENU_SCALE*8*4, screen.get_rect().height - constants.MENU_SCALE*8*5
+        health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
+        health_bar = pygame.Rect(health_bar_pos, health_bar_size)
+
+        pygame.draw.rect(screen, constants.ALMOST_BLACK, health_bar.inflate(constants.MENU_SCALE*4, constants.MENU_SCALE*4))
+
+        if health.current > 0:
+            health_width = health_bar.width * (health.current / health.max)
+            pygame.draw.rect(screen, health_color, (health_bar.topleft, (health_width, health_bar.height)))
+
+        text_box_pos = (health_bar.left+ 2*constants.MENU_SCALE, health_bar.top - 18*constants.MENU_SCALE)
+        text_box_size = (constants.MENU_SCALE*(3+12*len(str(health.current))), constants.MENU_SCALE*18)
+        text_box = pygame.Rect(text_box_pos, text_box_size)
+        #pygame.draw.rect(screen, constants.ALMOST_BLACK, text_box)
+        health_text_pos = (health_bar.left + 5*constants.MENU_SCALE, health_bar.top - 15*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, health_color, health_text_pos, str(health.current), 15*constants.MENU_SCALE)
+    
+        level = self.game.world.entity_component(self.game.world.tags.player, LevelC)
+        level_text_pos = (health_bar.x, health_bar.bottom + 5*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, constants.LIGHT_GRAY, level_text_pos, "Level " + str(level.level_num), 10*constants.MENU_SCALE)
+
+    def _get_health_bar_color(self, health_comp):
+        """Return what color an entity's health bar should be given its health component."""
+        amount_left = health_comp.current / health_comp.max
+        if amount_left > 0.5:
+            return constants.DARK_GREEN
+        if amount_left > 0.2:
+            return constants.ORANGE
+        return constants.DARK_RED
+
+
+class ExitMenu(Menu):
+    """Popup on exit."""
+    def __init__(self, game):
+        super().__init__(game)
+        leave()
 
 class Inventory(Menu):
     """Main inventory menu."""

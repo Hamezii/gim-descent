@@ -17,6 +17,7 @@ def dist(pos1, pos2):
 def clamp(value, minimum, maximum):
     """Return the value clamped between a range."""
     return min(max(minimum, value), maximum)
+
 #_________________
 
 class GridSystem(System):
@@ -24,8 +25,8 @@ class GridSystem(System):
 
     def __init__(self):
         super().__init__()
-        self.gridwidth = 40
-        self.gridheight = 40
+        self.gridwidth = 30
+        self.gridheight = 30
         self.blocker_grid = self.blocker_grid = [[0 for y in range(self.gridheight)] for x in range(self.gridwidth)]
         self.grid = self.grid = [[set() for y in range(self.gridheight)] for x in range(self.gridwidth)]
         self._cached_pos = {}
@@ -52,7 +53,7 @@ class GridSystem(System):
         """Move an entity to a position, raising an error if not possible."""
         entity_pos = self.world.entity_component(entity, TilePositionC)
 
-        if self.blocker_grid[entity_pos.x][entity_pos.y] == entity:
+        if self.world.has_component(entity, BlockerC):
             if self.blocker_grid[pos[0]][pos[1]] == 0:
                 self.blocker_grid[entity_pos.x][entity_pos.y] = 0
                 self.blocker_grid[pos[0]][pos[1]] = entity
@@ -403,6 +404,54 @@ class IdleSystem(System):
             if self.world.has_component(entity, InitiativeC):
                 self.world.entity_component(entity, InitiativeC).nextturn = 1
 
+class StairsSystem(System):
+    """Handles the changing of level when the player steps on stairs."""
+
+    def update(self, **args):
+        player = self.world.tags.player
+        player_pos = self.world.entity_component(player, TilePositionC)
+
+
+        for _, comps in self.world.get_components(StairsC, TilePositionC):
+            stair = comps[0]
+            stair_pos = comps[1]
+            if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
+
+                entities_to_remove = []
+                if stair.direction == "down":
+                    self.world.entity_component(player, LevelC).level_num += 1
+                player_entities = [player]
+                if self.world.has_component(player, InventoryC):
+                    for entity in self.world.entity_component(player, InventoryC).contents:
+                        player_entities.append(entity)
+                for entity, _ in self.world.get_component(TilePositionC):
+                    if entity not in player_entities:
+                        #self.remove_entity(entity)
+                        entities_to_remove.append(entity)
+                for entity, _ in self.world.get_component(StoredC):
+                    if entity not in player_entities:
+                        #self.remove_entity(entity)
+                        entities_to_remove.append(entity)
+                self.game.generate_level()
+                self.game.random_teleport_player()
+                if not self.world.has_component(player, FreeTurnC):
+                    self.world.add_component(player, FreeTurnC(1)) # stops player from getting hit at the beginning of the level.
+
+                for entity in entities_to_remove:
+                    self.remove_entity(entity)
+
+    def remove_entity(self, entity):
+        """TEMPORAY: A bit hacky
+
+        Remove an entity from the world when you change level.
+        """
+        self.world.delete_entity(entity)
+        if self.world.has_component(entity, StoredC): # Removes entity from inventories
+            carrier = self.world.entity_component(entity, StoredC).carrier
+            self.world.entity_component(carrier, InventoryC).contents.remove(entity)
+        if self.world.has_component(entity, TilePositionC):
+            self.world.get_system(GridSystem).remove_pos(entity)
+
 class DeadSystem(System):
     """Handles any entities that have been tagged as dead and queues them for deletion."""
 
@@ -414,6 +463,8 @@ class DeadSystem(System):
                 self.world.entity_component(carrier, InventoryC).contents.remove(entity)
             if self.world.has_component(entity, TilePositionC):
                 self.world.get_system(GridSystem).remove_pos(entity)
+
+
 
 class AnimationSystem(System):
     """Updates Render components on entities with an Animation component."""

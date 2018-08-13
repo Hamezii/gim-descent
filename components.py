@@ -3,9 +3,14 @@
 from random import randint
 
 class LevelC:
-    """Stores data about the current level."""
+    """Stores what level the entity is on."""
     def __init__(self, level_num):
         self.level_num = level_num
+
+class StairsC:
+    """Stores the direction the stairs go in."""
+    def __init__(self, direction="down"):
+        self.direction = direction
 
 class TilePositionC:
     """Stores position of an entity."""
