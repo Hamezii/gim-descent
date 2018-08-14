@@ -325,6 +325,7 @@ class Game:
             exit_x = random.randrange(gridwidth)
             exit_y = random.randrange(gridheight)
 
+        grid[exit_y][exit_x] = 2
         self.world.create_entity(*entity_templates.stairs(exit_x, exit_y))
 
         # Loot
@@ -346,10 +347,16 @@ class Game:
                 y = random.randrange(gridheight)
             self.random_loot(x, y)
 
+        #Spawn pool
+        spawn_pool = [*["ogre"]*3, *["snake"]*4, *["slime_large"]*1]
+        if level >= 10:
+            spawn_pool.extend(["golem"]*4)
+
+
 
         for y in range(0, gridheight):
             for x in range(0, gridwidth):
-                if grid[y][x]:                  # Creating walls on positions which have been marked
+                if grid[y][x] == 1:                  # Creating walls on positions which have been marked
                     wall = self.world.create_entity(*entity_templates.wall(x, y))
                     if random.randint(1, 3) == 1:
                         if level_type == "ice":
@@ -357,15 +364,10 @@ class Game:
                         if level_type == "fire":
                             self.world.add_component(wall, FireElementC())
 
-                else:
+                elif grid[y][x] == 0:
                     if random.randint(1, max(40-level*2, 10)) == 1:       # Creating enemies
-                        choice = random.randint(1, 3)
-                        if choice == 1:
-                            entity = self.world.create_entity(*entity_templates.ogre(x=x, y=y))
-                        if choice == 2:
-                            entity = self.world.create_entity(*entity_templates.snake(x=x, y=y))
-                        if choice == 3:
-                            entity = self.world.create_entity(*entity_templates.golem(x=x, y=y))
+                        choice = random.choice(spawn_pool)
+                        entity = self.world.create_entity(*getattr(entity_templates, choice)(x, y))
 
                         if random.randint(1, 2) == 1:
                             if level_type == "ice":
@@ -421,6 +423,7 @@ def main():
     game.world.add_system(RegenSystem())
     game.world.add_system(PickupSystem())
     game.world.add_system(IdleSystem())
+    game.world.add_system(SplitSystem())
     game.world.add_system(StairsSystem())
     game.world.add_system(DeadSystem())
 

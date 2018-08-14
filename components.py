@@ -131,6 +131,11 @@ class AttackC:
     def __init__(self, damage):
         self.damage = damage
 
+class SplitC:
+    """Stores the components of the entities to spawn when this entity dies."""
+    def __init__(self, entities):
+        self.entities = entities
+
 class DeadC:
     """Tags an entity as dead."""
     def __init__(self):
@@ -144,7 +149,6 @@ class IceElementC:
     def __init__(self):
         pass
 
-
 class FrozenC:
     """Tags an entity as frozen in ice.
 
@@ -152,7 +156,6 @@ class FrozenC:
     """
     def __init__(self):
         pass
-
 
 class FireElementC:
     """Tags an entity as a fire elemental.
@@ -162,30 +165,25 @@ class FireElementC:
     def __init__(self):
         pass
 
-
 class BurningC:
     """Tags an entity as burning, stores how many turns left."""
     def __init__(self, life):
         self.life = life
-
 
 class FreeTurnC:
     """Lets an entity get initiative and move for free for a limited time."""
     def __init__(self, life):
         self.life = life
 
-
 class UseEffectC:
     """Stores names of methods that are called when this entity is 'used'"""
     def __init__(self, *effects):
         self.effects = effects
 
-
 class RenderC:
     """Stores imagename of image to render."""
     def __init__(self, imagename=None):
         self.imagename = imagename
-
 
 class AnimationC:
     """Stores entity animations."""

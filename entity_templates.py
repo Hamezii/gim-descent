@@ -14,14 +14,10 @@ def item_template(**args):
         ItemC(consumable=args["consumable"]),
     ]
 
-def creature_template(**args):
-    """Creature template."""
+def creature(**args):
+    """Creature components."""
     return [
-        AnimationC(
-            idle=args["anim_idle"],
-            ready=args["anim_ready"]
-            ),
-        RenderC(),
+        RenderC(args["image"]),
         TilePositionC(args["x"], args["y"]),
         AIC(),
         MovementC(diagonal=args["diagonal"]),
@@ -29,6 +25,19 @@ def creature_template(**args):
         BlockerC(),
         HealthC(args["health"]),
         AttackC(args["attack"]),
+    ]
+
+def animated_creature(**args):
+    """Animated creature components."""
+    return [
+        *creature(
+            image=None,
+            **args
+        ),
+        AnimationC(
+            idle=args["anim_idle"],
+            ready=args["anim_ready"]
+        )
     ]
 
 def potion(x, y, color, effect):
@@ -55,7 +64,7 @@ def bomb(x, y):
 
 def ogre(x, y):
     """Ogre components."""
-    return creature_template(
+    return animated_creature(
         x=x,
         y=y,
         anim_idle=animations.OGRE_IDLE,
@@ -68,7 +77,7 @@ def ogre(x, y):
 
 def snake(x, y):
     """Snake components."""
-    return creature_template(
+    return animated_creature(
         x=x,
         y=y,
         anim_idle=animations.SNAKE_IDLE,
@@ -81,7 +90,7 @@ def snake(x, y):
 
 def golem(x, y):
     """Golem components."""
-    return creature_template(
+    return animated_creature(
         x=x,
         y=y,
         anim_idle=animations.GOLEM_IDLE,
@@ -91,6 +100,46 @@ def golem(x, y):
         health=30,
         attack=10
     )
+
+def slime_small(x, y):
+    """Small slime components."""
+    return creature(
+        x=x, y=y,
+        image="slime-s-i",
+        diagonal=False,
+        speed=3,
+        health=5,
+        attack=5
+    )
+
+def slime_medium(x, y):
+    """Medium slime components."""
+    return [
+        *creature(
+            x=x, y=y,
+            image="slime-m-i",
+            diagonal=False,
+            speed=3,
+            health=10,
+            attack=5
+        ),
+        SplitC((slime_small, slime_small))
+    ]
+
+def slime_large(x, y):
+    """Large slime components."""
+    return [
+        *animated_creature(
+            x=x, y=y,
+            anim_idle=animations.SLIME_LARGE_IDLE,
+            anim_ready=animations.SLIME_LARGE_READY,
+            diagonal=False,
+            speed=4,
+            health=20,
+            attack=5
+        ),
+        SplitC((slime_medium, slime_medium))
+    ]
 
 def player(x, y):
     """Player components."""

@@ -341,12 +341,20 @@ class ExplosionSystem(System):
                         if not self.world.get_system(GridSystem).on_grid((x, y)):
                             continue
                         for target_entity in self.world.get_system(GridSystem).get_entities_at((x, y)):
+                            if target_entity == entity:
+                                continue
                             if self.world.has_component(target_entity, DestructibleC) and not self.world.has_component(target_entity, HealthC):
                                 self.world.add_component(target_entity, DeadC())
+                            if self.world.has_component(target_entity, ExplosiveC):
+                                explosive = self.world.entity_component(target_entity, ExplosiveC)
+                                explosive.fuse = 1
+                                explosive.primed = True
+                                continue
                             if self.world.has_component(target_entity, ItemC):
                                 self.world.add_component(target_entity, DeadC())
                             else:
                                 self.world.create_entity(DamageC(target_entity, explode.damage))
+
 
                 dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
                 if dist_to_player < 10:
@@ -415,6 +423,31 @@ class IdleSystem(System):
             self.world.remove_component(entity, MyTurnC)
             if self.world.has_component(entity, InitiativeC):
                 self.world.entity_component(entity, InitiativeC).nextturn = 1
+
+class SplitSystem(System):
+    """Handles splitting entities when they are killed."""
+    adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
+
+    def update(self, **args):
+        for entity, comps in self.world.get_components(SplitC, DeadC):
+            split = comps[0]
+            if self.world.has_component(entity, TilePositionC):
+                pos = self.world.entity_component(entity, TilePositionC)
+                for template in split.entities:
+                    spawn_pos = self.random_adjacent_free_tile((pos.x, pos.y))
+                    if spawn_pos:
+                        new_entity = self.world.create_entity(*template(*spawn_pos))
+                        self.world.get_system(GridSystem).update()
+                        if self.world.has_component(new_entity, InitiativeC):
+                            self.world.entity_component(new_entity, InitiativeC).nextturn += 1
+
+    def random_adjacent_free_tile(self, pos):
+        """Return a random adjacent tile, or None if they are all blocked."""
+        for offset in [*random.sample(self.adjacent, len(self.adjacent)), (0, 0)]:
+            test_pos = [pos[i]+offset[i] for i in range(2)]
+            if self.world.get_system(GridSystem).get_blocker_at(test_pos) == 0:
+                return test_pos
+        return None
 
 class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
