@@ -286,9 +286,13 @@ class GameMenu(Menu):
         health_text_pos = (health_bar.left + 5*constants.MENU_SCALE, health_bar.top - 15*constants.MENU_SCALE)
         self.renderer.draw_text(screen, health_color, health_text_pos, str(health.current), 15*constants.MENU_SCALE)
     
-        level = self.game.world.entity_component(self.game.world.tags.player, LevelC)
+        level = self.game.world.entity_component(self.game.world.tags.player, LevelC).level_num
         level_text_pos = (health_bar.x, health_bar.bottom + 5*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, constants.LIGHT_GRAY, level_text_pos, "Level " + str(level.level_num), 10*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, constants.LIGHT_GRAY, level_text_pos, "Level " + str(level), 10*constants.MENU_SCALE)
+
+        kills = self.game.world.entity_component(self.game.world.tags.player, GameStatsC).kills
+        kills_text_pos = (health_bar.x, health_bar.bottom + 17.5*constants.MENU_SCALE)
+        self.renderer.draw_text(screen, constants.LIGHT_GRAY, kills_text_pos, "Kills " + str(kills), 10*constants.MENU_SCALE)
 
     def _get_health_bar_color(self, health_comp):
         """Return what color an entity's health bar should be given its health component."""

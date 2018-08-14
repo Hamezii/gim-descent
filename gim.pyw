@@ -351,8 +351,9 @@ class Game:
         spawn_pool = [*["ogre"]*3, *["snake"]*4, *["slime_large"]*1]
         if level >= 10:
             spawn_pool.extend(["golem"]*4)
-
-
+        if level >= 5:
+            spawn_pool.extend(["caterkiller"]*1)
+            spawn_pool.remove("snake")
 
         for y in range(0, gridheight):
             for x in range(0, gridwidth):

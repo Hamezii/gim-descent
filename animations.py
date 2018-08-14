@@ -11,3 +11,6 @@ GOLEM_READY = ("golem-stone-i", "golem-stone-i", "golem-stone-r", "golem-stone-r
 
 SLIME_LARGE_IDLE = ("slime-l-i",)
 SLIME_LARGE_READY = ("slime-l-r", "slime-l-r", "slime-l-i", "slime-l-i")
+
+CATERKILLER_IDLE = ("caterkiller-i",)
+CATERKILLER_READY = ("caterkiller-r", "caterkiller-i")

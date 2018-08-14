@@ -375,6 +375,7 @@ class DamageSystem(System):
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, DeadC())
+                    self.world.entity_component(self.world.tags.player, GameStatsC).kills += 1
 
                 if damage.burn and not self.world.has_component(damage.target, FireElementC):
                     self.world.add_component(damage.target, BurningC(5))
@@ -440,6 +441,10 @@ class SplitSystem(System):
                         self.world.get_system(GridSystem).update()
                         if self.world.has_component(new_entity, InitiativeC):
                             self.world.entity_component(new_entity, InitiativeC).nextturn += 1
+                        if self.world.has_component(entity, IceElementC):
+                            self.world.add_component(new_entity, IceElementC())
+                        if self.world.has_component(entity, FireElementC):
+                            self.world.add_component(new_entity, FireElementC())
 
     def random_adjacent_free_tile(self, pos):
         """Return a random adjacent tile, or None if they are all blocked."""

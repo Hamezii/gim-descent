@@ -7,6 +7,11 @@ class LevelC:
     def __init__(self, level_num):
         self.level_num = level_num
 
+class GameStatsC:
+    """Stores stats about the game."""
+    def __init__(self):
+        self.kills = 0
+
 class StairsC:
     """Stores the direction the stairs go in."""
     def __init__(self, direction="down"):
@@ -40,8 +45,8 @@ class AIC:
 
 class RegenC:
     """Tags an entity as able to passively regenerate."""
-    def __init__(self):
-        self.amount = 1
+    def __init__(self, amount=1):
+        self.amount = amount
 
 
 class ExplosiveC:

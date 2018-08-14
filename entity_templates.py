@@ -141,6 +141,21 @@ def slime_large(x, y):
         SplitC((slime_medium, slime_medium))
     ]
 
+def caterkiller(x, y):
+    """Caterkiller components."""
+    return [
+        *animated_creature(
+            x=x, y=y,
+            anim_idle=animations.CATERKILLER_IDLE,
+            anim_ready=animations.CATERKILLER_READY,
+            diagonal=False,
+            speed=2,
+            health=10,
+            attack=5
+        ),
+        RegenC(1)
+    ]
+
 def player(x, y):
     """Player components."""
     return [
@@ -154,6 +169,7 @@ def player(x, y):
         InventoryC(10),
         AttackC(5),
         LevelC(1),
+        GameStatsC(),
         FreeTurnC(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
     ]
 
