@@ -28,6 +28,7 @@ import audio
 import constants
 import renderer
 import ui
+import entity_templates
 from ecs import World
 from systems import *
 
@@ -260,86 +261,43 @@ class Game:
 
     def spawn_player(self):
         """Spawn the player entity into the level."""
-        components = (
-            RenderC("magnum"),
-            PlayerInputC(),
-            MovementC(),
-            InitiativeC(1),
-            BlockerC(),
-            HealthC(50),
-            InventoryC(10),
-            AttackC(5),
-            LevelC(1),
-            FreeTurnC(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
-            )
-
-        self.world.tags.player = self.world.create_entity(*components)
         self.world.get_system(GridSystem).update()
-        self.random_teleport_player()
 
-        # Starting bombs
+        x, y = self.world.get_system(GridSystem).random_free_pos()
+
+        self.world.tags.player = self.world.create_entity(*entity_templates.player(x, y))
+
+        # You spawn with some bombs
         pos = self.world.entity_component(self.world.tags.player, TilePositionC)
         for _ in range(3):
-            self.world.create_entity(
-                RenderC("bomb"),
-                TilePositionC(pos.x, pos.y),
-                ItemC(consumable=False),
-                ExplosiveC(3)
-            )
-
-    def random_teleport_player(self):
-        """Randomly teleports the player to somewhere on the level."""
-
-        while True:
-            randpos = (random.randrange(self.world.get_system(GridSystem).gridwidth),
-                       random.randrange(self.world.get_system(GridSystem).gridheight))
-            if self.world.get_system(GridSystem).on_grid(randpos):
-                if self.world.get_system(GridSystem).get_blocker_at(randpos) == 0:
-                    self.world.add_component(self.world.tags.player, TilePositionC(*randpos))
-                    return
+            self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
 
     def random_loot(self, x, y):
         """Spawn random loot at a certain position."""
         item = random.randint(1, 4)
         if item == 1:
-            self.world.create_entity(
-                RenderC("potion-red"),
-                TilePositionC(x, y),
-                ItemC(consumable=True),
-                UseEffectC((self.heal_entity, 20))
-            )
+            self.world.create_entity(*entity_templates.potion(x, y, "red", (self.heal_entity, 20)))
+
         if item == 2:
-            self.world.create_entity(
-                RenderC("potion-green"),
-                TilePositionC(x, y),
-                ItemC(consumable=True),
-                UseEffectC((self.speed_entity, 8))
-            )
+            self.world.create_entity(*entity_templates.potion(x, y, "green", (self.speed_entity, 8)))
+
         if item == 3:
-            self.world.create_entity(
-                RenderC("potion-blue"),
-                TilePositionC(x, y),
-                ItemC(consumable=True),
-                UseEffectC((self.teleport_entity, 15))
-            )
+            self.world.create_entity(*entity_templates.potion(x, y, "blue", (self.teleport_entity, 15)))
+
         if item == 4:
-            self.world.create_entity(
-                RenderC("bomb"),
-                TilePositionC(x, y),
-                ItemC(consumable=False),
-                ExplosiveC(3)
-            )
+            self.world.create_entity(*entity_templates.bomb(x, y))
 
     def generate_level(self):
         """Initialise the entities in the ECS."""
-        level_type = "normal"
-        if random.random() < 0.5:
-            level_type = random.choice(("ice", "fire"))
 
         if self.world.tags.player:
             level = self.world.entity_component(self.world.tags.player, LevelC).level_num
         else:
             level = 1
+
+        level_type = "normal"
+        if random.random() < 0.5 and level > 1:
+            level_type = random.choice(("ice", "fire"))
 
         grid = []
         gridwidth = self.world.get_system(GridSystem).gridwidth
@@ -367,11 +325,7 @@ class Game:
             exit_x = random.randrange(gridwidth)
             exit_y = random.randrange(gridheight)
 
-        self.world.create_entity(
-            RenderC("stairs-down"),
-            TilePositionC(exit_x, exit_y),
-            StairsC(),
-        )
+        self.world.create_entity(*entity_templates.stairs(exit_x, exit_y))
 
         # Loot
         loot_x = random.randint(1, gridwidth-2)
@@ -396,66 +350,22 @@ class Game:
         for y in range(0, gridheight):
             for x in range(0, gridwidth):
                 if grid[y][x]:                  # Creating walls on positions which have been marked
-                    wall = self.world.create_entity(
-                        RenderC(random.choice(("wall1", "wall2"))),
-                        TilePositionC(x, y),
-                        BlockerC(),
-                        DestructibleC(),
-                    )
+                    wall = self.world.create_entity(*entity_templates.wall(x, y))
                     if random.randint(1, 3) == 1:
                         if level_type == "ice":
                             self.world.add_component(wall, IceElementC())
                         if level_type == "fire":
                             self.world.add_component(wall, FireElementC())
+
                 else:
                     if random.randint(1, max(40-level*2, 10)) == 1:       # Creating enemies
                         choice = random.randint(1, 3)
                         if choice == 1:
-                            entity = self.world.create_entity(
-                                AnimationC(
-                                    idle=animations.OGRE_IDLE,
-                                    ready=animations.OGRE_READY
-                                    ),
-                                RenderC(),
-                                TilePositionC(x, y),
-                                AIC(),
-                                MovementC(diagonal=False),
-                                InitiativeC(3),
-                                BlockerC(),
-                                HealthC(10),
-                                AttackC(10),
-                            )
+                            entity = self.world.create_entity(*entity_templates.ogre(x=x, y=y))
                         if choice == 2:
-                            entity = self.world.create_entity(
-                                AnimationC(
-                                    idle=animations.SNAKE_IDLE,
-                                    ready=animations.SNAKE_READY
-                                    ),
-                                RenderC(),
-                                TilePositionC(x, y),
-                                AIC(),
-                                MovementC(diagonal=True),
-                                InitiativeC(2),
-                                BlockerC(),
-                                HealthC(5),
-                                AttackC(5),
-                            )
-
+                            entity = self.world.create_entity(*entity_templates.snake(x=x, y=y))
                         if choice == 3:
-                            entity = self.world.create_entity(
-                                AnimationC(
-                                    idle=animations.GOLEM_IDLE,
-                                    ready=animations.GOLEM_READY
-                                    ),
-                                RenderC(),
-                                TilePositionC(x, y),
-                                AIC(),
-                                MovementC(diagonal=False),
-                                InitiativeC(3),
-                                BlockerC(),
-                                HealthC(30),
-                                AttackC(10),
-                            )
+                            entity = self.world.create_entity(*entity_templates.golem(x=x, y=y))
 
                         if random.randint(1, 2) == 1:
                             if level_type == "ice":

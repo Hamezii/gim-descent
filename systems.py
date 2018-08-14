@@ -1,5 +1,6 @@
 """Contains all the ECS Systems."""
 
+import random
 from math import hypot
 
 import audio
@@ -37,6 +38,17 @@ class GridSystem(System):
             if clamp(pos[1], 0, self.gridheight-1) == pos[1]:
                 return True
         return False
+    
+    def random_free_pos(self):
+        """Return a position on the grid which does not have a Blocker on it.
+        
+        WARNNG: Does not mark the returned position as blocked.
+        """
+        while True:
+            randpos = (random.randrange(self.gridwidth), random.randrange(self.gridheight))
+            if self.get_blocker_at(randpos) == 0:
+                return randpos
+
 
     def get_blocker_at(self, pos):
         """Get id of blocker entity at a certain position.
@@ -432,7 +444,9 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         entities_to_remove.append(entity)
                 self.game.generate_level()
-                self.game.random_teleport_player()
+                self.world.get_system(GridSystem).update()
+                spawn_pos = self.world.get_system(GridSystem).random_free_pos()
+                player_pos.x, player_pos.y = spawn_pos
                 if not self.world.has_component(player, FreeTurnC):
                     self.world.add_component(player, FreeTurnC(1)) # stops player from getting hit at the beginning of the level.
 
