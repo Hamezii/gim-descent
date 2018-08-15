@@ -37,6 +37,11 @@ class World:
         self._components.clear()
         self._entities.clear()
 
+    def set_game_reference(self, game):
+        """Set the game which the World and systems have a reference to."""
+        self._game = game
+        for system in self._systems:
+            system.game = game
 
     def add_system(self, system_instance, priority=0):
         """Add a system instance to the world."""

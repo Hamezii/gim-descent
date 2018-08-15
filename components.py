@@ -1,198 +1,195 @@
 """Contains all the ECS Components."""
 
 from random import randint
+from typing import List, Dict
 
+from dataclasses import dataclass, field
+
+
+@dataclass
 class LevelC:
     """Stores what level the entity is on."""
-    def __init__(self, level_num):
-        self.level_num = level_num
+    level_num: int
 
+@dataclass
 class GameStatsC:
     """Stores stats about the game."""
-    def __init__(self):
-        self.kills = 0
+    kills: int = 0
 
+@dataclass
 class StairsC:
     """Stores the direction the stairs go in."""
-    def __init__(self, direction="down"):
-        self.direction = direction
+    direction: str = "down"
 
+@dataclass
 class TilePositionC:
     """Stores position of an entity."""
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    x: int
+    y: int
 
+@dataclass
 class HealthC:
     """Stores health of an entity."""
-    def __init__(self, health=None):
-        self.max = health
-        self.current = health
+    max: int = None
+    current: int = None
+    def __post_init__(self):
+        if self.current is None:
+            self.current = self.max
 
-
+@dataclass
 class InitiativeC:
     """Makes an entity able to take turns."""
-    def __init__(self, speed=None):
-        self.speed = speed
-        self.nextturn = randint(1, speed)
+    speed: int
+    nextturn: int = field(init=False)
+    def __post_init__(self):
+        self.nextturn = randint(1, self.speed)
 
-
+@dataclass
 class AIC:
     """Tags an entity as controlled by the computer. Stores id of entity to attack."""
-    def __init__(self):
-        self.target = 0
+    target: int = 0
 
-
+@dataclass
 class RegenC:
     """Tags an entity as able to passively regenerate."""
-    def __init__(self, amount=1):
-        self.amount = amount
+    amount: int = 1
 
-
+@dataclass
 class ExplosiveC:
     """Tags an entity as an explosive. Stores whether it is primed and how close it is to exploding."""
-    def __init__(self, fuse):
-        self.fuse = fuse
-        self.primed = False
+    fuse: int
+    primed: bool = False
 
-
+@dataclass
 class ExplodeC:
     """An explode event put on the entity which is to explode."""
-    def __init__(self):
-        self.radius = 1
-        self.damage = 10
+    radius: int = 1
+    damage: int = 10
 
-
+@dataclass
 class DestructibleC:
     """Tags an entity with no Health component as able to be destroyed by explosives."""
-    def __init__(self):
-        pass
+    pass
 
-
+@dataclass
 class PlayerInputC:
     """Tags an entity as controlled by the player."""
-    def __init__(self):
-        pass
+    pass
 
-
+@dataclass
 class MyTurnC:
     """Tags an entity as ready to take a turn."""
-    def __init__(self):
-        pass
+    pass
 
-
+@dataclass
 class BumpC:
-    """A bump event which is put on the entity which is bumping."""
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    """A bump event put on the entity which is bumping."""
+    x: int
+    y: int
 
-
+@dataclass
 class DamageC:
     """A damage message which is put on a message entity.
 
     Stores target id of damage, the amount of damage to inflict and any elemental properties.
     """
-    def __init__(self, target, amount, burn=False, freeze=False):
-        self.target = target
-        self.amount = amount
-        self.burn = burn
-        self.freeze = freeze
+    target: int
+    amount: int
+    burn: bool = False
+    freeze: bool = False
 
-
+@dataclass
 class BlockerC:
     """Tags an entity as solid and can't pass through other solid entities."""
-    def __init__(self):
-        pass
+    pass
 
-
+@dataclass
 class ItemC:
     """Tags that an entity can be carried/stored and whether it is a consumable."""
-    def __init__(self, consumable):
-        self.consumable = consumable
+    consumable: bool
 
-
+@dataclass
 class InventoryC:
     """Gives an entity an inventory. Stores current entities carried and maximum capacity."""
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.contents = []
+    capacity: int
+    contents: List[int] = field(init=False, default_factory=list)
 
-
+@dataclass
 class StoredC:
     """Stores what entity is currently carrying/storing this entity."""
-    def __init__(self, carrier):
-        self.carrier = carrier
+    carrier: int
 
-
+@dataclass
 class MovementC:
     """Tags that an entity can move and stores whether it can move diagonally."""
-    def __init__(self, diagonal=False):
-        self.diagonal = diagonal
+    diagonal: bool = False
 
-
+@dataclass
 class AttackC:
     """Tags that an entity can attack and stores for how much damage."""
-    def __init__(self, damage):
-        self.damage = damage
+    damage: int
 
+@dataclass
 class SplitC:
-    """Stores the components of the entities to spawn when this entity dies."""
-    def __init__(self, entities):
-        self.entities = entities
+    """Stores the template functions of the entities to spawn when this entity dies."""
+    entities: List
 
+@dataclass
 class DeadC:
     """Tags an entity as dead."""
-    def __init__(self):
-        pass
+    pass
 
+@dataclass
 class IceElementC:
     """Tags an entity as an ice elemental.
 
     Applies frozen when attacking and is immune to freezing.
     """
-    def __init__(self):
-        pass
+    pass
 
+@dataclass
 class FrozenC:
     """Tags an entity as frozen in ice.
 
     It requires a one-turn action to break free of the ice.
     """
-    def __init__(self):
-        pass
+    pass
 
+@dataclass
 class FireElementC:
     """Tags an entity as a fire elemental.
 
     Applies burning when attacking and is immune to burning.
     """
-    def __init__(self):
-        pass
+    pass
 
+@dataclass
 class BurningC:
     """Tags an entity as burning, stores how many turns left."""
-    def __init__(self, life):
-        self.life = life
+    life: int
 
+@dataclass
 class FreeTurnC:
     """Lets an entity get initiative and move for free for a limited time."""
-    def __init__(self, life):
-        self.life = life
+    life: int
 
+@dataclass
 class UseEffectC:
     """Stores names of methods that are called when this entity is 'used'"""
+    effects: List
     def __init__(self, *effects):
         self.effects = effects
 
+@dataclass
 class RenderC:
     """Stores imagename of image to render."""
-    def __init__(self, imagename=None):
-        self.imagename = imagename
+    imagename: str
 
+@dataclass
 class AnimationC:
     """Stores entity animations."""
+    animations: Dict[str, List[str]]
+    current_animation: List[str] = None
+    pos: int = 0
     def __init__(self, **args):
         self.animations = args
-        self.current_animation = None
-        self.pos = 0

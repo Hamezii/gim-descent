@@ -468,6 +468,7 @@ def main():
         if keypress == pygame.K_F11: # Load
             with open("save.save", "rb") as save_file:
                 game.world = pickle.load(save_file)
+                game.world.set_game_reference(game)
 
 
         UI.send_event(("input", UI.get_focus(), keypress))
