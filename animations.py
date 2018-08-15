@@ -14,3 +14,5 @@ SLIME_LARGE_READY = ("slime-l-r", "slime-l-r", "slime-l-i", "slime-l-i")
 
 CATERKILLER_IDLE = ("caterkiller-i",)
 CATERKILLER_READY = ("caterkiller-r", "caterkiller-i")
+
+FLY_FLYING = ("fly", "fly2")

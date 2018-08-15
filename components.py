@@ -7,28 +7,28 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class LevelC:
+class Level:
     """Stores what level the entity is on."""
     level_num: int
 
 @dataclass
-class GameStatsC:
+class GameStats:
     """Stores stats about the game."""
     kills: int = 0
 
 @dataclass
-class StairsC:
+class Stairs:
     """Stores the direction the stairs go in."""
     direction: str = "down"
 
 @dataclass
-class TilePositionC:
+class TilePosition:
     """Stores position of an entity."""
     x: int
     y: int
 
 @dataclass
-class HealthC:
+class Health:
     """Stores health of an entity."""
     max: int = None
     current: int = None
@@ -37,7 +37,7 @@ class HealthC:
             self.current = self.max
 
 @dataclass
-class InitiativeC:
+class Initiative:
     """Makes an entity able to take turns."""
     speed: int
     nextturn: int = field(init=False)
@@ -45,50 +45,50 @@ class InitiativeC:
         self.nextturn = randint(1, self.speed)
 
 @dataclass
-class AIC:
+class AI:
     """Tags an entity as controlled by the computer. Stores id of entity to attack."""
     target: int = 0
 
 @dataclass
-class RegenC:
+class Regen:
     """Tags an entity as able to passively regenerate."""
     amount: int = 1
 
 @dataclass
-class ExplosiveC:
+class Explosive:
     """Tags an entity as an explosive. Stores whether it is primed and how close it is to exploding."""
     fuse: int
     primed: bool = False
 
 @dataclass
-class ExplodeC:
+class Explode:
     """An explode event put on the entity which is to explode."""
     radius: int = 1
     damage: int = 10
 
 @dataclass
-class DestructibleC:
+class Destructible:
     """Tags an entity with no Health component as able to be destroyed by explosives."""
     pass
 
 @dataclass
-class PlayerInputC:
+class PlayerInput:
     """Tags an entity as controlled by the player."""
     pass
 
 @dataclass
-class MyTurnC:
+class MyTurn:
     """Tags an entity as ready to take a turn."""
     pass
 
 @dataclass
-class BumpC:
+class Bump:
     """A bump event put on the entity which is bumping."""
     x: int
     y: int
 
 @dataclass
-class DamageC:
+class Damage:
     """A damage message which is put on a message entity.
 
     Stores target id of damage, the amount of damage to inflict and any elemental properties.
@@ -99,48 +99,48 @@ class DamageC:
     freeze: bool = False
 
 @dataclass
-class BlockerC:
+class Blocker:
     """Tags an entity as solid and can't pass through other solid entities."""
     pass
 
 @dataclass
-class ItemC:
+class Item:
     """Tags that an entity can be carried/stored and whether it is a consumable."""
     consumable: bool
 
 @dataclass
-class InventoryC:
+class Inventory:
     """Gives an entity an inventory. Stores current entities carried and maximum capacity."""
     capacity: int
     contents: List[int] = field(init=False, default_factory=list)
 
 @dataclass
-class StoredC:
+class Stored:
     """Stores what entity is currently carrying/storing this entity."""
     carrier: int
 
 @dataclass
-class MovementC:
+class Movement:
     """Tags that an entity can move and stores whether it can move diagonally."""
     diagonal: bool = False
 
 @dataclass
-class AttackC:
+class Attack:
     """Tags that an entity can attack and stores for how much damage."""
     damage: int
 
 @dataclass
-class SplitC:
+class Split:
     """Stores the template functions of the entities to spawn when this entity dies."""
     entities: List
 
 @dataclass
-class DeadC:
+class Dead:
     """Tags an entity as dead."""
     pass
 
 @dataclass
-class IceElementC:
+class IceElement:
     """Tags an entity as an ice elemental.
 
     Applies frozen when attacking and is immune to freezing.
@@ -148,7 +148,7 @@ class IceElementC:
     pass
 
 @dataclass
-class FrozenC:
+class Frozen:
     """Tags an entity as frozen in ice.
 
     It requires a one-turn action to break free of the ice.
@@ -156,7 +156,7 @@ class FrozenC:
     pass
 
 @dataclass
-class FireElementC:
+class FireElement:
     """Tags an entity as a fire elemental.
 
     Applies burning when attacking and is immune to burning.
@@ -164,29 +164,29 @@ class FireElementC:
     pass
 
 @dataclass
-class BurningC:
+class Burning:
     """Tags an entity as burning, stores how many turns left."""
     life: int
 
 @dataclass
-class FreeTurnC:
+class FreeTurn:
     """Lets an entity get initiative and move for free for a limited time."""
     life: int
 
 @dataclass
-class UseEffectC:
+class UseEffect:
     """Stores names of methods that are called when this entity is 'used'"""
     effects: List
     def __init__(self, *effects):
         self.effects = effects
 
 @dataclass
-class RenderC:
+class Render:
     """Stores imagename of image to render."""
     imagename: str
 
 @dataclass
-class AnimationC:
+class Animation:
     """Stores entity animations."""
     animations: Dict[str, List[str]]
     current_animation: List[str] = None

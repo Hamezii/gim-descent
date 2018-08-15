@@ -3,28 +3,28 @@
 from random import choice
 
 import animations
-from components import *
+import components as c
 
 
 def item_template(**args):
     """Item template."""
     return [
-        RenderC(args["render"]),
-        TilePositionC(args["x"], args["y"]),
-        ItemC(consumable=args["consumable"]),
+        c.Render(args["render"]),
+        c.TilePosition(args["x"], args["y"]),
+        c.Item(consumable=args["consumable"]),
     ]
 
 def creature(**args):
     """Creature components."""
     return [
-        RenderC(args["image"]),
-        TilePositionC(args["x"], args["y"]),
-        AIC(),
-        MovementC(diagonal=args["diagonal"]),
-        InitiativeC(args["speed"]),
-        BlockerC(),
-        HealthC(args["health"]),
-        AttackC(args["attack"]),
+        c.Render(args["image"]),
+        c.TilePosition(args["x"], args["y"]),
+        c.AI(),
+        c.Movement(diagonal=args["diagonal"]),
+        c.Initiative(args["speed"]),
+        c.Blocker(),
+        c.Health(args["health"]),
+        c.Attack(args["attack"]),
     ]
 
 def animated_creature(**args):
@@ -34,7 +34,7 @@ def animated_creature(**args):
             image=None,
             **args
         ),
-        AnimationC(
+        c.Animation(
             idle=args["anim_idle"],
             ready=args["anim_ready"]
         )
@@ -48,7 +48,7 @@ def potion(x, y, color, effect):
         render="potion-"+color,
         consumable=True
     )
-    components.append(UseEffectC(effect))
+    components.append(c.UseEffect(effect))
     return components
 
 def bomb(x, y):
@@ -58,7 +58,7 @@ def bomb(x, y):
         render="bomb",
         consumable=False
     )
-    components.append(ExplosiveC(3))
+    components.append(c.Explosive(3))
     return components
 
 
@@ -123,7 +123,7 @@ def slime_medium(x, y):
             health=10,
             attack=5
         ),
-        SplitC((slime_small, slime_small))
+        c.Split((slime_small, slime_small))
     ]
 
 def slime_large(x, y):
@@ -138,7 +138,7 @@ def slime_large(x, y):
             health=20,
             attack=5
         ),
-        SplitC((slime_medium, slime_medium))
+        c.Split((slime_medium, slime_medium))
     ]
 
 def caterkiller(x, y):
@@ -153,39 +153,53 @@ def caterkiller(x, y):
             health=10,
             attack=5
         ),
-        RegenC(1)
+        c.Regen(1)
+    ]
+
+def fly(x, y):
+    """Fly components."""
+    return [
+        *animated_creature(
+            x=x, y=y,
+            anim_idle=animations.FLY_FLYING,
+            anim_ready=animations.FLY_FLYING,
+            diagonal=False,
+            speed=1,
+            health=10,
+            attack=2
+        )
     ]
 
 def player(x, y):
     """Player components."""
     return [
-        RenderC("magnum"),
-        TilePositionC(x, y),
-        PlayerInputC(),
-        MovementC(),
-        InitiativeC(1),
-        BlockerC(),
-        HealthC(50),
-        InventoryC(10),
-        AttackC(5),
-        LevelC(1),
-        GameStatsC(),
-        FreeTurnC(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
+        c.Render("magnum"),
+        c.TilePosition(x, y),
+        c.PlayerInput(),
+        c.Movement(),
+        c.Initiative(1),
+        c.Blocker(),
+        c.Health(50),
+        c.Inventory(10),
+        c.Attack(5),
+        c.Level(1),
+        c.GameStats(),
+        c.FreeTurn(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
     ]
 
 def wall(x, y):
     """Wall components."""
     return [
-        RenderC(choice(("wall1", "wall2"))),
-        TilePositionC(x, y),
-        BlockerC(),
-        DestructibleC(),
+        c.Render(choice(("wall1", "wall2"))),
+        c.TilePosition(x, y),
+        c.Blocker(),
+        c.Destructible(),
     ]
 
 def stairs(x, y, direction="down"):
     """Stairs components."""
     return [
-        RenderC("stairs-"+str(direction)),
-        TilePositionC(x, y),
-        StairsC(direction=direction),
+        c.Render("stairs-"+str(direction)),
+        c.TilePosition(x, y),
+        c.Stairs(direction=direction),
     ]

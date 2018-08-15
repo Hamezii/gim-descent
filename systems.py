@@ -1,19 +1,18 @@
 """Contains all the ECS Systems."""
 
 import random
-from math import hypot
+import math
 
 import audio
 import constants
-from components import *
+import components as c
 from ecs import System
 
 
 # HELPER FUNCTIONS
 def dist(pos1, pos2):
     """Return the distance between 2 points using Pythagoras."""
-    return hypot(abs(pos1.x-pos2.x), abs(pos1.y-pos2.y))
-
+    return math.hypot(abs(pos1.x-pos2.x), abs(pos1.y-pos2.y))
 
 def clamp(value, minimum, maximum):
     """Return the value clamped between a range."""
@@ -38,10 +37,10 @@ class GridSystem(System):
             if clamp(pos[1], 0, self.gridheight-1) == pos[1]:
                 return True
         return False
-    
+
     def random_free_pos(self):
         """Return a position on the grid which does not have a Blocker on it.
-        
+
         WARNNG: Does not mark the returned position as blocked.
         """
         while True:
@@ -63,9 +62,9 @@ class GridSystem(System):
 
     def move_entity(self, entity, pos):
         """Move an entity to a position, raising an error if not possible."""
-        entity_pos = self.world.entity_component(entity, TilePositionC)
+        entity_pos = self.world.entity_component(entity, c.TilePosition)
 
-        if self.world.has_component(entity, BlockerC):
+        if self.world.has_component(entity, c.Blocker):
             if self.blocker_grid[pos[0]][pos[1]] == 0:
                 self.blocker_grid[entity_pos.x][entity_pos.y] = 0
                 self.blocker_grid[pos[0]][pos[1]] = entity
@@ -87,19 +86,19 @@ class GridSystem(System):
         del self._cached_pos[entity]
 
     def update(self, **args):
-        for entity, pos in self.world.get_component(TilePositionC):
+        for entity, pos in self.world.get_component(c.TilePosition):
             if not entity in self._cached_pos:
                 self._cached_pos[entity] = (pos.x, pos.y)
                 self.grid[pos.x][pos.y].add(entity)
-                if self.world.has_component(entity, BlockerC):
+                if self.world.has_component(entity, c.Blocker):
                     self.blocker_grid[pos.x][pos.y] = entity
 
         for entity in tuple(self._cached_pos):
-            if not self.world.has_component(entity, TilePositionC):
+            if not self.world.has_component(entity, c.TilePosition):
                 self.remove_pos(entity)
                 continue
 
-            pos = self.world.entity_component(entity, TilePositionC)
+            pos = self.world.entity_component(entity, c.TilePosition)
             if (pos.x, pos.y) != self._cached_pos[entity]:
                 cache_x, cache_y = self._cached_pos[entity]
                 self._cached_pos[entity] = (pos.x, pos.y)
@@ -123,36 +122,36 @@ class InitiativeSystem(System):
 
         self.tick = True
         try:
-            for _ in self.world.get_component(MyTurnC):
+            for _ in self.world.get_component(c.MyTurn):
                 self.tick = False
         except KeyError:
             pass
 
-        for entity, freeturn in self.world.get_component(FreeTurnC):
-            if self.world.has_component(entity, InitiativeC):
+        for entity, freeturn in self.world.get_component(c.FreeTurn):
+            if self.world.has_component(entity, c.Initiative):
                 if self.tick:
                     freeturn.life -= 1
                     if freeturn.life <= 0:
-                        self.world.remove_component(entity, FreeTurnC)
+                        self.world.remove_component(entity, c.FreeTurn)
 
-                    initiative = self.world.entity_component(entity, InitiativeC)
+                    initiative = self.world.entity_component(entity, c.Initiative)
                     initiative.nextturn -= 1
                     if initiative.nextturn <= 0:
                         initiative.nextturn += initiative.speed
-                        self.world.add_component(entity, MyTurnC())
+                        self.world.add_component(entity, c.MyTurn())
                 self.tick = False
             else:
-                self.world.remove_component(entity, FreeTurnC)
+                self.world.remove_component(entity, c.FreeTurn)
 
             return
 
-        for entity, initiative in self.world.get_component(InitiativeC):
-            if not self.world.has_component(entity, MyTurnC):
+        for entity, initiative in self.world.get_component(c.Initiative):
+            if not self.world.has_component(entity, c.MyTurn):
                 if self.tick:
                     initiative.nextturn -= 1
                 if initiative.nextturn <= 0:
                     initiative.nextturn += initiative.speed
-                    self.world.add_component(entity, MyTurnC())
+                    self.world.add_component(entity, c.MyTurn())
 
 
 class PlayerInputSystem(System):
@@ -161,10 +160,10 @@ class PlayerInputSystem(System):
     def update(self, **args):
         playerinput = args["playerinput"]
         if playerinput in constants.DIRECTIONS:
-            for entity, comps in self.world.get_components(TilePositionC, PlayerInputC, MyTurnC):
+            for entity, comps in self.world.get_components(c.TilePosition, c.PlayerInput, c.MyTurn):
                 tilepos = comps[0]
                 bumppos = (tilepos.x+playerinput[0], tilepos.y+playerinput[1])
-                self.world.add_component(entity, BumpC(*bumppos))
+                self.world.add_component(entity, c.Bump(*bumppos))
 
 
 class AISystem(System):
@@ -173,19 +172,19 @@ class AISystem(System):
     def update(self, **args):
         grid = self.world.get_system(GridSystem)
 
-        for entity, comps in self.world.get_components(MovementC, TilePositionC, AIC, MyTurnC):
+        for entity, comps in self.world.get_components(c.Movement, c.TilePosition, c.AI, c.MyTurn):
             movement = comps[0]
             pos = comps[1]
             ai = comps[2]
 
-            playerpos = self.world.entity_component(self.world.tags.player, TilePositionC)
+            playerpos = self.world.entity_component(self.world.tags.player, c.TilePosition)
             if dist(pos, playerpos) <= 15:
                 ai.target = self.world.tags.player
             else:
                 ai.target = 0
 
             if ai.target:
-                targetpos = self.world.entity_component(ai.target, TilePositionC)
+                targetpos = self.world.entity_component(ai.target, c.TilePosition)
 
                 movex = 0
                 movey = 0
@@ -201,7 +200,7 @@ class AISystem(System):
                         movey = -1
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
 
                 if not moved:
                     movex = targetpos.x - pos.x
@@ -221,7 +220,7 @@ class AISystem(System):
 
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
 
                 if not moved:
                     if movex != 0:
@@ -240,7 +239,7 @@ class AISystem(System):
                             movex = 1
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, BumpC(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
 
 
 class FreezingSystem(System):
@@ -249,10 +248,10 @@ class FreezingSystem(System):
     def update(self, **args):
 
         try:
-            for entity, _ in self.world.get_components(FrozenC, MyTurnC, BumpC):
-                self.world.remove_component(entity, FrozenC)
-                self.world.remove_component(entity, MyTurnC)
-                self.world.entity_component(entity, InitiativeC).nextturn = 1
+            for entity, _ in self.world.get_components(c.Frozen, c.MyTurn, c.Bump):
+                self.world.remove_component(entity, c.Frozen)
+                self.world.remove_component(entity, c.MyTurn)
+                self.world.entity_component(entity, c.Initiative).nextturn = 1
         except ValueError:
             pass
 
@@ -264,21 +263,21 @@ class BurningSystem(System):
         if not self.world.get_system(InitiativeSystem).tick:
             return
 
-        for entity, burning in self.world.get_component(BurningC):
+        for entity, burning in self.world.get_component(c.Burning):
 
-            if self.world.has_component(entity, HealthC):
-                self.world.create_entity(DamageC(entity, 1))
+            if self.world.has_component(entity, c.Health):
+                self.world.create_entity(c.Damage(entity, 1))
 
             burning.life -= 1
             if burning.life <= 0:
-                self.world.remove_component(entity, BurningC)
+                self.world.remove_component(entity, c.Burning)
 
 
 class BumpSystem(System):
     """Carries out bump actions, then deletes the Bump components."""
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(TilePositionC, BumpC, MyTurnC):
+        for entity, comps in self.world.get_components(c.TilePosition, c.Bump, c.MyTurn):
             bump = comps[1]
             bumppos = (bump.x, bump.y)
 
@@ -290,52 +289,54 @@ class BumpSystem(System):
             if targetent == 0:
 
                 self.world.get_system(GridSystem).move_entity(entity, bumppos)
-                self.world.remove_component(entity, MyTurnC)
+                self.world.remove_component(entity, c.MyTurn)
 
             else:
-                if self.world.has_component(targetent, HealthC) and self.world.has_component(entity, AttackC):
+                if self.world.has_component(targetent, c.Health) and self.world.has_component(entity, c.Attack):
                     if entity == self.world.tags.player or targetent == self.world.tags.player:
                         # The player must be involved for damage to be inflicted in a bump.
                         # This is so that AI don't attack each other when trying to move.
-                        damage = self.world.entity_component(entity, AttackC).damage
+                        damage = self.world.entity_component(entity, c.Attack).damage
                         self.world.create_entity(
-                            DamageC(targetent, damage,
-                                    burn=self.world.has_component(entity, FireElementC),
-                                    freeze=self.world.has_component(entity, IceElementC)
-                                   )
+                            c.Damage(
+                                targetent,
+                                damage,
+                                burn=self.world.has_component(entity, c.FireElement),
+                                freeze=self.world.has_component(entity, c.IceElement)
+                                )
                         )
 
                         if entity == self.world.tags.player:
                             self.game.camera.shake(5)
                             audio.play("punch", 0.5)
 
-                        self.world.remove_component(entity, MyTurnC)
-        for entity, _ in self.world.get_component(BumpC):
-            self.world.remove_component(entity, BumpC)
+                        self.world.remove_component(entity, c.MyTurn)
+        for entity, _ in self.world.get_component(c.Bump):
+            self.world.remove_component(entity, c.Bump)
 
 
 class ExplosionSystem(System):
-    """Manages explosives and makes anything with an ExplodeC component explode."""
+    """Manages explosives and makes anything with an Explode component explode."""
 
     def update(self, **args):
 
         if self.world.get_system(InitiativeSystem).tick:
-            for entity, explosive in self.world.get_component(ExplosiveC):
+            for entity, explosive in self.world.get_component(c.Explosive):
                 if explosive.primed:
                     explosive.fuse -= 1
                     if explosive.fuse <= 0:
-                        self.world.add_component(entity, ExplodeC())
+                        self.world.add_component(entity, c.Explode())
 
 
-        for entity, explode in self.world.get_component(ExplodeC):
-            self.world.add_component(entity, DeadC())
+        for entity, explode in self.world.get_component(c.Explode):
+            self.world.add_component(entity, c.Dead())
 
             iterentity = entity
-            while self.world.has_component(iterentity, StoredC):  # Getting carrier entity
-                iterentity = self.world.entity_component(iterentity, StoredC).carrier
+            while self.world.has_component(iterentity, c.Stored):  # Getting carrier entity
+                iterentity = self.world.entity_component(iterentity, c.Stored).carrier
 
-            if self.world.has_component(iterentity, TilePositionC):             # Damaging things around it
-                pos = self.world.entity_component(iterentity, TilePositionC)
+            if self.world.has_component(iterentity, c.TilePosition):             # Damaging things around it
+                pos = self.world.entity_component(iterentity, c.TilePosition)
                 for x in range(pos.x - explode.radius, pos.x + explode.radius + 1):
                     for y in range(pos.y - explode.radius, pos.y + explode.radius + 1):
                         if not self.world.get_system(GridSystem).on_grid((x, y)):
@@ -343,20 +344,20 @@ class ExplosionSystem(System):
                         for target_entity in self.world.get_system(GridSystem).get_entities_at((x, y)):
                             if target_entity == entity:
                                 continue
-                            if self.world.has_component(target_entity, DestructibleC) and not self.world.has_component(target_entity, HealthC):
-                                self.world.add_component(target_entity, DeadC())
-                            if self.world.has_component(target_entity, ExplosiveC):
-                                explosive = self.world.entity_component(target_entity, ExplosiveC)
+                            if self.world.has_component(target_entity, c.Destructible) and not self.world.has_component(target_entity, c.Health):
+                                self.world.add_component(target_entity, c.Dead())
+                            if self.world.has_component(target_entity, c.Explosive):
+                                explosive = self.world.entity_component(target_entity, c.Explosive)
                                 explosive.fuse = 1
                                 explosive.primed = True
                                 continue
-                            if self.world.has_component(target_entity, ItemC):
-                                self.world.add_component(target_entity, DeadC())
+                            if self.world.has_component(target_entity, c.Item):
+                                self.world.add_component(target_entity, c.Dead())
                             else:
-                                self.world.create_entity(DamageC(target_entity, explode.damage))
+                                self.world.create_entity(c.Damage(target_entity, explode.damage))
 
 
-                dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, TilePositionC))
+                dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, c.TilePosition))
                 if dist_to_player < 10:
                     self.game.camera.shake(40 - dist_to_player * 3)
                     audio.play("explosion", 0.6 - dist_to_player * 0.05)
@@ -365,36 +366,36 @@ class DamageSystem(System):
     """Manages damage events, applying the damage and then deleting the message entity."""
 
     def update(self, **args):
-        for message_entity, damage in self.world.get_component(DamageC):
-            if self.world.has_component(damage.target, HealthC):
-                targethealth = self.world.entity_component(damage.target, HealthC)
+        for message_entity, damage in self.world.get_component(c.Damage):
+            if self.world.has_component(damage.target, c.Health):
+                targethealth = self.world.entity_component(damage.target, c.Health)
 
                 targethealth.current -= damage.amount
                 if damage.target == self.world.tags.player:
                     self.game.camera.shake(5 + damage.amount*2)
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
-                    self.world.add_component(damage.target, DeadC())
-                    self.world.entity_component(self.world.tags.player, GameStatsC).kills += 1
+                    self.world.add_component(damage.target, c.Dead())
+                    self.world.entity_component(self.world.tags.player, c.GameStats).kills += 1
 
-                if damage.burn and not self.world.has_component(damage.target, FireElementC):
-                    self.world.add_component(damage.target, BurningC(5))
+                if damage.burn and not self.world.has_component(damage.target, c.FireElement):
+                    self.world.add_component(damage.target, c.Burning(5))
 
-                if damage.freeze and not self.world.has_component(damage.target, IceElementC):
-                    self.world.add_component(damage.target, FrozenC())
+                if damage.freeze and not self.world.has_component(damage.target, c.IceElement):
+                    self.world.add_component(damage.target, c.Frozen())
 
-            if self.world.has_component(damage.target, ExplosiveC):
-                self.world.entity_component(damage.target, ExplosiveC).primed = True
+            if self.world.has_component(damage.target, c.Explosive):
+                self.world.entity_component(damage.target, c.Explosive).primed = True
 
             self.world.delete_entity(message_entity)
 
 class RegenSystem(System):
-    """Heals creatures with a RegenC component when they are injured."""
+    """Heals creatures with a Regen component when they are injured."""
     def update(self, **args):
         if self.world.get_system(InitiativeSystem).tick:
-            for entity, regen in self.world.get_component(RegenC):
-                if self.world.has_component(entity, HealthC):
-                    health = self.world.entity_component(entity, HealthC)
+            for entity, regen in self.world.get_component(c.Regen):
+                if self.world.has_component(entity, c.Health):
+                    health = self.world.entity_component(entity, c.Health)
                     if health.current < health.max:
                         health.current = min(health.current + regen.amount, health.max)
 
@@ -403,16 +404,16 @@ class PickupSystem(System):
     """Allows carrier entities to pick up entities with a Pickup component as long it is not their turn."""
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(TilePositionC, InventoryC):
-            if not self.world.has_component(entity, MyTurnC):
+        for entity, comps in self.world.get_components(c.TilePosition, c.Inventory):
+            if not self.world.has_component(entity, c.MyTurn):
                 pos = comps[0]
                 inventory = comps[1]
-                for item, item_comps in self.world.get_components(TilePositionC, ItemC):
+                for item, item_comps in self.world.get_components(c.TilePosition, c.Item):
                     if len(inventory.contents) < inventory.capacity:
                         item_pos = item_comps[0]
                         if (item_pos.x, item_pos.y) == (pos.x, pos.y):
-                            self.world.remove_component(item, TilePositionC)
-                            self.world.add_component(item, StoredC(entity))
+                            self.world.remove_component(item, c.TilePosition)
+                            self.world.add_component(item, c.Stored(entity))
                             inventory.contents.append(item)
 
 
@@ -420,31 +421,31 @@ class IdleSystem(System):
     """Makes AI controlled entities idle for a turn if no action was taken."""
 
     def update(self, **args):
-        for entity, _ in self.world.get_components(AIC, MyTurnC):
-            self.world.remove_component(entity, MyTurnC)
-            if self.world.has_component(entity, InitiativeC):
-                self.world.entity_component(entity, InitiativeC).nextturn = 1
+        for entity, _ in self.world.get_components(c.AI, c.MyTurn):
+            self.world.remove_component(entity, c.MyTurn)
+            if self.world.has_component(entity, c.Initiative):
+                self.world.entity_component(entity, c.Initiative).nextturn = 1
 
 class SplitSystem(System):
     """Handles splitting entities when they are killed."""
     adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(SplitC, DeadC):
+        for entity, comps in self.world.get_components(c.Split, c.Dead):
             split = comps[0]
-            if self.world.has_component(entity, TilePositionC):
-                pos = self.world.entity_component(entity, TilePositionC)
+            if self.world.has_component(entity, c.TilePosition):
+                pos = self.world.entity_component(entity, c.TilePosition)
                 for template in split.entities:
                     spawn_pos = self.random_adjacent_free_tile((pos.x, pos.y))
                     if spawn_pos:
                         new_entity = self.world.create_entity(*template(*spawn_pos))
                         self.world.get_system(GridSystem).update()
-                        if self.world.has_component(new_entity, InitiativeC):
-                            self.world.entity_component(new_entity, InitiativeC).nextturn += 1
-                        if self.world.has_component(entity, IceElementC):
-                            self.world.add_component(new_entity, IceElementC())
-                        if self.world.has_component(entity, FireElementC):
-                            self.world.add_component(new_entity, FireElementC())
+                        if self.world.has_component(new_entity, c.Initiative):
+                            self.world.entity_component(new_entity, c.Initiative).nextturn += 1
+                        if self.world.has_component(entity, c.IceElement):
+                            self.world.add_component(new_entity, c.IceElement())
+                        if self.world.has_component(entity, c.FireElement):
+                            self.world.add_component(new_entity, c.FireElement())
 
     def random_adjacent_free_tile(self, pos):
         """Return a random adjacent tile, or None if they are all blocked."""
@@ -459,10 +460,10 @@ class StairsSystem(System):
 
     def update(self, **args):
         player = self.world.tags.player
-        player_pos = self.world.entity_component(player, TilePositionC)
+        player_pos = self.world.entity_component(player, c.TilePosition)
 
 
-        for _, comps in self.world.get_components(StairsC, TilePositionC):
+        for _, comps in self.world.get_components(c.Stairs, c.TilePosition):
             stair = comps[0]
             stair_pos = comps[1]
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
@@ -470,23 +471,23 @@ class StairsSystem(System):
                 entities_to_remove = []
 
                 if stair.direction == "down":
-                    self.world.entity_component(player, LevelC).level_num += 1
+                    self.world.entity_component(player, c.Level).level_num += 1
                 player_entities = [player]
-                if self.world.has_component(player, InventoryC):
-                    for entity in self.world.entity_component(player, InventoryC).contents:
+                if self.world.has_component(player, c.Inventory):
+                    for entity in self.world.entity_component(player, c.Inventory).contents:
                         player_entities.append(entity)
-                for entity, _ in self.world.get_component(TilePositionC):
+                for entity, _ in self.world.get_component(c.TilePosition):
                     if entity not in player_entities:
                         entities_to_remove.append(entity)
-                for entity, _ in self.world.get_component(StoredC):
+                for entity, _ in self.world.get_component(c.Stored):
                     if entity not in player_entities:
                         entities_to_remove.append(entity)
                 self.game.generate_level()
                 self.world.get_system(GridSystem).update()
                 spawn_pos = self.world.get_system(GridSystem).random_free_pos()
                 player_pos.x, player_pos.y = spawn_pos
-                if not self.world.has_component(player, FreeTurnC):
-                    self.world.add_component(player, FreeTurnC(1)) # stops player from getting hit at the beginning of the level.
+                if not self.world.has_component(player, c.FreeTurn):
+                    self.world.add_component(player, c.FreeTurn(1)) # stops player from getting hit at the beginning of the level.
 
                 for entity in entities_to_remove:
                     self.remove_entity(entity)
@@ -497,22 +498,22 @@ class StairsSystem(System):
         Remove an entity from the world when you change level.
         """
         self.world.delete_entity(entity)
-        if self.world.has_component(entity, StoredC): # Removes entity from inventories
-            carrier = self.world.entity_component(entity, StoredC).carrier
-            self.world.entity_component(carrier, InventoryC).contents.remove(entity)
-        if self.world.has_component(entity, TilePositionC):
+        if self.world.has_component(entity, c.Stored): # Removes entity from inventories
+            carrier = self.world.entity_component(entity, c.Stored).carrier
+            self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
+        if self.world.has_component(entity, c.TilePosition):
             self.world.get_system(GridSystem).remove_pos(entity)
 
 class DeadSystem(System):
     """Handles any entities that have been tagged as dead and queues them for deletion."""
 
     def update(self, **args):
-        for entity, _ in self.world.get_component(DeadC):
+        for entity, _ in self.world.get_component(c.Dead):
             self.world.delete_entity(entity)
-            if self.world.has_component(entity, StoredC): # Removes entity from inventories
-                carrier = self.world.entity_component(entity, StoredC).carrier
-                self.world.entity_component(carrier, InventoryC).contents.remove(entity)
-            if self.world.has_component(entity, TilePositionC):
+            if self.world.has_component(entity, c.Stored): # Removes entity from inventories
+                carrier = self.world.entity_component(entity, c.Stored).carrier
+                self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
+            if self.world.has_component(entity, c.TilePosition):
                 self.world.get_system(GridSystem).remove_pos(entity)
 
 
@@ -534,17 +535,17 @@ class AnimationSystem(System):
 
         self.t_last_frame = self.t_last_frame % self.ANIMATION_RATE
 
-        for entity, comps in self.world.get_components(AnimationC, RenderC):
+        for entity, comps in self.world.get_components(c.Animation, c.Render):
             animation = comps[0]
             render = comps[1]
 
             playing_animation = animation.animations["idle"]
 
-            if self.world.has_component(entity, InitiativeC):
+            if self.world.has_component(entity, c.Initiative):
                 entity_nextturn = self.world.entity_component(
-                    entity, InitiativeC).nextturn
+                    entity, c.Initiative).nextturn
                 player_nextturn = self.world.entity_component(
-                    self.world.tags.player, InitiativeC).nextturn
+                    self.world.tags.player, c.Initiative).nextturn
                 if entity_nextturn <= player_nextturn:
                     playing_animation = animation.animations["ready"]
 

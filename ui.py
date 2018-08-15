@@ -9,7 +9,8 @@ import pygame
 
 import audio
 import constants
-from systems import *
+import components as c
+from systems import GridSystem
 
 
 def leave():
@@ -208,7 +209,7 @@ class GameMenu(Menu):
     def get_event(self, event):
         if event[0] == "update":
             delta = event[1]
-            cameragoal = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
+            cameragoal = self.game.world.entity_component(self.game.world.tags.player, c.TilePosition)
             cameragoal = self.game.camera.tile_to_camera_pos(cameragoal.x, cameragoal.y)
             self.game.camera.update(delta, cameragoal)
         if event[0] == "input":
@@ -241,7 +242,7 @@ class GameMenu(Menu):
 
         screen.blit(self._floor_cache, (0, 0), (camerarect.x, camerarect.y, camerarect.width, camerarect.height))
 
-        for entity, comps in self.game.world.get_components(RenderC, TilePositionC):
+        for entity, comps in self.game.world.get_components(c.Render, c.TilePosition):
             pos = comps[1]
 
             pixelpos = self.game.camera.tile_to_pixel_pos(pos.x, pos.y)
@@ -254,8 +255,8 @@ class GameMenu(Menu):
                 pixelpos = (pixelpos[0] - camerarect.x, pixelpos[1] - camerarect.y)
                 self.game.draw_centered_entity(screen, entity, camerascale, pixelpos)
 
-                if self.game.world.has_component(entity, HealthC):    # Healthbar
-                    health = self.game.world.entity_component(entity, HealthC)
+                if self.game.world.has_component(entity, c.Health):    # Healthbar
+                    health = self.game.world.entity_component(entity, c.Health)
                     barrect = pygame.Rect(pixelpos[0] - camerazoom*0.35, pixelpos[1] + camerazoom*0.4, camerazoom*0.7, camerazoom*0.05)
                     pygame.draw.rect(screen, constants.ALMOST_BLACK, barrect.inflate(camerazoom*0.1, camerazoom*0.1))
                     if health.current > 0:
@@ -266,7 +267,7 @@ class GameMenu(Menu):
         # Drawing HUD
 
         # Health bar
-        health = self.game.world.entity_component(self.game.world.tags.player, HealthC)
+        health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
         health_color = self._get_health_bar_color(health)
 
         health_bar_pos = constants.MENU_SCALE*8*4, screen.get_rect().height - constants.MENU_SCALE*8*5
@@ -279,18 +280,14 @@ class GameMenu(Menu):
             health_width = health_bar.width * (health.current / health.max)
             pygame.draw.rect(screen, health_color, (health_bar.topleft, (health_width, health_bar.height)))
 
-        text_box_pos = (health_bar.left+ 2*constants.MENU_SCALE, health_bar.top - 18*constants.MENU_SCALE)
-        text_box_size = (constants.MENU_SCALE*(3+12*len(str(health.current))), constants.MENU_SCALE*18)
-        text_box = pygame.Rect(text_box_pos, text_box_size)
-        #pygame.draw.rect(screen, constants.ALMOST_BLACK, text_box)
         health_text_pos = (health_bar.left + 5*constants.MENU_SCALE, health_bar.top - 15*constants.MENU_SCALE)
         self.renderer.draw_text(screen, health_color, health_text_pos, str(health.current), 15*constants.MENU_SCALE)
-    
-        level = self.game.world.entity_component(self.game.world.tags.player, LevelC).level_num
+
+        level = self.game.world.entity_component(self.game.world.tags.player, c.Level).level_num
         level_text_pos = (health_bar.x, health_bar.bottom + 5*constants.MENU_SCALE)
         self.renderer.draw_text(screen, constants.LIGHT_GRAY, level_text_pos, "Level " + str(level), 10*constants.MENU_SCALE)
 
-        kills = self.game.world.entity_component(self.game.world.tags.player, GameStatsC).kills
+        kills = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).kills
         kills_text_pos = (health_bar.x, health_bar.bottom + 17.5*constants.MENU_SCALE)
         self.renderer.draw_text(screen, constants.LIGHT_GRAY, kills_text_pos, "Kills " + str(kills), 10*constants.MENU_SCALE)
 
@@ -309,6 +306,12 @@ class ExitMenu(Menu):
     def __init__(self, game):
         super().__init__(game)
         leave()
+
+    def get_event(self, event):
+        pass
+
+    def draw(self, screen):
+        pass
 
 class Inventory(Menu):
     """Main inventory menu."""
@@ -363,7 +366,7 @@ class Inventory(Menu):
 
             if keypress == pygame.K_z:
                 itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
-                items = self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents
+                items = self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents
                 if itempos < len(items):
                     self.menu_manager.add_menu(InventoryOptions(self.game, items[itempos]))
 
@@ -375,7 +378,7 @@ class Inventory(Menu):
         black_box_size = tuple(self.slot_size * self.size[i] +10*constants.MENU_SCALE for i in range(2))
         pygame.draw.rect(screen, constants.BLACK, (black_box_pos, black_box_size))
 
-        inventory = self.game.world.entity_component(self.game.world.tags.player, InventoryC)
+        inventory = self.game.world.entity_component(self.game.world.tags.player, c.Inventory)
 
         inventory_slot = self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)
         for x in range(self.size[0]):
@@ -400,9 +403,9 @@ class InventoryOptions(Menu):
         super().__init__(game)
         self.item = item
         self.options = []
-        if self.game.world.has_component(item, UseEffectC):
+        if self.game.world.has_component(item, c.UseEffect):
             self.options.append("use")
-        if self.game.world.has_component(item, ExplosiveC):
+        if self.game.world.has_component(item, c.Explosive):
             self.options.append("prime")
         self.options.append("throw")
         self.options.append("drop")
@@ -438,25 +441,25 @@ class InventoryOptions(Menu):
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":
-                    use = self.game.world.entity_component(self.item, UseEffectC)
+                    use = self.game.world.entity_component(self.item, c.UseEffect)
                     for effect in use.effects:
                         effect[0](self.game.world.tags.player, *effect[1:])
-                    if self.game.world.entity_component(self.item, ItemC).consumable:
-                        self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
+                    if self.game.world.entity_component(self.item, c.Item).consumable:
+                        self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
 
                 if selection == "prime":
-                    self.game.world.entity_component(self.item, ExplosiveC).primed = True
+                    self.game.world.entity_component(self.item, c.Explosive).primed = True
 
                 if selection == "throw":
                     self.menu_manager.add_menu(ThrowOptions(self.game, self.item))
 
                 if selection == "drop":
-                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
-                    self.game.world.remove_component(self.item, StoredC)
+                    self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, c.Stored)
 
-                    pos = self.game.world.entity_component(self.game.world.tags.player, TilePositionC)
-                    self.game.world.add_component(self.item, TilePositionC(pos.x, pos.y))
+                    pos = self.game.world.entity_component(self.game.world.tags.player, c.TilePosition)
+                    self.game.world.add_component(self.item, c.TilePosition(pos.x, pos.y))
 
 
     def draw(self, screen):
@@ -509,7 +512,7 @@ class ThrowOptions(Menu):
             if keypress in constants.DIRECTIONS:
                 self.dir = keypress
                 playerpos = self.game.world.entity_component(
-                    self.game.world.tags.player, TilePositionC)
+                    self.game.world.tags.player, c.TilePosition)
                 self.targettile = [playerpos.x, playerpos.y]
                 stopped = False
                 distance = 0
@@ -532,18 +535,18 @@ class ThrowOptions(Menu):
 
             if keypress == pygame.K_z:
                 if self.droptile is not None:
-                    self.game.world.entity_component(self.game.world.tags.player, InventoryC).contents.remove(self.item)
-                    self.game.world.remove_component(self.item, StoredC)
-                    self.game.world.add_component(self.item, TilePositionC(*self.droptile))
+                    self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
+                    self.game.world.remove_component(self.item, c.Stored)
+                    self.game.world.add_component(self.item, c.TilePosition(*self.droptile))
                 if self.targettile is not None:
                     target = self.game.world.get_system(GridSystem).get_blocker_at(self.targettile)
                     if target:
-                        if self.game.world.has_component(self.item, UseEffectC):
-                            use = self.game.world.entity_component(self.item, UseEffectC)
+                        if self.game.world.has_component(self.item, c.UseEffect):
+                            use = self.game.world.entity_component(self.item, c.UseEffect)
                             for effect in use.effects:
                                 effect[0](target, *effect[1:])
-                        if self.game.world.entity_component(self.item, ItemC).consumable:
-                            self.game.world.add_component(self.item, DeadC())
+                        if self.game.world.entity_component(self.item, c.Item).consumable:
+                            self.game.world.add_component(self.item, c.Dead())
 
                     self.menu_manager.remove_menu(self)
 
