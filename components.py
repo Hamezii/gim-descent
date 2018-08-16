@@ -5,7 +5,6 @@ from typing import List, Dict
 
 from dataclasses import dataclass, field
 
-
 @dataclass
 class Level:
     """Stores what level the entity is on."""
@@ -42,12 +41,22 @@ class Initiative:
     speed: int
     nextturn: int = field(init=False)
     def __post_init__(self):
-        self.nextturn = randint(1, self.speed)
+        self.nextturn = randint(2, self.speed+1)
 
 @dataclass
 class AI:
-    """Tags an entity as controlled by the computer. Stores id of entity to attack."""
+    """Tags an entity as controlled by the computer. Stores id of entity to target."""
     target: int = 0
+
+@dataclass
+class AIFlyWizard:
+    """Tag for fly wizard AI."""
+    state: str = "asleep"
+
+@dataclass
+class AIDodge:
+    """Tags an entity as able to dodge attacks."""
+    pass
 
 @dataclass
 class Regen:

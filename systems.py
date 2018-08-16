@@ -1,17 +1,18 @@
 """Contains all the ECS Systems."""
 
-import random
 import math
+import random
 
 import audio
-import constants
 import components as c
+import constants
+import entity_templates
 from ecs import System
 
 
 # HELPER FUNCTIONS
 def dist(pos1, pos2):
-    """Return the distance between 2 points using Pythagoras."""
+    """Return the distance between 2 position components using Pythagoras."""
     return math.hypot(abs(pos1.x-pos2.x), abs(pos1.y-pos2.y))
 
 def clamp(value, minimum, maximum):
@@ -22,6 +23,7 @@ def clamp(value, minimum, maximum):
 
 class GridSystem(System):
     """Stores grid attributes and a grid of blocker entities."""
+    adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
 
     def __init__(self):
         super().__init__()
@@ -38,6 +40,14 @@ class GridSystem(System):
                 return True
         return False
 
+    def random_adjacent_free_pos(self, pos):
+        """Return a random adjacent tile, or None if they are all blocked."""
+        for offset in [*random.sample(self.adjacent, len(self.adjacent)), (0, 0)]:
+            test_pos = [pos[i]+offset[i] for i in range(2)]
+            if self.world.get_system(GridSystem).get_blocker_at(test_pos) == 0:
+                return test_pos
+        return None
+
     def random_free_pos(self):
         """Return a position on the grid which does not have a Blocker on it.
 
@@ -48,6 +58,13 @@ class GridSystem(System):
             if self.get_blocker_at(randpos) == 0:
                 return randpos
 
+    def can_move_in_direction(self, entity, direction):
+        """Return true if the entity can move in a direction."""
+        pos = self.world.entity_component(entity, c.TilePosition)
+        move_pos = (pos.x+direction[0], pos.y+direction[1])
+        if self.on_grid(move_pos) and self.get_blocker_at(move_pos) == 0:
+            return True
+        return False
 
     def get_blocker_at(self, pos):
         """Get id of blocker entity at a certain position.
@@ -142,7 +159,6 @@ class InitiativeSystem(System):
                 self.tick = False
             else:
                 self.world.remove_component(entity, c.FreeTurn)
-
             return
 
         for entity, initiative in self.world.get_component(c.Initiative):
@@ -160,10 +176,51 @@ class PlayerInputSystem(System):
     def update(self, **args):
         playerinput = args["playerinput"]
         if playerinput in constants.DIRECTIONS:
-            for entity, comps in self.world.get_components(c.TilePosition, c.PlayerInput, c.MyTurn):
-                tilepos = comps[0]
-                bumppos = (tilepos.x+playerinput[0], tilepos.y+playerinput[1])
+            for entity, _ in self.world.get_components(c.PlayerInput, c.MyTurn):
+                bumppos = (playerinput[0], playerinput[1])
                 self.world.add_component(entity, c.Bump(*bumppos))
+
+
+
+class AIFlyWizardSystem(System):
+    """Lets the fly wizard decide what action to make."""
+
+    def change_state(self, entity, new_state):
+        """Change the AI state of a fly wizard, updating render info."""
+        if self.world.has_component(entity, c.Dead):
+            return
+
+        ai = self.world.entity_component(entity, c.AIFlyWizard)
+        render = self.world.entity_component(entity, c.Render)
+        ai.state = new_state
+
+        if ai.state == "asleep":
+            render.imagename = "fly-wizard-i"
+
+        if ai.state == "normal":
+            self.world.add_component(entity, c.Initiative(2))
+            render.imagename = "fly-wizard-r2"
+            pos = self.world.entity_component(entity, c.TilePosition)
+            for _ in range(5):
+                adjacent_pos = self.world.get_system(GridSystem).random_adjacent_free_pos((pos.x, pos.y))
+                if adjacent_pos:
+                    self.world.create_entity(*entity_templates.fly(*adjacent_pos))
+                    self.world.get_system(GridSystem).update()
+
+        if ai.state == "angry":
+            self.world.add_component(entity, c.Initiative(1))
+            render.imagename = "fly-wizard-r"
+
+
+    def update(self, **args):
+        player_pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
+        for entity, (ai, pos) in self.world.get_components(c.AIFlyWizard, c.TilePosition):
+            if ai.state == "asleep":
+                if dist(pos, player_pos) <= 4:
+                    self.change_state(entity, "normal")
+
+
+
 
 
 class AISystem(System):
@@ -172,10 +229,7 @@ class AISystem(System):
     def update(self, **args):
         grid = self.world.get_system(GridSystem)
 
-        for entity, comps in self.world.get_components(c.Movement, c.TilePosition, c.AI, c.MyTurn):
-            movement = comps[0]
-            pos = comps[1]
-            ai = comps[2]
+        for entity, (movement, pos, ai, _) in self.world.get_components(c.Movement, c.TilePosition, c.AI, c.MyTurn):
 
             playerpos = self.world.entity_component(self.world.tags.player, c.TilePosition)
             if dist(pos, playerpos) <= 15:
@@ -200,7 +254,7 @@ class AISystem(System):
                         movey = -1
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, c.Bump(movex, movey))
 
                 if not moved:
                     movex = targetpos.x - pos.x
@@ -211,16 +265,30 @@ class AISystem(System):
                             movey = -1
                         if movey > 0:
                             movey = 1
-                    else:
+                    elif abs(movex) > abs(movey):
                         movey = 0
                         if movex < 0:
                             movex = -1
                         if movex > 0:
                             movex = 1
+                    else:
+                        if random.random() < 0.5:
+                            movey = 0
+                            if movex < 0:
+                                movex = -1
+                            if movex > 0:
+                                movex = 1
+                        else:
+                            movex = 0
+                            if movey < 0:
+                                movey = -1
+                            if movey > 0:
+                                movey = 1
+
 
                     if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
+                        self.world.add_component(entity, c.Bump(movex, movey))
 
                 if not moved:
                     if movex != 0:
@@ -237,10 +305,9 @@ class AISystem(System):
                             movex = -1
                         if movex > 0:
                             movex = 1
-                    if grid.get_blocker_at((pos.x+movex, pos.y+movey)) in (0, ai.target):
+                    if grid.get_blocker_at((movex, movey)) in (0, ai.target):
                         moved = True
-                        self.world.add_component(entity, c.Bump(pos.x+movex, pos.y+movey))
-
+                        self.world.add_component(entity, c.Bump(movex, movey))
 
 class FreezingSystem(System):
     """Cancels the action of frozen entities attempting to move, defreezing them instead."""
@@ -272,14 +339,27 @@ class BurningSystem(System):
             if burning.life <= 0:
                 self.world.remove_component(entity, c.Burning)
 
+class AIDodgeSystem(System):
+    """Carries out dodges when an entity moves onto the same tile."""
+    def update(self, **args):
+        for entity, (pos, initiative, _) in self.world.get_components(c.TilePosition, c.Initiative, c.AIDodge):
+            if initiative.nextturn > 1:
+                continue
+            for _, (o_pos, bump, _) in self.world.get_components(c.TilePosition, c.Bump, c.MyTurn):
+                bump_pos = c.TilePosition(o_pos.x+bump.x, o_pos.y+bump.y)
+                if bump_pos == pos:
+                    if self.world.get_system(GridSystem).can_move_in_direction(entity, (bump.x, bump.y)):
+                        self.world.get_system(GridSystem).move_entity(entity, (pos.x+bump.x, pos.y+bump.y))
+                        initiative.nextturn += initiative.speed # would like to remove MyTurn component but the ai doesn't have it yet, should change
+
 
 class BumpSystem(System):
     """Carries out bump actions, then deletes the Bump components."""
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(c.TilePosition, c.Bump, c.MyTurn):
-            bump = comps[1]
-            bumppos = (bump.x, bump.y)
+        for entity, (pos, bump, _) in self.world.get_components(c.TilePosition, c.Bump, c.MyTurn):
+
+            bumppos = (pos.x + bump.x, pos.y + bump.y)
 
             if not self.world.get_system(GridSystem).on_grid(bumppos):
                 continue
@@ -387,6 +467,14 @@ class DamageSystem(System):
             if self.world.has_component(damage.target, c.Explosive):
                 self.world.entity_component(damage.target, c.Explosive).primed = True
 
+            if self.world.has_component(damage.target, c.AIFlyWizard):
+                if self.world.entity_component(damage.target, c.AIFlyWizard).state == "angry":
+                    next_state = "normal"
+                    self.game.teleport_entity(damage.target, 6)
+                else:
+                    next_state = "angry"
+                self.world.get_system(AIFlyWizardSystem).change_state(damage.target, next_state)
+
             self.world.delete_entity(message_entity)
 
 class RegenSystem(System):
@@ -404,13 +492,11 @@ class PickupSystem(System):
     """Allows carrier entities to pick up entities with a Pickup component as long it is not their turn."""
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(c.TilePosition, c.Inventory):
+        for entity, (pos, inventory) in self.world.get_components(c.TilePosition, c.Inventory):
             if not self.world.has_component(entity, c.MyTurn):
-                pos = comps[0]
-                inventory = comps[1]
-                for item, item_comps in self.world.get_components(c.TilePosition, c.Item):
+
+                for item, (item_pos, _) in self.world.get_components(c.TilePosition, c.Item):
                     if len(inventory.contents) < inventory.capacity:
-                        item_pos = item_comps[0]
                         if (item_pos.x, item_pos.y) == (pos.x, pos.y):
                             self.world.remove_component(item, c.TilePosition)
                             self.world.add_component(item, c.Stored(entity))
@@ -421,39 +507,29 @@ class IdleSystem(System):
     """Makes AI controlled entities idle for a turn if no action was taken."""
 
     def update(self, **args):
-        for entity, _ in self.world.get_components(c.AI, c.MyTurn):
+        for entity, _ in self.world.get_component(c.MyTurn):
+            if entity == self.world.tags.player:
+                continue
             self.world.remove_component(entity, c.MyTurn)
             if self.world.has_component(entity, c.Initiative):
                 self.world.entity_component(entity, c.Initiative).nextturn = 1
 
 class SplitSystem(System):
     """Handles splitting entities when they are killed."""
-    adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
 
     def update(self, **args):
-        for entity, comps in self.world.get_components(c.Split, c.Dead):
-            split = comps[0]
+        for entity, (split, _) in self.world.get_components(c.Split, c.Dead):
             if self.world.has_component(entity, c.TilePosition):
                 pos = self.world.entity_component(entity, c.TilePosition)
                 for template in split.entities:
-                    spawn_pos = self.random_adjacent_free_tile((pos.x, pos.y))
+                    spawn_pos = self.world.get_system(GridSystem).random_adjacent_free_pos((pos.x, pos.y))
                     if spawn_pos:
                         new_entity = self.world.create_entity(*template(*spawn_pos))
                         self.world.get_system(GridSystem).update()
-                        if self.world.has_component(new_entity, c.Initiative):
-                            self.world.entity_component(new_entity, c.Initiative).nextturn += 1
                         if self.world.has_component(entity, c.IceElement):
                             self.world.add_component(new_entity, c.IceElement())
                         if self.world.has_component(entity, c.FireElement):
                             self.world.add_component(new_entity, c.FireElement())
-
-    def random_adjacent_free_tile(self, pos):
-        """Return a random adjacent tile, or None if they are all blocked."""
-        for offset in [*random.sample(self.adjacent, len(self.adjacent)), (0, 0)]:
-            test_pos = [pos[i]+offset[i] for i in range(2)]
-            if self.world.get_system(GridSystem).get_blocker_at(test_pos) == 0:
-                return test_pos
-        return None
 
 class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
@@ -463,9 +539,7 @@ class StairsSystem(System):
         player_pos = self.world.entity_component(player, c.TilePosition)
 
 
-        for _, comps in self.world.get_components(c.Stairs, c.TilePosition):
-            stair = comps[0]
-            stair_pos = comps[1]
+        for _, (stair, stair_pos) in self.world.get_components(c.Stairs, c.TilePosition):
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
 
                 entities_to_remove = []
@@ -483,11 +557,6 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         entities_to_remove.append(entity)
                 self.game.generate_level()
-                self.world.get_system(GridSystem).update()
-                spawn_pos = self.world.get_system(GridSystem).random_free_pos()
-                player_pos.x, player_pos.y = spawn_pos
-                if not self.world.has_component(player, c.FreeTurn):
-                    self.world.add_component(player, c.FreeTurn(1)) # stops player from getting hit at the beginning of the level.
 
                 for entity in entities_to_remove:
                     self.remove_entity(entity)
@@ -535,9 +604,7 @@ class AnimationSystem(System):
 
         self.t_last_frame = self.t_last_frame % self.ANIMATION_RATE
 
-        for entity, comps in self.world.get_components(c.Animation, c.Render):
-            animation = comps[0]
-            render = comps[1]
+        for entity, (animation, render) in self.world.get_components(c.Animation, c.Render):
 
             playing_animation = animation.animations["idle"]
 

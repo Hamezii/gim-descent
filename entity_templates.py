@@ -16,15 +16,36 @@ def item_template(**args):
 
 def creature(**args):
     """Creature components."""
-    return [
+    if "image" not in args:
+        args["image"] = None
+
+    components = [
         c.Render(args["image"]),
         c.TilePosition(args["x"], args["y"]),
-        c.AI(),
         c.Movement(diagonal=args["diagonal"]),
-        c.Initiative(args["speed"]),
         c.Blocker(),
         c.Health(args["health"]),
         c.Attack(args["attack"]),
+    ]
+    if "anim_idle" in args:
+        components.append(
+            c.Animation(
+                idle=args["anim_idle"],
+                ready=args["anim_ready"]
+            )
+        )
+    if "speed" in args:
+        components.append(
+            c.Initiative(args["speed"])
+        )
+
+    return components
+
+def normal_ai_creature(**args):
+    """Normal AI creature components."""
+    return [
+        *creature(**args),
+        c.AI()
     ]
 
 def animated_creature(**args):
@@ -64,7 +85,7 @@ def bomb(x, y):
 
 def ogre(x, y):
     """Ogre components."""
-    return animated_creature(
+    return normal_ai_creature(
         x=x,
         y=y,
         anim_idle=animations.OGRE_IDLE,
@@ -77,7 +98,7 @@ def ogre(x, y):
 
 def snake(x, y):
     """Snake components."""
-    return animated_creature(
+    return normal_ai_creature(
         x=x,
         y=y,
         anim_idle=animations.SNAKE_IDLE,
@@ -90,7 +111,7 @@ def snake(x, y):
 
 def golem(x, y):
     """Golem components."""
-    return animated_creature(
+    return normal_ai_creature(
         x=x,
         y=y,
         anim_idle=animations.GOLEM_IDLE,
@@ -103,7 +124,7 @@ def golem(x, y):
 
 def slime_small(x, y):
     """Small slime components."""
-    return creature(
+    return normal_ai_creature(
         x=x, y=y,
         image="slime-s-i",
         diagonal=False,
@@ -115,7 +136,7 @@ def slime_small(x, y):
 def slime_medium(x, y):
     """Medium slime components."""
     return [
-        *creature(
+        *normal_ai_creature(
             x=x, y=y,
             image="slime-m-i",
             diagonal=False,
@@ -129,7 +150,7 @@ def slime_medium(x, y):
 def slime_large(x, y):
     """Large slime components."""
     return [
-        *animated_creature(
+        *normal_ai_creature(
             x=x, y=y,
             anim_idle=animations.SLIME_LARGE_IDLE,
             anim_ready=animations.SLIME_LARGE_READY,
@@ -144,7 +165,7 @@ def slime_large(x, y):
 def caterkiller(x, y):
     """Caterkiller components."""
     return [
-        *animated_creature(
+        *normal_ai_creature(
             x=x, y=y,
             anim_idle=animations.CATERKILLER_IDLE,
             anim_ready=animations.CATERKILLER_READY,
@@ -159,29 +180,45 @@ def caterkiller(x, y):
 def fly(x, y):
     """Fly components."""
     return [
-        *animated_creature(
+        *normal_ai_creature(
             x=x, y=y,
             anim_idle=animations.FLY_FLYING,
             anim_ready=animations.FLY_FLYING,
             diagonal=False,
             speed=1,
-            health=10,
+            health=5,
             attack=2
-        )
+        ),
+        c.AIDodge()
+    ]
+
+def fly_wizard(x, y):
+    """Fly wizard components."""
+    return [
+        *normal_ai_creature(
+            x=x, y=y,
+            image="fly-wizard-i",
+            diagonal=False,
+            health=60,
+            attack=10
+        ),
+        c.AIFlyWizard(),
+        c.AIDodge()
     ]
 
 def player(x, y):
     """Player components."""
     return [
-        c.Render("magnum"),
-        c.TilePosition(x, y),
+        *creature(
+            x=x, y=y,
+            image="magnum",
+            diagonal=False,
+            speed=1,
+            health=50,
+            attack=5
+        ),
         c.PlayerInput(),
-        c.Movement(),
-        c.Initiative(1),
-        c.Blocker(),
-        c.Health(50),
         c.Inventory(10),
-        c.Attack(5),
         c.Level(1),
         c.GameStats(),
         c.FreeTurn(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.

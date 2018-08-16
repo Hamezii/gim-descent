@@ -259,19 +259,6 @@ class Game:
             health = self.world.entity_component(entity, c.Health)
             health.current = min(health.max, health.current+amount)
 
-    def spawn_player(self):
-        """Spawn the player entity into the level."""
-        self.world.get_system(s.GridSystem).update()
-
-        x, y = self.world.get_system(s.GridSystem).random_free_pos()
-
-        self.world.tags.player = self.world.create_entity(*entity_templates.player(x, y))
-
-        # You spawn with some bombs
-        pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
-        for _ in range(3):
-            self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
-
     def random_loot(self, x, y):
         """Spawn random loot at a certain position."""
         item = random.randint(1, 4)
@@ -287,13 +274,44 @@ class Game:
         if item == 4:
             self.world.create_entity(*entity_templates.bomb(x, y))
 
-    def generate_level(self):
-        """Initialise the entities in the ECS."""
+    def generate_fly_wizard_level(self):
+        """Make the fly wizard level."""
+        grid = []
+        gridwidth = self.world.get_system(s.GridSystem).gridwidth
+        gridheight = self.world.get_system(s.GridSystem).gridheight
 
-        if self.world.tags.player:
-            level = self.world.entity_component(self.world.tags.player, c.Level).level_num
-        else:
-            level = 1
+        main_room = pygame.Rect(5, 5, 20, 20)
+
+        for y in range(0, gridheight):  # Walls
+            grid.append([])
+
+            for x in range(0, gridwidth):
+                if main_room.collidepoint(x, y):
+                    grid[y].append(0)
+                else:
+                    grid[y].append(1)
+
+        for x in range(1, 5):
+            for y in range(14, 17):
+                grid[y][x] = 0
+
+        for y in range(14, 17):
+            grid[y][8] = 1
+
+        self.world.create_entity(*entity_templates.fly(7, 15))
+        self.world.create_entity(*entity_templates.fly_wizard(22, 15))
+
+        for y in range(0, gridheight):
+            for x in range(0, gridwidth):
+                if grid[y][x] == 1:                  # Creating walls on positions which have been marked
+                    self.world.create_entity(*entity_templates.wall(x, y))
+
+        self.world.add_component(self.world.tags.player, c.TilePosition(2, 15))
+
+
+
+    def generate_random_level(self, level):
+        """Initialise the entities for a random level."""
 
         level_type = "normal"
         if random.random() < 0.5 and level > 1:
@@ -377,6 +395,28 @@ class Game:
                                 self.world.add_component(entity, c.FireElement())
 
         self.world.get_system(s.GridSystem).update()
+        x, y = self.world.get_system(s.GridSystem).random_free_pos()
+        self.world.add_component(self.world.tags.player, c.TilePosition(x, y))
+
+
+    def generate_level(self):
+        """Generate a level depending on how far the player got."""
+
+        if self.world.tags.player:
+            level = self.world.entity_component(self.world.tags.player, c.Level).level_num
+        else:
+            self.world.tags.player = self.world.create_entity(*entity_templates.player(0, 0))
+            level = 1
+
+        if level == 10:
+            self.generate_fly_wizard_level()
+        else:
+            self.generate_random_level(level)
+
+        if level == 1:
+            pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
+            for _ in range(3):
+                self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
 
 # MAIN
 
@@ -414,9 +454,11 @@ def main():
     game.world.add_system(s.InitiativeSystem())
 
     game.world.add_system(s.PlayerInputSystem())
+    game.world.add_system(s.AIFlyWizardSystem())
     game.world.add_system(s.AISystem())
     game.world.add_system(s.FreezingSystem())
     game.world.add_system(s.BurningSystem())
+    game.world.add_system(s.AIDodgeSystem())
     game.world.add_system(s.BumpSystem())
 
     game.world.add_system(s.ExplosionSystem())
@@ -431,8 +473,6 @@ def main():
     game.world.add_system(s.AnimationSystem())
 
     game.generate_level()
-
-    game.spawn_player()
 
     RENDERER.camera = game.camera
     UI.add_menu(ui.MainMenu(game))
