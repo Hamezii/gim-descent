@@ -4,15 +4,11 @@ GIM Descent 4
 James Lecomte
 
 To do:
-- Make enemies do different things when attacking ie. goblins explode when attacking
-
 - Maybe implement an event system, where Systems emit events which other Systems recieve
  - This one might be a bad idea though
 
 - Fix the grid cache system
  - I think this is done
-
-
 '''
 
 # VV Do this to profile VV
@@ -331,7 +327,7 @@ class Game:
             for roomx in range(0, gridwidth):
                 roomheight = random.randint(2, 6)
                 roomwidth = random.randint(2, 6)
-                if roomx + roomwidth <= gridwidth and roomy + roomheight <= gridheight and random.randint(1, max(5, 20-level)) == 1:
+                if roomx + roomwidth <= gridwidth and roomy + roomheight <= gridheight and random.randint(1, 15) == 1:
                     for y in range(0, roomheight):
                         for x in range(0, roomwidth):
                             grid[roomy+y][roomx+x] = 0
@@ -366,12 +362,25 @@ class Game:
             self.random_loot(x, y)
 
         #Spawn pool
-        spawn_pool = [*["ogre"]*3, *["snake"]*4, *["slime_large"]*1]
+        spawn_pool = [*["snake"]*4]
+        if 1 <= level <= 6:
+            spawn_pool.extend(["ogre"]*3)
+        if 1 <= level <= 6:
+            spawn_pool.extend(["snake"]*4)
+        else:
+            spawn_pool.extend(["snake"]*2)
+
+        if 1 <= level <= 5:
+            spawn_pool.extend(["slime_medium"]*1)
+        else:
+            spawn_pool.extend(["slime_large"]*1)
+
+        if level >= 7:
+            spawn_pool.extend(["bomb_goblin"]*1)
         if level >= 10:
             spawn_pool.extend(["golem"]*3)
-        if level >= 5:
+        if level >= 7:
             spawn_pool.extend(["caterkiller"]*1)
-            spawn_pool.remove("snake")
 
         for y in range(0, gridheight):
             for x in range(0, gridwidth):

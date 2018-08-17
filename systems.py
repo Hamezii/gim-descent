@@ -390,6 +390,10 @@ class BumpSystem(System):
                             self.game.camera.shake(5)
                             audio.play("punch", 0.5)
 
+                        if self.world.has_component(entity, c.Bomber):
+                            self.world.add_component(entity, c.Explode())
+                            self.world.remove_component(entity, c.Bomber)
+
                         self.world.remove_component(entity, c.MyTurn)
         for entity, _ in self.world.get_component(c.Bump):
             self.world.remove_component(entity, c.Bump)
@@ -409,6 +413,8 @@ class ExplosionSystem(System):
 
 
         for entity, explode in self.world.get_component(c.Explode):
+            if self.world.has_component(entity, c.Bomber):
+                self.world.remove_component(entity, c.Bomber)
             self.world.add_component(entity, c.Dead())
 
             iterentity = entity
@@ -426,15 +432,7 @@ class ExplosionSystem(System):
                                 continue
                             if self.world.has_component(target_entity, c.Destructible) and not self.world.has_component(target_entity, c.Health):
                                 self.world.add_component(target_entity, c.Dead())
-                            if self.world.has_component(target_entity, c.Explosive):
-                                explosive = self.world.entity_component(target_entity, c.Explosive)
-                                explosive.fuse = 1
-                                explosive.primed = True
-                                continue
-                            if self.world.has_component(target_entity, c.Item):
-                                self.world.add_component(target_entity, c.Dead())
-                            else:
-                                self.world.create_entity(c.Damage(target_entity, explode.damage))
+                            self.world.create_entity(c.Damage(target_entity, explode.damage))
 
 
                 dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, c.TilePosition))
@@ -464,13 +462,16 @@ class DamageSystem(System):
                 if damage.freeze and not self.world.has_component(damage.target, c.IceElement):
                     self.world.add_component(damage.target, c.Frozen())
 
+            if self.world.has_component(damage.target, c.Item) and not self.world.has_component(damage.target, c.Explosive):
+                self.world.add_component(damage.target, c.Dead())
+
             if self.world.has_component(damage.target, c.Explosive):
                 self.world.entity_component(damage.target, c.Explosive).primed = True
 
             if self.world.has_component(damage.target, c.AIFlyWizard):
+                self.game.teleport_entity(damage.target, 6)
                 if self.world.entity_component(damage.target, c.AIFlyWizard).state == "angry":
                     next_state = "normal"
-                    self.game.teleport_entity(damage.target, 6)
                 else:
                     next_state = "angry"
                 self.world.get_system(AIFlyWizardSystem).change_state(damage.target, next_state)
@@ -584,6 +585,12 @@ class DeadSystem(System):
                 self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
             if self.world.has_component(entity, c.TilePosition):
                 self.world.get_system(GridSystem).remove_pos(entity)
+            if self.world.has_component(entity, c.Bomber): # Dropping bomb on bomber death
+                if self.world.has_component(entity, c.TilePosition):
+                    pos = self.world.entity_component(entity, c.TilePosition)
+                    bomb = self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
+                    self.world.add_component(bomb, self.world.entity_component(entity, c.Explosive))
+                    self.world.entity_component(bomb, c.Explosive).primed = True
 
 
 

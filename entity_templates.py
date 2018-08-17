@@ -122,6 +122,22 @@ def golem(x, y):
         attack=10
     )
 
+def bomb_goblin(x, y):
+    """Bomb goblin components."""
+    return [
+        *normal_ai_creature(
+            x=x, y=y,
+            image="goblin-bomb-i",
+            diagonal=False,
+            speed=2,
+            health=10,
+            attack=0
+        ),
+        c.Bomber(),
+        c.Explosive(3)
+    ]
+
+
 def slime_small(x, y):
     """Small slime components."""
     return normal_ai_creature(
