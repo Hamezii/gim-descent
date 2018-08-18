@@ -6,6 +6,11 @@ from typing import List, Dict
 from dataclasses import dataclass, field
 
 @dataclass
+class Boss:
+    """Tags an entity as a boss, and contains a list of minions to kill if it dies."""
+    minions: List[int] = field(default_factory=list)
+
+@dataclass
 class Describable:
     """Stores the name and description of an entity."""
     name: str
@@ -157,6 +162,11 @@ class Split:
 @dataclass
 class Dead:
     """Tags an entity as dead."""
+    pass
+
+@dataclass
+class Delete:
+    """Tags an entity to be safely removed from the ECS."""
     pass
 
 @dataclass

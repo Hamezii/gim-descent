@@ -239,6 +239,7 @@ def fly_wizard(x, y):
             attack=10
         ),
         c.AIFlyWizard(),
+        c.Boss(),
         c.AIDodge()
     ]
 

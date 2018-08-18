@@ -187,11 +187,16 @@ class AIFlyWizardSystem(System):
 
     def change_state(self, entity, new_state):
         """Change the AI state of a fly wizard, updating render info."""
-        if self.world.has_component(entity, c.Dead):
+
+        if self.world.has_component(entity, c.Dead): # So it doesn't emit flies when getting hit the last time
             return
 
         ai = self.world.entity_component(entity, c.AIFlyWizard)
         render = self.world.entity_component(entity, c.Render)
+
+        if ai.state != "asleep":
+            self.game.teleport_entity(entity, 6)
+
         ai.state = new_state
 
         if ai.state == "asleep":
@@ -204,7 +209,9 @@ class AIFlyWizardSystem(System):
             for _ in range(5):
                 adjacent_pos = self.world.get_system(GridSystem).random_adjacent_free_pos((pos.x, pos.y))
                 if adjacent_pos:
-                    self.world.create_entity(*entity_templates.fly(*adjacent_pos))
+                    fly = self.world.create_entity(*entity_templates.fly(*adjacent_pos))
+                    if self.world.has_component(entity, c.Boss):
+                        self.world.entity_component(entity, c.Boss).minions.append(fly)
                     self.world.get_system(GridSystem).update()
 
         if ai.state == "angry":
@@ -469,7 +476,6 @@ class DamageSystem(System):
                 self.world.entity_component(damage.target, c.Explosive).primed = True
 
             if self.world.has_component(damage.target, c.AIFlyWizard):
-                self.game.teleport_entity(damage.target, 6)
                 if self.world.entity_component(damage.target, c.AIFlyWizard).state == "angry":
                     next_state = "normal"
                 else:
@@ -542,9 +548,6 @@ class StairsSystem(System):
 
         for _, (stair, stair_pos) in self.world.get_components(c.Stairs, c.TilePosition):
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
-
-                entities_to_remove = []
-
                 if stair.direction == "down":
                     self.world.entity_component(player, c.Level).level_num += 1
                 player_entities = [player]
@@ -553,46 +556,11 @@ class StairsSystem(System):
                         player_entities.append(entity)
                 for entity, _ in self.world.get_component(c.TilePosition):
                     if entity not in player_entities:
-                        entities_to_remove.append(entity)
+                        self.world.add_component(entity, c.Delete())
                 for entity, _ in self.world.get_component(c.Stored):
                     if entity not in player_entities:
-                        entities_to_remove.append(entity)
+                        self.world.add_component(entity, c.Delete())
                 self.game.generate_level()
-
-                for entity in entities_to_remove:
-                    self.remove_entity(entity)
-
-    def remove_entity(self, entity):
-        """TEMPORAY: A bit hacky
-
-        Remove an entity from the world when you change level.
-        """
-        self.world.delete_entity(entity)
-        if self.world.has_component(entity, c.Stored): # Removes entity from inventories
-            carrier = self.world.entity_component(entity, c.Stored).carrier
-            self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
-        if self.world.has_component(entity, c.TilePosition):
-            self.world.get_system(GridSystem).remove_pos(entity)
-
-class DeadSystem(System):
-    """Handles any entities that have been tagged as dead and queues them for deletion."""
-
-    def update(self, **args):
-        for entity, _ in self.world.get_component(c.Dead):
-            self.world.delete_entity(entity)
-            if self.world.has_component(entity, c.Stored): # Removes entity from inventories
-                carrier = self.world.entity_component(entity, c.Stored).carrier
-                self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
-            if self.world.has_component(entity, c.TilePosition):
-                self.world.get_system(GridSystem).remove_pos(entity)
-            if self.world.has_component(entity, c.Bomber): # Dropping bomb on bomber death
-                if self.world.has_component(entity, c.TilePosition):
-                    pos = self.world.entity_component(entity, c.TilePosition)
-                    bomb = self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
-                    self.world.add_component(bomb, self.world.entity_component(entity, c.Explosive))
-                    self.world.entity_component(bomb, c.Explosive).primed = True
-
-
 
 class AnimationSystem(System):
     """Updates Render components on entities with an Animation component."""
@@ -631,3 +599,36 @@ class AnimationSystem(System):
                                     len(animation.current_animation))
 
             render.imagename = animation.current_animation[animation.pos]
+
+class DeadSystem(System):
+    """Handles any entities that have been tagged as dead and queues them for deletion."""
+
+    def update(self, **args):
+        for entity, _ in self.world.get_component(c.Dead):
+            if self.world.has_component(entity, c.Bomber): # Dropping bomb on bomber death
+                if self.world.has_component(entity, c.TilePosition):
+                    pos = self.world.entity_component(entity, c.TilePosition)
+                    bomb = self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
+                    self.world.add_component(bomb, self.world.entity_component(entity, c.Explosive))
+                    self.world.entity_component(bomb, c.Explosive).primed = True
+
+            if self.world.has_component(entity, c.Boss):
+                for minion in self.world.entity_component(entity, c.Boss).minions:
+                    if self.world.has_entity(minion):
+                        self.world.add_component(minion, c.Delete())
+                if self.world.has_component(entity, c.TilePosition):
+                    pos = self.world.entity_component(entity, c.TilePosition)
+                    self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
+
+            self.world.add_component(entity, c.Delete())
+
+class DeleteSystem(System):
+    """Deletes any entities that have been tagged with a Delete component."""
+    def update(self, **args):
+        for entity, _ in self.world.get_component(c.Delete):
+            self.world.delete_entity(entity)
+            if self.world.has_component(entity, c.Stored): # Removes entity from inventories
+                carrier = self.world.entity_component(entity, c.Stored).carrier
+                self.world.entity_component(carrier, c.Inventory).contents.remove(entity)
+            if self.world.has_component(entity, c.TilePosition):
+                self.world.get_system(GridSystem).remove_pos(entity)

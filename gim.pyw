@@ -377,10 +377,11 @@ class Game:
 
         if level >= 7:
             spawn_pool.extend(["bomb_goblin"]*1)
-        if level >= 10:
-            spawn_pool.extend(["golem"]*3)
         if level >= 7:
             spawn_pool.extend(["caterkiller"]*1)
+        if level >= 10:
+            spawn_pool.extend(["golem"]*1)
+
 
         for y in range(0, gridheight):
             for x in range(0, gridwidth):
@@ -411,13 +412,12 @@ class Game:
     def generate_level(self):
         """Generate a level depending on how far the player got."""
 
-        if self.world.tags.player:
-            level = self.world.entity_component(self.world.tags.player, c.Level).level_num
-        else:
+        if not self.world.tags.player:
             self.world.tags.player = self.world.create_entity(*entity_templates.player(0, 0))
-            level = 1
 
-        if level == 15:
+        level = self.world.entity_component(self.world.tags.player, c.Level).level_num
+
+        if level == 12:
             self.generate_fly_wizard_level()
         else:
             self.generate_random_level(level)
@@ -477,9 +477,11 @@ def main():
     game.world.add_system(s.IdleSystem())
     game.world.add_system(s.SplitSystem())
     game.world.add_system(s.StairsSystem())
-    game.world.add_system(s.DeadSystem())
 
     game.world.add_system(s.AnimationSystem())
+
+    game.world.add_system(s.DeadSystem())
+    game.world.add_system(s.DeleteSystem())
 
     game.generate_level()
 
