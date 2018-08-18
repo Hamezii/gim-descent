@@ -259,13 +259,13 @@ class Game:
         """Spawn random loot at a certain position."""
         item = random.randint(1, 4)
         if item == 1:
-            self.world.create_entity(*entity_templates.potion(x, y, "red", (self.heal_entity, 20)))
+            self.world.create_entity(*entity_templates.health_potion(x, y))
 
         if item == 2:
-            self.world.create_entity(*entity_templates.potion(x, y, "green", (self.speed_entity, 8)))
+            self.world.create_entity(*entity_templates.speed_potion(x, y))
 
         if item == 3:
-            self.world.create_entity(*entity_templates.potion(x, y, "blue", (self.teleport_entity, 15)))
+            self.world.create_entity(*entity_templates.teleport_potion(x, y))
 
         if item == 4:
             self.world.create_entity(*entity_templates.bomb(x, y))
@@ -417,7 +417,7 @@ class Game:
             self.world.tags.player = self.world.create_entity(*entity_templates.player(0, 0))
             level = 1
 
-        if level == 10:
+        if level == 15:
             self.generate_fly_wizard_level()
         else:
             self.generate_random_level(level)

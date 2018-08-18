@@ -6,6 +6,12 @@ from typing import List, Dict
 from dataclasses import dataclass, field
 
 @dataclass
+class Describable:
+    """Stores the name and description of an entity."""
+    name: str
+    desc: str
+
+@dataclass
 class Bomber:
     """Tags an entity that drops a bomb on death and attacks by exploding."""
     pass

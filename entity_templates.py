@@ -9,7 +9,8 @@ import components as c
 def item_template(**args):
     """Item template."""
     return [
-        c.Render(args["render"]),
+        c.Describable(args["name"], args["desc"]),
+        c.Render(args["image"]),
         c.TilePosition(args["x"], args["y"]),
         c.Item(consumable=args["consumable"]),
     ]
@@ -48,36 +49,55 @@ def normal_ai_creature(**args):
         c.AI()
     ]
 
-def animated_creature(**args):
-    """Animated creature components."""
+def potion(**args):
+    """Potion components."""
     return [
-        *creature(
-            image=None,
-            **args
+        *item_template(
+            **args,
+            consumable=True,
+            image="potion-"+args["color"]
         ),
-        c.Animation(
-            idle=args["anim_idle"],
-            ready=args["anim_ready"]
-        )
+        c.UseEffect(args["effect"])
     ]
 
-def potion(x, y, color, effect):
-    """Potion components."""
-    components = item_template(
-        x=x,
-        y=y,
-        render="potion-"+color,
-        consumable=True
+def health_potion(x, y):
+    """Health potion components."""
+    return potion(
+        x=x, y=y,
+        name="Health potion",
+        desc="Heals target for 20 HP",
+        color="red",
+        effect=("heal_entity", 20)
     )
-    components.append(c.UseEffect(effect))
-    return components
+
+def teleport_potion(x, y):
+    """Teleport potion components."""
+    return potion(
+        x=x, y=y,
+        name="Teleport potion",
+        desc="Teleports target in a radius of 15 tiles",
+        color="blue",
+        effect=("teleport_entity", 15)
+    )
+
+def speed_potion(x, y):
+    """Teleport potion components."""
+    return potion(
+        x=x, y=y,
+        name="Speed potion",
+        desc="Gives target 8 free turns",
+        color="green",
+        effect=("speed_entity", 8)
+    )
 
 def bomb(x, y):
     """Bomb components."""
     components = item_template(
         x=x, y=y,
-        render="bomb",
-        consumable=False
+        name="Bomb",
+        desc="Explodes after a cooldown",
+        image="bomb",
+        consumable=False,
     )
     components.append(c.Explosive(3))
     return components

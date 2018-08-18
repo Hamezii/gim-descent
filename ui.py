@@ -436,14 +436,14 @@ class InventoryOptions(Menu):
                 self.menu_manager.remove_menu(self)
                 audio.play("drop", replace=True)
             if keypress == pygame.K_z:
-                self.menu_manager.remove_menu(self)
                 audio.play("snap1", replace=True)
 
                 selection = self.options[self.cursorpos]
                 if selection == "use":
+                    self.menu_manager.remove_menu(self)
                     use = self.game.world.entity_component(self.item, c.UseEffect)
                     for effect in use.effects:
-                        effect[0](self.game.world.tags.player, *effect[1:])
+                        getattr(self.game, effect[0])(self.game.world.tags.player, *effect[1:])
                     if self.game.world.entity_component(self.item, c.Item).consumable:
                         self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)
@@ -452,9 +452,11 @@ class InventoryOptions(Menu):
                     self.game.world.entity_component(self.item, c.Explosive).primed = True
 
                 if selection == "throw":
+                    self.menu_manager.remove_menu(self)
                     self.menu_manager.add_menu(ThrowOptions(self.game, self.item))
 
                 if selection == "drop":
+                    self.menu_manager.remove_menu(self)
                     self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
                     self.game.world.remove_component(self.item, c.Stored)
 
@@ -470,18 +472,24 @@ class InventoryOptions(Menu):
                 pos.move((self.pos[0]+12*constants.MENU_SCALE, pos.y))
             pygame.draw.rect(screen, (0, 0, 0), (pos.x, pos.y, 60*constants.MENU_SCALE, 12*constants.MENU_SCALE), 0)
             text_pos = (pos.x+30*constants.MENU_SCALE, pos.y + 6*constants.MENU_SCALE)
-            self.renderer.draw_text(screen, (255, 255, 255), text_pos, self.options[i], size=5 * constants.MENU_SCALE, centered=True)
+            self.renderer.draw_text(screen, constants.WHITE, text_pos, self.options[i], size=5 * constants.MENU_SCALE, centered=True)
 
         option_cursor_image = self.renderer.get_image(name="cursor", color=(
             255, 255, 255, pygame.BLEND_ADD), scale=constants.MENU_SCALE)
         option_cursor_pos = (self.pos[0], self.pos[1]+12*constants.MENU_SCALE *
                              (self.cursorpos+0.5)+(constants.TILE_SIZE*1.5+10)*constants.MENU_SCALE)
-        self.renderer.draw_centered_image(
-            screen, option_cursor_image, option_cursor_pos)
+        self.renderer.draw_centered_image(screen, option_cursor_image, option_cursor_pos)
 
         pos = (self.pos[0] + constants.TILE_SIZE * constants.MENU_SCALE * 0.75, self.pos[1] + constants.TILE_SIZE * constants.MENU_SCALE * 0.75)
         self.renderer.draw_centered_image(screen, self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE*1.5), pos)
         self.game.draw_centered_entity(screen, self.item, constants.MENU_SCALE*1.5, pos)
+
+        if self.game.world.has_component(self.item, c.Describable):
+            text_pos = (self.pos[0] + constants.TILE_SIZE * constants.MENU_SCALE * 1.6, self.pos[1])
+            describe = self.game.world.entity_component(self.item, c.Describable)
+            self.renderer.draw_text(screen, constants.WHITE, text_pos, describe.name, size=10 * constants.MENU_SCALE)
+            self.renderer.draw_text(screen, constants.WHITE, (text_pos[0], text_pos[1]+15*constants.MENU_SCALE), describe.desc, size=5 * constants.MENU_SCALE)
+
 
 
 class ThrowOptions(Menu):
@@ -544,7 +552,7 @@ class ThrowOptions(Menu):
                         if self.game.world.has_component(self.item, c.UseEffect):
                             use = self.game.world.entity_component(self.item, c.UseEffect)
                             for effect in use.effects:
-                                effect[0](target, *effect[1:])
+                                getattr(self.game, effect[0])(target, *effect[1:])
                         if self.game.world.entity_component(self.item, c.Item).consumable:
                             self.game.world.add_component(self.item, c.Dead())
 
