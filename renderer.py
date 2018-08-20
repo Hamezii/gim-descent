@@ -69,7 +69,7 @@ class Renderer:
     def draw_text(self, surface, color, pos, text, size, centered=False):
         """Draw text to a surface.
 
-        size refers to the height and width of each character in pixels.
+        size refers to the height of each character in pixels.
         """
         color = (color[0], color[1], color[2], pygame.BLEND_ADD)
         character_width = size * 0.8
@@ -83,6 +83,16 @@ class Renderer:
             else:
                 char_name = "txt-"+character
             surface.blit(self.get_image(name=char_name, scale=size*0.2, color=color), (pos[0] + i * character_width, pos[1]))
+
+    def make_text(self, color, text, size):
+        """Return a surface containing text."""
+        surface_height = size
+        surface_width = size * (len(text) * 0.8 - 0.2)
+        surface = pygame.Surface((surface_width, surface_height))
+        surface.set_colorkey(constants.COLOR_KEY)
+        surface.fill(constants.COLOR_KEY)
+        self.draw_text(surface, color, (0, 0), text, size)
+        return surface
 
     def draw_image(self, surface, image, pos):
         """Blit an image to a surface."""

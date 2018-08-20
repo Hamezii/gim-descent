@@ -47,6 +47,130 @@ class DynamicPos:
         """Get y value of vector."""
         return self.current[1]
 
+class Widget:
+    """A UI element which can be reused in the UI."""
+    def __init__(self, renderer, offset=(0, 0)):
+        self.renderer = renderer
+        self.offset = offset
+
+        self.dirty_attributes = []
+        self._surface_attributes = None
+
+        #self.redraws = 0 # Used for debugging
+
+        self._draw_surface = None
+
+    def _update_surface(self):
+        """Update the draw surface."""
+        pass
+
+    def update(self, delta):
+        """Update the widget."""
+        pass
+
+    def _is_dirty(self):
+        """Return True if the surface requires updating."""
+        current_attributes = {attr: getattr(self, attr) for attr in self.dirty_attributes}
+
+        if self._surface_attributes is None:
+            self._surface_attributes = current_attributes
+            return True
+
+        if current_attributes == self._surface_attributes:
+            return False
+
+        self._surface_attributes = current_attributes
+        return True
+
+    def draw(self, surface, pos=(0, 0)):
+        """Draw the widget to a surface."""
+        if self._is_dirty():
+            #self.redraws += 1
+            #print(self.redraws)
+            self._update_surface()
+
+
+        surface.blit(self._draw_surface, [pos[i]+self.offset[i] for i in range(2)])
+
+class MainMenuTitle(Widget):
+    """The game title."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._draw_surface = self.renderer.get_image(name="title", scale=constants.MENU_SCALE/2)
+        c_x, c_y = self._draw_surface.get_rect().center
+
+        self.offset = [constants.WIDTH//2-c_x, -c_y*2]
+        self.y_goal = constants.HEIGHT/2 - 50*constants.MENU_SCALE - 200
+        self.speed = 0
+        self.shake_x = 0
+        self.shake_y = 0
+        self.shake = 0
+        self.lastshake = 1000/60
+
+    def update(self, delta):
+        if self.offset[1] < self.y_goal:
+            self.speed += delta*0.001
+            self.offset[1] = min(self.offset[1]+self.speed*delta, self.y_goal)
+            if self.offset[1] == self.y_goal:
+                self.shake = 15*constants.MENU_SCALE
+        else:
+            if self.shake > 0:
+                self.lastshake += delta
+                while self.lastshake > 1000/60:
+                    self.lastshake -= 1000/60
+                    self.shake_x = random.uniform(-self.shake, self.shake)
+                    self.shake_y = random.uniform(-self.shake, self.shake)
+                    self.shake *= 0.9
+                    if self.shake < 1:
+                        self.shake = 0
+
+    def draw(self, surface, pos=(0, 0)):
+        super().draw(surface, (self.shake_x, self.shake_y))
+
+class ImageGrid(Widget):
+    """An image."""
+    def __init__(self, image=None, grid_size=None, **kwargs):
+        super().__init__(**kwargs)
+
+        self._image = image
+        self._grid_size = grid_size
+
+    def _update_surface(self):
+        image_rect = self._image.get_rect()
+        surface_width = image_rect.width * self._grid_size[0]
+        surface_height = image_rect.height * self._grid_size[1]
+        self._draw_surface = pygame.Surface((surface_width, surface_height))
+        for x in range(self._grid_size[0]):
+            for y in range(self._grid_size[1]):
+                self._draw_surface.blit(self._image, (image_rect.width*x, image_rect.height*y))
+
+
+class Text(Widget):
+    """A line of text."""
+    def __init__(self, size=None, color=constants.WHITE, text="", centered=False, **kwargs):
+        super().__init__(**kwargs)
+
+        self.size = size
+        self.color = color
+        self.centered = centered
+        self.text = text
+
+        self.dirty_attributes = ("size", "color", "centered", "text")
+
+    def _update_surface(self):
+        if self.centered and self._draw_surface is not None:
+            center = self._draw_surface.get_rect().center
+            self.offset = tuple(self.offset[i]+center[i] for i in range(2))
+
+        self._draw_surface = self.renderer.make_text(self.color, self.text, self.size)
+
+        if self.centered:
+            center = self._draw_surface.get_rect().center
+            for i in range(2):
+                self.offset = tuple(self.offset[i]-center[i]*0.5 for i in range(2))
+
 class MenuManager:
     """Stores all the menu instances.
 
@@ -55,6 +179,7 @@ class MenuManager:
 
     def __init__(self, renderer):
         self.renderer = renderer
+        self.game = None
 
         self.menus = []
         self.focuses = []
@@ -69,12 +194,12 @@ class MenuManager:
         for menu in self.menus:
             menu.draw(screen)
 
-    def add_menu(self, menu, focus=True):
-        """Add a menu instance.
+    def add_menu(self, menu_type, *args, focus=True):
+        """Instace and add a menu.
 
         If focus is True, focus will change to the new menu.
         """
-        menu.renderer = self.renderer
+        menu = menu_type(self.game, self.renderer, *args)
         menu.menu_manager = self
         self.menus.append(menu)
         if focus:
@@ -98,10 +223,10 @@ class MenuManager:
 class Menu:
     """A class that can be interacted with and drawn to the screen."""
 
-    def __init__(self, game):
+    def __init__(self, game, renderer):
         self.game = game
-        self.renderer = None
-        self.menu_manager = None
+        self.renderer = renderer
+        self.menu_manager = None # Set by the ManuManager after instancing
 
     def get_event(self, event):
         """React to an event.
@@ -115,65 +240,79 @@ class Menu:
         """Draw the menu."""
         raise NotImplementedError
 
+class DebugMenu(Menu):
+    """Prints debug info."""
 
-class MainMenuTitle:
-    """The game title."""
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
 
-    def __init__(self):
-        self.pos = DynamicPos((constants.WIDTH//2, -200), 0)
-        self.y_goal = constants.HEIGHT/2 - 50*constants.MENU_SCALE
-        self.speed = 0
-        self.shake_x = 0
-        self.shake_y = 0
-        self.shake = 0
-        self.lastshake = 1000/60
+        self.active = False
 
-    def update(self, delta):
-        """Update the title."""
-        if self.pos.y < self.y_goal:
-            self.speed += delta*0.001
-            self.pos.move((self.pos.x, min(self.pos.y+self.speed*delta, self.y_goal)), instant=True)
-            if self.pos.y == self.y_goal:
-                self.shake = 15*constants.MENU_SCALE
-        else:
-            if self.shake > 0:
-                self.lastshake += delta
-                while self.lastshake > 1000/60:
-                    self.lastshake -= 1000/60
-                    self.shake_x = random.uniform(-self.shake, self.shake)
-                    self.shake_y = random.uniform(-self.shake, self.shake)
-                    self.shake *= 0.9
-                    if self.shake < 1:
-                        self.shake = 0
+        self.debug_text = [
+            Text(
+                renderer=renderer,
+                size=10,
+                color=constants.RED,
+                offset=(0, 12*i),
+            ) for i in range(3)
+        ]
 
-    def draw(self, renderer, screen):
-        """Draw the title."""
-        image = renderer.get_image(name="title", scale=constants.MENU_SCALE/2)
-        renderer.draw_centered_image(screen, image, (self.pos.x+self.shake_x, self.pos.y+self.shake_y))
+    def get_event(self, event):
+        if event[0] == "input":
+            keypress = event[2]
+            if keypress == pygame.K_F12:
+                self.active = not self.active
+
+    def draw(self, screen):
+        if not self.active:
+            return
+        info = self.game.get_debug_info()
+        for i, widget in enumerate(self.debug_text):
+            widget.text = info[i]
+            widget.draw(screen)
 
 
 class MainMenu(Menu):
     """The starting menu of the game."""
 
-    def __init__(self, game):
-        super().__init__(game)
-        self.title = MainMenuTitle()
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
         self.animation_done = False
         self.title_background = None
+
+        self.title = MainMenuTitle(renderer=self.renderer)
+        self.text = None
+        self.widgets = [
+            self.title
+        ]
 
     def get_event(self, event):
         if event[0] == "update":
             delta = event[1]
-            self.title.update(delta)
+
+            for widget in self.widgets:
+                widget.update(delta)
 
             if not self.animation_done:
-                if self.title.pos.y == self.title.y_goal:
+                if self.title.offset[1] == self.title.y_goal:
                     self.animation_done = True
+                    self.text = Text(
+                        renderer=self.renderer,
+                        text="Press any key to begin",
+                        size=constants.MENU_SCALE*5,
+                        offset=(constants.WIDTH // 2, constants.HEIGHT//2),
+                        centered=True
+                    )
+                    self.widgets.append(self.text)
+
+
         if event[0] == "input" and event[1] == self:
             keypress = event[2]
             if self.animation_done:
                 if keypress:
-                    self.menu_manager.add_menu(GameMenu(self.game))
+                    self.menu_manager.add_menu(GameMenu)
+                    self.menu_manager.add_menu(HUD, focus=False)
+                    self.menu_manager.add_menu(DebugMenu, focus=False)
                     self.menu_manager.remove_menu(self)
             if keypress == pygame.K_ESCAPE:
                 leave()
@@ -191,18 +330,17 @@ class MainMenu(Menu):
 
         self.renderer.draw_image(screen, self.title_background, (0, constants.HEIGHT-self.title_background.get_height()))
 
-        if self.animation_done:
-            color = (random.randint(0, 5)*50, 122, 0)
-            pos = (constants.WIDTH // 2, constants.HEIGHT//2)
-            self.renderer.draw_text(screen, color, pos, "Press any key to begin", constants.MENU_SCALE*5, centered=True)
+        if self.text:
+            self.text.color = (random.randint(0, 5)*50, 122, 0)
 
-        self.title.draw(self.renderer, screen)
+        for widget in self.widgets:
+            widget.draw(screen)
 
 class GameMenu(Menu):
     """The main game menu. Takes player input and draws the game."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
         self._floor_cache = None
         self._zoom_cache = 0
 
@@ -216,11 +354,11 @@ class GameMenu(Menu):
             keypress = event[2]
 
             if keypress == pygame.K_ESCAPE:
-                self.menu_manager.add_menu(ExitMenu(self.game))
+                self.menu_manager.add_menu(ExitMenu)
 
             if event[1] is self:
                 if keypress == pygame.K_z:
-                    self.menu_manager.add_menu(Inventory(self.game))
+                    self.menu_manager.add_menu(Inventory)
                 if keypress in constants.DIRECTIONS:
                     self.game.world.update(playerinput=keypress, t_frame=0)
 
@@ -263,33 +401,78 @@ class GameMenu(Menu):
                         health_width = barrect.width*(health.current / health.max)
                         pygame.draw.rect(screen, self._get_health_bar_color(health), (barrect.topleft, (health_width, barrect.height)))
 
+    def _get_health_bar_color(self, health_comp):
+        """Return what color an entity's health bar should be given its health component."""
+        amount_left = health_comp.current / health_comp.max
+        if amount_left > 0.5:
+            return constants.DARK_GREEN
+        if amount_left > 0.2:
+            return constants.ORANGE
+        return constants.DARK_RED
 
-        # Drawing HUD
+class HUD(Menu):
+    """Displays information about your health, etc."""
 
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
+        health_bar_pos = constants.MENU_SCALE*8*4, constants.HEIGHT - constants.MENU_SCALE*8*5
+        health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
+        self.health_bar = pygame.Rect(health_bar_pos, health_bar_size)
+
+        self.health_text = Text(
+            renderer=self.renderer,
+            size=15*constants.MENU_SCALE,
+            offset=(self.health_bar.left + 5*constants.MENU_SCALE, self.health_bar.top - 15*constants.MENU_SCALE)
+        )
+
+        self.level_text = Text(
+            renderer=self.renderer,
+            size=10*constants.MENU_SCALE,
+            offset=(self.health_bar.x, self.health_bar.bottom + 5*constants.MENU_SCALE),
+            color=constants.LIGHT_GRAY
+        )
+
+        self.kills_text = Text(
+            renderer=self.renderer,
+            size=10*constants.MENU_SCALE,
+            offset=(self.health_bar.x, self.health_bar.bottom + 17.5*constants.MENU_SCALE),
+            color=constants.LIGHT_GRAY
+        )
+
+        self.widgets = [
+            self.health_text,
+            self.level_text,
+            self.kills_text
+        ]
+
+    def get_event(self, event):
+        pass
+
+    def draw(self, screen):
         # Health bar
         health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
         health_color = self._get_health_bar_color(health)
 
-        health_bar_pos = constants.MENU_SCALE*8*4, screen.get_rect().height - constants.MENU_SCALE*8*5
-        health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
-        health_bar = pygame.Rect(health_bar_pos, health_bar_size)
-
-        pygame.draw.rect(screen, constants.ALMOST_BLACK, health_bar.inflate(constants.MENU_SCALE*4, constants.MENU_SCALE*4))
+        pygame.draw.rect(screen, constants.ALMOST_BLACK, self.health_bar.inflate(constants.MENU_SCALE*4, constants.MENU_SCALE*4))
 
         if health.current > 0:
-            health_width = health_bar.width * (health.current / health.max)
-            pygame.draw.rect(screen, health_color, (health_bar.topleft, (health_width, health_bar.height)))
+            health_width = self.health_bar.width * (health.current / health.max)
+            pygame.draw.rect(screen, health_color, (self.health_bar.topleft, (health_width, self.health_bar.height)))
 
-        health_text_pos = (health_bar.left + 5*constants.MENU_SCALE, health_bar.top - 15*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, health_color, health_text_pos, str(health.current), 15*constants.MENU_SCALE)
 
-        level = self.game.world.entity_component(self.game.world.tags.player, c.Level).level_num
-        level_text_pos = (health_bar.x, health_bar.bottom + 5*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, constants.LIGHT_GRAY, level_text_pos, "Level " + str(level), 10*constants.MENU_SCALE)
+        # Widgets
+
+        self.health_text.color = health_color
+        self.health_text.text = str(health.current)
 
         kills = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).kills
-        kills_text_pos = (health_bar.x, health_bar.bottom + 17.5*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, constants.LIGHT_GRAY, kills_text_pos, "Kills " + str(kills), 10*constants.MENU_SCALE)
+        self.kills_text.text = "Kills " + str(kills)
+
+        level = self.game.world.entity_component(self.game.world.tags.player, c.Level).level_num
+        self.level_text.text = "Level " + str(level)
+
+        for widget in self.widgets:
+            widget.draw(screen)
 
     def _get_health_bar_color(self, health_comp):
         """Return what color an entity's health bar should be given its health component."""
@@ -303,8 +486,8 @@ class GameMenu(Menu):
 
 class ExitMenu(Menu):
     """Popup on exit."""
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
         leave()
 
     def get_event(self, event):
@@ -316,12 +499,19 @@ class ExitMenu(Menu):
 class Inventory(Menu):
     """Main inventory menu."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
         self.cursorpos = [0, 0]
         self.size = [2, 5]
         self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
         self.pos = DynamicPos((-self.slot_size*2-21, constants.HEIGHT/2-self.slot_size*3), speed=10)
+
+        self.widgets = (
+            Text(renderer=self.renderer, size=5*constants.MENU_SCALE, text="Z to select", offset=(0, - 19*constants.MENU_SCALE)),
+            Text(renderer=self.renderer, size=5*constants.MENU_SCALE, text="X to return", offset=(0, - 12*constants.MENU_SCALE)),
+            ImageGrid(renderer=self.renderer, grid_size=[2, 5], image=self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)),
+        )
+
         self.show()
 
     def show(self):
@@ -368,7 +558,7 @@ class Inventory(Menu):
                 itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
                 items = self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents
                 if itempos < len(items):
-                    self.menu_manager.add_menu(InventoryOptions(self.game, items[itempos]))
+                    self.menu_manager.add_menu(InventoryOptions, items[itempos])
 
     def draw(self, screen):
         drawposx = round(self.pos.x)
@@ -380,10 +570,8 @@ class Inventory(Menu):
 
         inventory = self.game.world.entity_component(self.game.world.tags.player, c.Inventory)
 
-        inventory_slot = self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)
-        for x in range(self.size[0]):
-            for y in range(self.size[1]):
-                screen.blit(inventory_slot, (drawposx+self.slot_size*x, drawposy+self.slot_size*y))
+        for widget in self.widgets:
+            widget.draw(screen, (drawposx, drawposy))
 
         for i, entity in enumerate(inventory.contents):
             pos = (drawposx+self.slot_size*(i//self.size[1]+0.5), drawposy+self.slot_size*(i % self.size[1]+0.5))
@@ -392,15 +580,12 @@ class Inventory(Menu):
         inv_cursor_screenpos = (drawposx + self.slot_size * self.cursorpos[0], drawposy + self.slot_size * self.cursorpos[1])
         screen.blit(self.renderer.get_image(name="inventory-cursor-box", scale=constants.MENU_SCALE), inv_cursor_screenpos)
 
-        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy - 19*constants.MENU_SCALE), "Z to select", 5*constants.MENU_SCALE)
-        self.renderer.draw_text(screen, constants.WHITE, (drawposx, drawposy - 12*constants.MENU_SCALE), "X to return", 5*constants.MENU_SCALE)
-
 
 class InventoryOptions(Menu):
     """Option menu for item selected in menu."""
 
-    def __init__(self, game, item):
-        super().__init__(game)
+    def __init__(self, game, renderer, item):
+        super().__init__(game, renderer)
         self.item = item
         self.options = []
         if self.game.world.has_component(item, c.UseEffect):
@@ -418,6 +603,15 @@ class InventoryOptions(Menu):
         self.cursorpos = 0
 
         audio.play("snap2", replace=True)
+
+        self.widgets = []
+        if self.game.world.has_component(self.item, c.Describable):
+            text_x = constants.TILE_SIZE * constants.MENU_SCALE * 1.6
+            describe = self.game.world.entity_component(self.item, c.Describable)
+            self.widgets.extend((
+                Text(renderer=self.renderer, size=10*constants.MENU_SCALE, text=describe.name, offset=(text_x, 0)),
+                Text(renderer=self.renderer, size=5*constants.MENU_SCALE, text=describe.desc, offset=(text_x, 15*constants.MENU_SCALE)),
+            ))
 
     def get_event(self, event):
         if event[0] == "update":
@@ -453,7 +647,7 @@ class InventoryOptions(Menu):
 
                 if selection == "throw":
                     self.menu_manager.remove_menu(self)
-                    self.menu_manager.add_menu(ThrowOptions(self.game, self.item))
+                    self.menu_manager.add_menu(ThrowOptions, self.item)
 
                 if selection == "drop":
                     self.menu_manager.remove_menu(self)
@@ -484,19 +678,15 @@ class InventoryOptions(Menu):
         self.renderer.draw_centered_image(screen, self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE*1.5), pos)
         self.game.draw_centered_entity(screen, self.item, constants.MENU_SCALE*1.5, pos)
 
-        if self.game.world.has_component(self.item, c.Describable):
-            text_pos = (self.pos[0] + constants.TILE_SIZE * constants.MENU_SCALE * 1.6, self.pos[1])
-            describe = self.game.world.entity_component(self.item, c.Describable)
-            self.renderer.draw_text(screen, constants.WHITE, text_pos, describe.name, size=10 * constants.MENU_SCALE)
-            self.renderer.draw_text(screen, constants.WHITE, (text_pos[0], text_pos[1]+15*constants.MENU_SCALE), describe.desc, size=5 * constants.MENU_SCALE)
-
+        for widget in self.widgets:
+            widget.draw(screen, self.pos)
 
 
 class ThrowOptions(Menu):
     """Throw direction selector once an item has been chosen to throw."""
 
-    def __init__(self, game, item):
-        super().__init__(game)
+    def __init__(self, game, renderer, item):
+        super().__init__(game, renderer)
         self.item = item
         self.dir = (0, 0)
         self.targettile = None
@@ -504,6 +694,31 @@ class ThrowOptions(Menu):
 
         self.help_pos = DynamicPos((constants.WIDTH//2, constants.HEIGHT+constants.MENU_SCALE*2.5), speed=10)
         self.help_pos.move((self.help_pos.x, constants.HEIGHT/2+constants.TILE_SIZE*constants.MENU_SCALE))
+
+        text_args = {
+            "renderer":self.renderer,
+            "size":5*constants.MENU_SCALE,
+            "centered":True
+        }
+
+        self.help_text = (
+            Text(
+                **text_args,
+                text="Pick a direction",
+                offset=(0, 0),
+                color=constants.LIGHT_GRAY
+            ),
+            Text(
+                **text_args,
+                text="Z to throw",
+                offset=(0, 7*constants.MENU_SCALE)
+            ),
+            Text(
+                **text_args,
+                text="X to cancel",
+                offset=(0, 14*constants.MENU_SCALE)
+            )
+        )
 
     def get_event(self, event):
         if event[0] == "update":
@@ -515,7 +730,7 @@ class ThrowOptions(Menu):
             keypress = event[2]
             if keypress == pygame.K_x:
                 self.menu_manager.remove_menu(self)
-                self.menu_manager.add_menu(InventoryOptions(self.game, self.item))
+                self.menu_manager.add_menu(InventoryOptions, self.item)
 
             if keypress in constants.DIRECTIONS:
                 self.dir = keypress
@@ -566,10 +781,5 @@ class ThrowOptions(Menu):
                 self.renderer.draw_centered_image(screen, self.renderer.get_image(
                     name="crosshair", scale=self.game.camera.get_scale()), self.game.camera.tile_to_screen_pos(*self.targettile))
 
-        text_size = 5*constants.MENU_SCALE
-        y_off = 0
-        self.renderer.draw_text(screen, constants.LIGHT_GRAY, (self.help_pos.x, self.help_pos.y), "Pick a direction", text_size, centered=True)
-        y_off += 7*constants.MENU_SCALE
-        self.renderer.draw_text(screen, constants.WHITE, (self.help_pos.x, self.help_pos.y + y_off), "Z to throw", text_size, centered=True)
-        y_off += 7*constants.MENU_SCALE
-        self.renderer.draw_text(screen, constants.WHITE, (self.help_pos.x, self.help_pos.y + y_off), "X to cancel", text_size, centered=True)
+        for text in self.help_text:
+            text.draw(screen, (self.help_pos.x, self.help_pos.y))

@@ -427,6 +427,16 @@ class Game:
             for _ in range(3):
                 self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
 
+    def get_debug_info(self):
+        """Return a tuple of text for debug info."""
+        fps = CLOCK.get_fps()
+        info = (
+            "FPS: " + str(int(fps)),
+            "TOTAL IMAGES: " + str(RENDERER.total_images),
+            "OBJECTS: " + str(len([*self.world.get_component(c.TilePosition)]))
+        )
+        return info
+
 # MAIN
 
 def get_input():
@@ -459,6 +469,9 @@ def main():
     """Run the game."""
     game = Game()
 
+    RENDERER.camera = game.camera
+    UI.game = game
+
     game.world.add_system(s.GridSystem())
     game.world.add_system(s.InitiativeSystem())
 
@@ -485,10 +498,7 @@ def main():
 
     game.generate_level()
 
-    RENDERER.camera = game.camera
-    UI.add_menu(ui.MainMenu(game))
-
-    debugging = False
+    UI.add_menu(ui.MainMenu)
 
     while True:
 
@@ -510,9 +520,6 @@ def main():
         if keypress == pygame.K_EQUALS:  # Zooming in
             game.camera.zoom(20)
 
-        if keypress == pygame.K_F12:
-            debugging = not debugging
-
         if keypress == pygame.K_F10: # Save
             with open("save.save", "wb") as save_file:
                 pickle.dump(game.world, save_file)
@@ -520,7 +527,6 @@ def main():
             with open("save.save", "rb") as save_file:
                 game.world = pickle.load(save_file)
                 game.world.set_game_reference(game)
-
 
         UI.send_event(("input", UI.get_focus(), keypress))
 
@@ -536,21 +542,7 @@ def main():
         UI.send_event(("update", avgms))
         UI.draw_menus(SCREEN)
 
-        if debugging:
-            print_debug_info(game)
-
         pygame.display.update()
-
-def print_debug_info(game):
-    """Show debug info in the topleft corner."""
-    fps = CLOCK.get_fps()
-    info = (
-        "FPS: " + str(int(fps)),
-        "TOTAL IMAGES: " + str(RENDERER.total_images),
-        "OBJECTS: " + str(len([*game.world.get_component(c.TilePosition)]))
-    )
-    for i, line in enumerate(info):
-        RENDERER.draw_text(SCREEN, (200, 50, 50), (0, 12*i), line, 10)
 
 
 def init_screen():
@@ -559,14 +551,14 @@ def init_screen():
         info_object = pygame.display.Info()
         width = info_object.current_w
         height = info_object.current_h
-        screen = pygame.display.set_mode(
-            (width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
     else:
         width = 1200
         height = 800
         screen = pygame.display.set_mode((width, height))
 
     return (screen, width, height)
+
 
 if __name__ == "__main__":
     CLOCK = pygame.time.Clock()

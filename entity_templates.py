@@ -75,9 +75,9 @@ def teleport_potion(x, y):
     return potion(
         x=x, y=y,
         name="Teleport potion",
-        desc="Teleports target in a radius of 15 tiles",
+        desc="Teleports target in a radius of 10 tiles",
         color="blue",
-        effect=("teleport_entity", 15)
+        effect=("teleport_entity", 10)
     )
 
 def speed_potion(x, y):
