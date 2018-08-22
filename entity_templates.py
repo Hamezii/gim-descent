@@ -150,11 +150,11 @@ def bomb_goblin(x, y):
             image="goblin-bomb-i",
             diagonal=False,
             speed=2,
-            health=10,
+            health=5,
             attack=0
         ),
         c.Bomber(),
-        c.Explosive(3)
+        c.Explosive(2)
     ]
 
 

@@ -405,10 +405,10 @@ class GameMenu(Menu):
         """Return what color an entity's health bar should be given its health component."""
         amount_left = health_comp.current / health_comp.max
         if amount_left > 0.5:
-            return constants.DARK_GREEN
+            return constants.GREEN
         if amount_left > 0.2:
             return constants.ORANGE
-        return constants.DARK_RED
+        return constants.RED
 
 class HUD(Menu):
     """Displays information about your health, etc."""
@@ -489,10 +489,10 @@ class HUD(Menu):
         """Return what color an entity's health bar should be given its health component."""
         amount_left = health_comp.current / health_comp.max
         if amount_left > 0.5:
-            return constants.DARK_GREEN
+            return constants.GREEN
         if amount_left > 0.2:
             return constants.ORANGE
-        return constants.DARK_RED
+        return constants.RED
 
 
 class ExitMenu(Menu):
