@@ -16,17 +16,18 @@ To do:
 
 import pickle
 import random
+#from functools import lru_cache
 
 import pygame
 
 import audio
+import components as c
 import constants
 import entity_templates
 import renderer
+import systems as s
 import ui
 from ecs import World
-import components as c
-import systems as s
 
 FULLSCREEN_MODE = True
 
@@ -37,7 +38,7 @@ pygame.mixer.set_num_channels(8)
 
 audio.init_cache()
 
-#random.seed(1)
+random.seed(1)
 
 
 # CLASSES
@@ -162,14 +163,16 @@ class Game:
         self.camera = Camera(speed=5)
         self.world = World(self)
 
-    def entity_image(self, entity, scale):
-        """Return the current image of an entity referred to by its id."""
-        args = {}
+    #@lru_cache()
+    def entity_draw_data(self, entity):
+        """Return a dictionary of draw data about an entity.
 
-        # Name
-        name = self.world.entity_component(entity, c.Render).imagename
-
-        # Color
+        NOT CURRENTLY IN USE
+        """
+        data = {}
+        # Image name
+        data["name"] = self.world.entity_component(entity, c.Render).imagename
+        # Color modifier
         color = [0, 0, 0]
         if self.world.has_component(entity, c.FireElement) or self.world.has_component(entity, c.Burning):
             color[0] += 100
@@ -178,32 +181,17 @@ class Game:
             color[1] += 50
             color[2] += 100
         if any(color):
-            args["color"] = (color[0], color[1], color[2], pygame.BLEND_ADD)
-
-        # Blinking
+            data["color"] = (color[0], color[1], color[2], pygame.BLEND_ADD)
+        # Blinking tag
         if entity != self.world.tags.player:
             if self.world.has_component(entity, c.Initiative):
                 entity_nextturn = self.world.entity_component(entity, c.Initiative).nextturn
                 player_nextturn = self.world.entity_component(self.world.tags.player, c.Initiative).nextturn
                 if entity_nextturn <= player_nextturn:
-                    args["blinking"] = True
-
-        # Getting image
-        img = RENDERER.get_image(name=name, scale=scale, **args)
-        return img
-
-    def draw_centered_entity(self, surface, entity, scale, pos):
-        """Draw an entity, including icons etc."""
-        entity_surface = self.entity_image(entity, scale)
-
-        RENDERER.draw_centered_image(surface, entity_surface, pos)
-
-        if self.world.has_component(entity, c.Frozen):
-            RENDERER.draw_centered_image(surface, RENDERER.get_image(name="ice-cube", scale=scale), pos)
+                    data["blinking"] = RENDERER.is_blinking()
 
         # Icons
         icons = []
-
         if self.world.has_component(entity, c.FireElement):
             icons.append(("elementFire", None))
 
@@ -219,17 +207,17 @@ class Game:
             freeturn = self.world.entity_component(entity, c.FreeTurn)
             icons.append(("free-turn", freeturn.life))
 
-        ppt = scale * constants.TILE_SIZE
-        for i, icon in enumerate(icons):
-            image_name = icon[0]
-            value = icon[1]
+        data["icons"] = tuple(icons)
 
-            icon_pos = (pos[0] + ppt*(-0.25 + i*0.2), pos[1] + ppt*0.2)
-            RENDERER.draw_centered_image(surface, RENDERER.get_image(name=image_name, scale=scale), icon_pos)
-            if value is not None:
-                text_pos = (icon_pos[0], icon_pos[1]-ppt*0.3)
-                RENDERER.draw_text(surface, constants.WHITE, text_pos, str(value), 10 * scale, centered=True)
+        data["frozen"] = self.world.has_component(entity, c.Frozen)
 
+        # Returning dictionary
+        return data
+
+    def draw_centered_entity(self, surface, entity, scale, pos):
+        """Draw an entity, including icons etc."""
+        entity_surface = RENDERER.entity_image(scale, **self.entity_draw_data(entity))
+        RENDERER.draw_centered_image(surface, entity_surface, pos)
 
     def teleport_entity(self, entity, amount):
         """Teleport an entity to a random position in a specific radius."""

@@ -30,6 +30,13 @@ class Renderer:
 
         self.t_elapsed = 0
 
+    def is_blinking(self):
+        """Return True if blinking images should be lit up at the moment."""
+        if self.t_elapsed % self.BLINK_RATE < self.BLINK_RATE/2:
+            return True
+        return False
+
+
     @lru_cache(maxsize=None)
     def get_image(self, **args):
         """Get an image. Optional modifier parameters like scale and color can be used.
@@ -38,12 +45,6 @@ class Renderer:
         """
         if "scale" not in args:
             args["scale"] = 1
-
-        if "blinking" in args:
-            if args["blinking"] and self.t_elapsed % self.BLINK_RATE < self.BLINK_RATE/2:
-                args["blinking"] = True
-            else:
-                del args["blinking"]
 
         self.total_images += 1
         image = _import_image(args["name"]).copy()
@@ -79,13 +80,16 @@ class Renderer:
 
     def make_text(self, color, text, size):
         """Return a surface containing text."""
-        surface_height = size
-        surface_width = size * (len(text) * 0.8 - 0.2)
-        surface = pygame.Surface((surface_width, surface_height))
+        surface = pygame.Surface(self.text_rect(text, size).size)
         surface.set_colorkey(constants.COLOR_KEY)
         surface.fill(constants.COLOR_KEY)
         self.draw_text(surface, color, (0, 0), text, size)
         return surface
+
+    def text_rect(self, text, size, pos=(0, 0)):
+        """Return the rect that text would occupy if drawn."""
+        rect = pygame.Rect(pos, (size * (len(text) * 0.8 - 0.2), size))
+        return rect
 
     def draw_image(self, surface, image, pos):
         """Blit an image to a surface."""
@@ -94,3 +98,80 @@ class Renderer:
     def draw_centered_image(self, surface, image, centerpos):
         """Blit an image to a surface, centering it at centerpos."""
         surface.blit(image, (centerpos[0] - image.get_width()//2, centerpos[1] - image.get_height()//2))
+
+    @lru_cache(maxsize=None)
+    def icon_image(self, icons, scale):
+        """Return an icons surface."""
+        images = []
+
+        for i, icon in enumerate(icons):
+            image_name = icon[0]
+            images.append(self.get_image(name=image_name, scale=scale))
+
+        tile_size = scale * constants.TILE_SIZE
+        rects = []
+        text_rects = []
+        for i, image in enumerate(images):
+            pos = (tile_size*(i*0.2), 0)
+            rects.append(image.get_rect(center=pos))
+
+            if icons[i][1]:
+                text_pos = (pos[0], pos[1]-tile_size*0.3)
+                text_rect = self.text_rect(str(icons[i][1]), scale*10)
+                text_rect.center = text_pos
+                text_rects.append(text_rect)
+            else:
+                text_rects.append(pygame.Rect(0, 0, 0, 0))
+
+        surface_rect = pygame.Rect(0, 0, 0, 0).unionall(rects)
+        surface_rect.unionall_ip(text_rects)
+        x, y = surface_rect.topleft
+
+        surface = pygame.Surface(surface_rect.size)
+        surface.set_colorkey(constants.COLOR_KEY)
+        surface.fill(constants.COLOR_KEY)
+
+        for i, image in enumerate(images):
+            rects[i].move_ip(-x, -y)
+            #pygame.draw.rect(surface, constants.BLACK, rects[i])
+            surface.blit(image, rects[i])
+
+            if icons[i][1]:
+                text_rects[i].move_ip(-x, -y)
+                #pygame.draw.rect(surface, constants.BLACK, text_rects[i])
+                self.draw_text(surface, constants.WHITE, text_rects[i], str(icons[i][1]), 10 * scale)
+
+        return surface
+
+    @lru_cache(maxsize=None)
+    def entity_image(self, scale, **draw_data):
+        """Return an entity image and center given draw data."""
+        images = []
+        rects = []
+
+        # Entity image
+        images.append(self.get_image(scale=scale, **draw_data))
+        rects.append(images[0].get_rect())
+        center = rects[0].center
+
+        tile_size = scale * constants.TILE_SIZE
+
+        # Icon images
+        if draw_data["icons"]:
+            images.append(self.icon_image(draw_data["icons"], scale))
+            rects.append(images[-1].get_rect(left=center[0]-tile_size*0.4, bottom=center[1]+0.4*tile_size))
+
+        # Frozen ice cube
+        if draw_data["frozen"]:
+            images.append(self.get_image(name="ice-cube", scale=scale))
+            rects.append(images[-1].get_rect(center=center))
+
+        surface_rect = pygame.Rect(center, (0, 0)).unionall(rects)
+
+        surface = pygame.Surface(surface_rect.size, pygame.SRCALPHA)
+
+        x, y = surface_rect.topleft
+        for i, image in enumerate(images):
+            surface.blit(image, rects[i].move(-x, -y))
+
+        return surface
