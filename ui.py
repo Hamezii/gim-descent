@@ -419,6 +419,11 @@ class HUD(Menu):
         health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
         self.health_bar = pygame.Rect(health_bar_pos, health_bar_size)
 
+        self.max_health_text = Text(
+            renderer=self.renderer,
+            size=15*constants.MENU_SCALE
+        )
+
         self.health_text = Text(
             renderer=self.renderer,
             size=15*constants.MENU_SCALE,
@@ -440,6 +445,7 @@ class HUD(Menu):
         )
 
         self.widgets = [
+            self.max_health_text,
             self.health_text,
             self.level_text,
             self.kills_text
@@ -460,10 +466,15 @@ class HUD(Menu):
             pygame.draw.rect(screen, health_color, (self.health_bar.topleft, (health_width, self.health_bar.height)))
 
 
+
         # Widgets
 
-        self.health_text.color = health_color
+        self.health_text.color = self.max_health_text.color = health_color
         self.health_text.text = str(health.current)
+
+        self.max_health_text.text = "/"+str(health.max)
+        text_len = len(self.max_health_text.text)
+        self.max_health_text.offset = (self.health_bar.right + (1 - text_len*4)*3*constants.MENU_SCALE, self.health_bar.top - 15*constants.MENU_SCALE)
 
         kills = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).kills
         self.kills_text.text = "Kills " + str(kills)

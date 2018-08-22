@@ -1,6 +1,6 @@
 """Entity Component System."""
 
-from functools import lru_cache as _lru_cache
+from functools import lru_cache
 
 class TagManager:
     """Stores tags about the world."""
@@ -260,14 +260,14 @@ class World:
         except KeyError:
             pass
 
-    @_lru_cache()
+    @lru_cache()
     def get_component(self, component_type):
-        """Cache."""
+        """Get a list for Entity, Component pairs."""
         return [query for query in self._get_component(component_type)]
 
-    @_lru_cache()
+    @lru_cache()
     def get_components(self, *component_types):
-        """Cache."""
+        """Get a list for Entity and multiple Component sets."""
         return [query for query in self._get_components(*component_types)]
 
     def try_component(self, entity, component_type):
