@@ -281,7 +281,10 @@ class MainMenu(Menu):
         self.title_background = None
 
         self.title = MainMenuTitle(renderer=self.renderer)
-        self.text = None
+        self.options = ("New game", "Load game")
+
+        self.cursor_pos = 0
+
         self.widgets = [
             self.title
         ]
@@ -296,24 +299,41 @@ class MainMenu(Menu):
             if not self.animation_done:
                 if self.title.offset[1] == self.title.y_goal:
                     self.animation_done = True
-                    self.text = Text(
-                        renderer=self.renderer,
-                        text="Press any key to begin",
-                        size=constants.MENU_SCALE*5,
-                        offset=(constants.WIDTH // 2, constants.HEIGHT//2),
-                        centered=True
-                    )
-                    self.widgets.append(self.text)
+                    y = constants.HEIGHT//2
+                    for option in self.options:
+                        self.widgets.append(
+                            Text(
+                                renderer=self.renderer,
+                                text=option,
+                                size=constants.MENU_SCALE*5,
+                                offset=(constants.WIDTH // 2, y),
+                                centered=True
+                            )
+                        )
+                        y += constants.MENU_SCALE * 8
 
 
         if event[0] == "input" and event[1] == self:
             keypress = event[2]
             if self.animation_done:
-                if keypress:
+
+                if keypress == constants.DOWN:
+                    self.cursor_pos = min(1, self.cursor_pos + 1)
+
+                if keypress == constants.UP:
+                    self.cursor_pos = max(0, self.cursor_pos - 1)
+
+                if keypress in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_z):
                     self.menu_manager.add_menu(GameMenu)
                     self.menu_manager.add_menu(HUD, focus=False)
                     self.menu_manager.add_menu(DebugMenu, focus=False)
                     self.menu_manager.remove_menu(self)
+                    if self.options[self.cursor_pos] == "New game":
+                        self.game.new_game()
+                        self.menu_manager.add_menu(CharacterSelect)
+                    if self.options[self.cursor_pos] == "Load game":
+                        self.game.load_game()
+
             if keypress == pygame.K_ESCAPE:
                 leave()
 
@@ -328,10 +348,58 @@ class MainMenu(Menu):
                 size = (int(constants.HEIGHT/1080*1920), constants.HEIGHT)
             self.title_background = pygame.transform.scale(self.renderer.get_image(name="title_background"), size)
 
-        self.renderer.draw_image(screen, self.title_background, (0, constants.HEIGHT-self.title_background.get_height()))
+        screen.blit(self.title_background, (0, constants.HEIGHT-self.title_background.get_height()))
 
-        if self.text:
-            self.text.color = (random.randint(0, 5)*50, 122, 0)
+        if self.animation_done:
+            pos = (constants.WIDTH/2 - constants.MENU_SCALE * 50, constants.HEIGHT/2 + constants.MENU_SCALE*8*self.cursor_pos)
+            color = (*constants.WHITE, pygame.BLEND_ADD)
+            self.renderer.draw_centered_image(screen, self.renderer.get_image(name="cursor", color=color, scale=constants.MENU_SCALE), pos)
+
+
+        for widget in self.widgets:
+            widget.draw(screen)
+
+class CharacterSelect(Menu):
+    """Allows you to choose who you play as. Opens at new game."""
+    characters = ("magnum", "edward", "sentinel")
+    num_characters = 3
+    def __init__(self, game, renderer):
+        super().__init__(game, renderer)
+        self.cursor_pos = 0
+        self.widgets = [
+            Text(
+                renderer=self.renderer,
+                text="Choose your character",
+                size=constants.MENU_SCALE * 15,
+                offset=(constants.WIDTH / 2, constants.MENU_SCALE * 100),
+                centered=True
+            )
+        ]
+
+    def get_event(self, event):
+        if event[0] == "input" and event[1] is self:
+            keypress = event[2]
+
+            if keypress == constants.RIGHT:
+                self.cursor_pos = min(self.cursor_pos+1, 2)
+
+            if keypress == constants.LEFT:
+                self.cursor_pos = max(self.cursor_pos-1, 0)
+
+            if keypress == pygame.K_z:
+                self.game.world.entity_component(self.game.world.tags.player, c.Render).imagename = self.characters[self.cursor_pos]
+                self.menu_manager.remove_menu(self)
+
+    def draw(self, screen):
+        screen.fill(constants.ALMOST_BLACK)
+        cursor_image = self.renderer.get_image(name="inventory-cursor-box", scale=constants.MENU_SCALE)
+
+        for i, character in enumerate(self.characters):
+            spacing = constants.MENU_SCALE* constants.TILE_SIZE * 2
+            x = constants.WIDTH/2 + spacing*(i - (self.num_characters-1)/2)
+            self.renderer.draw_centered_image(screen, self.renderer.get_image(name=character, scale=constants.MENU_SCALE), (x, constants.HEIGHT/2))
+            if self.cursor_pos == i:
+                self.renderer.draw_centered_image(screen, cursor_image, (x, constants.HEIGHT/2))
 
         for widget in self.widgets:
             widget.draw(screen)

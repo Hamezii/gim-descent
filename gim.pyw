@@ -4,6 +4,8 @@ GIM Descent 4
 James Lecomte
 
 To do:
+- Clean up ui code
+
 - Maybe implement an event system, where Systems emit events which other Systems recieve
  - This one might be a bad idea though
 
@@ -38,7 +40,7 @@ pygame.mixer.set_num_channels(8)
 
 audio.init_cache()
 
-random.seed(1)
+#random.seed(1)
 
 
 # CLASSES
@@ -161,7 +163,7 @@ class Game:
 
     def __init__(self):
         self.camera = Camera(speed=5)
-        self.world = World(self)
+        self.world = None
 
     #@lru_cache()
     def entity_draw_data(self, entity):
@@ -425,6 +427,41 @@ class Game:
         )
         return info
 
+    def load_game(self):
+        """Load the game from where it was last saved."""
+        with open("save.save", "rb") as save_file:
+            self.world = pickle.load(save_file)
+            self.world.set_game_reference(self)
+
+    def new_game(self):
+        """Initialise for a new game."""
+        self.world = World(self)
+        self.world.add_system(s.GridSystem())
+        self.world.add_system(s.InitiativeSystem())
+
+        self.world.add_system(s.PlayerInputSystem())
+        self.world.add_system(s.AIFlyWizardSystem())
+        self.world.add_system(s.AISystem())
+        self.world.add_system(s.FreezingSystem())
+        self.world.add_system(s.BurningSystem())
+        self.world.add_system(s.AIDodgeSystem())
+        self.world.add_system(s.BumpSystem())
+
+        self.world.add_system(s.ExplosionSystem())
+        self.world.add_system(s.DamageSystem())
+        self.world.add_system(s.RegenSystem())
+        self.world.add_system(s.PickupSystem())
+        self.world.add_system(s.IdleSystem())
+        self.world.add_system(s.SplitSystem())
+        self.world.add_system(s.StairsSystem())
+
+        self.world.add_system(s.AnimationSystem())
+
+        self.world.add_system(s.DeadSystem())
+        self.world.add_system(s.DeleteSystem())
+
+        self.generate_level()
+
 # MAIN
 
 def get_input():
@@ -460,31 +497,7 @@ def main():
     RENDERER.camera = game.camera
     UI.game = game
 
-    game.world.add_system(s.GridSystem())
-    game.world.add_system(s.InitiativeSystem())
-
-    game.world.add_system(s.PlayerInputSystem())
-    game.world.add_system(s.AIFlyWizardSystem())
-    game.world.add_system(s.AISystem())
-    game.world.add_system(s.FreezingSystem())
-    game.world.add_system(s.BurningSystem())
-    game.world.add_system(s.AIDodgeSystem())
-    game.world.add_system(s.BumpSystem())
-
-    game.world.add_system(s.ExplosionSystem())
-    game.world.add_system(s.DamageSystem())
-    game.world.add_system(s.RegenSystem())
-    game.world.add_system(s.PickupSystem())
-    game.world.add_system(s.IdleSystem())
-    game.world.add_system(s.SplitSystem())
-    game.world.add_system(s.StairsSystem())
-
-    game.world.add_system(s.AnimationSystem())
-
-    game.world.add_system(s.DeadSystem())
-    game.world.add_system(s.DeleteSystem())
-
-    game.generate_level()
+    #game.new_game()
 
     UI.add_menu(ui.MainMenu)
 
@@ -512,15 +525,13 @@ def main():
             with open("save.save", "wb") as save_file:
                 pickle.dump(game.world, save_file)
         if keypress == pygame.K_F11: # Load
-            with open("save.save", "rb") as save_file:
-                game.world = pickle.load(save_file)
-                game.world.set_game_reference(game)
+            game.load_game()
 
         UI.send_event(("input", UI.get_focus(), keypress))
 
         done = False
         t_frame = delta
-        while not done:
+        while not done and game.world:
             game.world.update(playerinput=None, t_frame=t_frame)
             t_frame = 0
             if game.world.has_component(game.world.tags.player, c.MyTurn):

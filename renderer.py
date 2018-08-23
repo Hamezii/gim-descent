@@ -100,7 +100,7 @@ class Renderer:
         surface.blit(image, (centerpos[0] - image.get_width()//2, centerpos[1] - image.get_height()//2))
 
     @lru_cache(maxsize=None)
-    def icon_image(self, icons, scale):
+    def _icon_image(self, icons, scale):
         """Return an icons surface."""
         images = []
 
@@ -145,7 +145,7 @@ class Renderer:
 
     @lru_cache(maxsize=None)
     def entity_image(self, scale, **draw_data):
-        """Return an entity image and center given draw data."""
+        """Return an entity surface given draw data."""
         images = []
         rects = []
 
@@ -158,7 +158,7 @@ class Renderer:
 
         # Icon images
         if draw_data["icons"]:
-            images.append(self.icon_image(draw_data["icons"], scale))
+            images.append(self._icon_image(draw_data["icons"], scale))
             rects.append(images[-1].get_rect(left=center[0]-tile_size*0.4, bottom=center[1]+0.4*tile_size))
 
         # Frozen ice cube
