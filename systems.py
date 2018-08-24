@@ -102,7 +102,7 @@ class GridSystem(System):
             self.blocker_grid[cache_x][cache_y] = 0
         del self._cached_pos[entity]
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, pos in self.world.get_component(c.TilePosition):
             if not entity in self._cached_pos:
                 self._cached_pos[entity] = (pos.x, pos.y)
@@ -135,7 +135,7 @@ class InitiativeSystem(System):
         super().__init__()
         self.tick = False
 
-    def update(self, **args):
+    def process(self, **args):
 
         self.tick = True
         try:
@@ -173,7 +173,7 @@ class InitiativeSystem(System):
 class PlayerInputSystem(System):
     """Interprets input from the player, applying it to all entities with a PlayerInput component."""
 
-    def update(self, **args):
+    def process(self, **args):
         playerinput = args["playerinput"]
         if playerinput in constants.DIRECTIONS:
             for entity, _ in self.world.get_components(c.PlayerInput, c.MyTurn):
@@ -212,14 +212,14 @@ class AIFlyWizardSystem(System):
                     fly = self.world.create_entity(*entity_templates.fly(*adjacent_pos))
                     if self.world.has_component(entity, c.Boss):
                         self.world.entity_component(entity, c.Boss).minions.append(fly)
-                    self.world.get_system(GridSystem).update()
+                    self.world.get_system(GridSystem).process()
 
         if ai.state == "angry":
             self.world.add_component(entity, c.Initiative(1))
             render.imagename = "fly-wizard-r"
 
 
-    def update(self, **args):
+    def process(self, **args):
         player_pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
         for entity, (ai, pos) in self.world.get_components(c.AIFlyWizard, c.TilePosition):
             if ai.state == "asleep":
@@ -233,7 +233,7 @@ class AIFlyWizardSystem(System):
 class AISystem(System):
     """Lets all AI controlled entities decide what action to make."""
 
-    def update(self, **args):
+    def process(self, **args):
         grid = self.world.get_system(GridSystem)
 
         for entity, (movement, pos, ai, _) in self.world.get_components(c.Movement, c.TilePosition, c.AI, c.MyTurn):
@@ -319,7 +319,7 @@ class AISystem(System):
 class FreezingSystem(System):
     """Cancels the action of frozen entities attempting to move, defreezing them instead."""
 
-    def update(self, **args):
+    def process(self, **args):
 
         try:
             for entity, _ in self.world.get_components(c.Frozen, c.MyTurn, c.Bump):
@@ -332,7 +332,7 @@ class FreezingSystem(System):
 class BurningSystem(System):
     """Damages burning players, with the fire dying after a certain amount of time."""
 
-    def update(self, **args):
+    def process(self, **args):
 
         if not self.world.get_system(InitiativeSystem).tick:
             return
@@ -348,7 +348,7 @@ class BurningSystem(System):
 
 class AIDodgeSystem(System):
     """Carries out dodges when an entity moves onto the same tile."""
-    def update(self, **args):
+    def process(self, **args):
         for entity, (pos, initiative, _) in self.world.get_components(c.TilePosition, c.Initiative, c.AIDodge):
             if initiative.nextturn > 1:
                 continue
@@ -363,7 +363,7 @@ class AIDodgeSystem(System):
 class BumpSystem(System):
     """Carries out bump actions, then deletes the Bump components."""
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, (pos, bump, _) in self.world.get_components(c.TilePosition, c.Bump, c.MyTurn):
 
             bumppos = (pos.x + bump.x, pos.y + bump.y)
@@ -409,7 +409,7 @@ class BumpSystem(System):
 class ExplosionSystem(System):
     """Manages explosives and makes anything with an Explode component explode."""
 
-    def update(self, **args):
+    def process(self, **args):
 
         if self.world.get_system(InitiativeSystem).tick:
             for entity, explosive in self.world.get_component(c.Explosive):
@@ -450,7 +450,7 @@ class ExplosionSystem(System):
 class DamageSystem(System):
     """Manages damage events, applying the damage and then deleting the message entity."""
 
-    def update(self, **args):
+    def process(self, **args):
         for message_entity, damage in self.world.get_component(c.Damage):
             if self.world.has_component(damage.target, c.Health):
                 targethealth = self.world.entity_component(damage.target, c.Health)
@@ -486,7 +486,7 @@ class DamageSystem(System):
 
 class RegenSystem(System):
     """Heals creatures with a Regen component when they are injured."""
-    def update(self, **args):
+    def process(self, **args):
         if self.world.get_system(InitiativeSystem).tick:
             for entity, regen in self.world.get_component(c.Regen):
                 if self.world.has_component(entity, c.Health):
@@ -498,7 +498,7 @@ class RegenSystem(System):
 class PickupSystem(System):
     """Allows carrier entities to pick up entities with a Pickup component as long it is not their turn."""
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, (pos, inventory) in self.world.get_components(c.TilePosition, c.Inventory):
             if not self.world.has_component(entity, c.MyTurn):
 
@@ -513,7 +513,7 @@ class PickupSystem(System):
 class IdleSystem(System):
     """Makes AI controlled entities idle for a turn if no action was taken."""
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, _ in self.world.get_component(c.MyTurn):
             if entity == self.world.tags.player:
                 continue
@@ -524,7 +524,7 @@ class IdleSystem(System):
 class SplitSystem(System):
     """Handles splitting entities when they are killed."""
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, (split, _) in self.world.get_components(c.Split, c.Dead):
             if self.world.has_component(entity, c.TilePosition):
                 pos = self.world.entity_component(entity, c.TilePosition)
@@ -532,7 +532,7 @@ class SplitSystem(System):
                     spawn_pos = self.world.get_system(GridSystem).random_adjacent_free_pos((pos.x, pos.y))
                     if spawn_pos:
                         new_entity = self.world.create_entity(*template(*spawn_pos))
-                        self.world.get_system(GridSystem).update()
+                        self.world.get_system(GridSystem).process()
                         if self.world.has_component(entity, c.IceElement):
                             self.world.add_component(new_entity, c.IceElement())
                         if self.world.has_component(entity, c.FireElement):
@@ -541,7 +541,7 @@ class SplitSystem(System):
 class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
 
-    def update(self, **args):
+    def process(self, **args):
         player = self.world.tags.player
         player_pos = self.world.entity_component(player, c.TilePosition)
 
@@ -572,7 +572,7 @@ class AnimationSystem(System):
         super().__init__()
         self.t_last_frame = 0
 
-    def update(self, **args):
+    def process(self, **args):
 
         self.t_last_frame += args["t_frame"]
 
@@ -604,7 +604,7 @@ class AnimationSystem(System):
 class DeadSystem(System):
     """Handles any entities that have been tagged as dead and queues them for deletion."""
 
-    def update(self, **args):
+    def process(self, **args):
         for entity, _ in self.world.get_component(c.Dead):
             if self.world.has_component(entity, c.Bomber): # Dropping bomb on bomber death
                 if self.world.has_component(entity, c.TilePosition):
@@ -625,7 +625,7 @@ class DeadSystem(System):
 
 class DeleteSystem(System):
     """Deletes any entities that have been tagged with a Delete component."""
-    def update(self, **args):
+    def process(self, **args):
         for entity, _ in self.world.get_component(c.Delete):
             self.world.delete_entity(entity)
             if self.world.has_component(entity, c.Stored): # Removes entity from inventories

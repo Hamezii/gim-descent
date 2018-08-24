@@ -428,7 +428,7 @@ class GameMenu(Menu):
                 if keypress == pygame.K_z:
                     self.menu_manager.add_menu(Inventory)
                 if keypress in constants.DIRECTIONS:
-                    self.game.world.update(playerinput=keypress, t_frame=0)
+                    self.game.world.process(playerinput=keypress, t_frame=0)
 
     def draw(self, screen):
         camerarect = self.game.camera.get_rect()

@@ -394,7 +394,7 @@ class Game:
                             if level_type == "fire":
                                 self.world.add_component(entity, c.FireElement())
 
-        self.world.get_system(s.GridSystem).update()
+        self.world.get_system(s.GridSystem).process()
         x, y = self.world.get_system(s.GridSystem).random_free_pos()
         self.world.add_component(self.world.tags.player, c.TilePosition(x, y))
 
@@ -533,13 +533,14 @@ def main():
 
         UI.send_event(("input", UI.get_focus(), keypress))
 
-        done = False
-        t_frame = delta
-        while not done and game.world:
-            game.world.update(playerinput=None, t_frame=t_frame)
-            t_frame = 0
-            if game.world.has_component(game.world.tags.player, c.MyTurn):
-                done = True
+        if game.world:    # Processing ecs
+            done = False
+            t_frame = delta
+            while not done:
+                game.world.process(playerinput=None, t_frame=t_frame)
+                t_frame = 0
+                if game.world.has_component(game.world.tags.player, c.MyTurn):
+                    done = True
 
         RENDERER.t_elapsed += delta
         UI.send_event(("update", avgms))

@@ -14,7 +14,7 @@ class System:
         self.world: World
         self.game = None
 
-    def update(self, **args):
+    def process(self, **args):
         """Run a tick of the system."""
         raise NotImplementedError
 
@@ -307,11 +307,11 @@ class World:
         self._dead_entities.clear()
         self.clear_cache()
 
-    def _update(self, *args, **kwargs):
+    def _process(self, *args, **kwargs):
         for system in self._systems:
-            system.update(*args, **kwargs)
+            system.process(*args, **kwargs)
 
-    def update(self, *args, **kwargs):
+    def process(self, *args, **kwargs):
         """Call the process method on all Systems, in order of their priority.
 
         Call the *process* method on all assigned Systems, respecting their
@@ -322,5 +322,5 @@ class World:
         :param args: Optional arguments that will be passed through to the
         *process* method of all Systems.
         """
-        self._update(*args, **kwargs)
+        self._process(*args, **kwargs)
         self._clear_dead_entities()
