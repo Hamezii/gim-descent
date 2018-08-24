@@ -427,6 +427,11 @@ class Game:
         )
         return info
 
+    def save_game(self):
+        """Save the game state."""
+        with open("save.save", "wb") as save_file:
+            pickle.dump(self.world, save_file)
+
     def load_game(self):
         """Load the game from where it was last saved."""
         with open("save.save", "rb") as save_file:
@@ -522,8 +527,7 @@ def main():
             game.camera.zoom(20)
 
         if keypress == pygame.K_F10: # Save
-            with open("save.save", "wb") as save_file:
-                pickle.dump(game.world, save_file)
+            game.save_game()
         if keypress == pygame.K_F11: # Load
             game.load_game()
 

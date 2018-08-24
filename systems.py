@@ -561,6 +561,7 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
                 self.game.generate_level()
+                self.game.save_game()
 
 class AnimationSystem(System):
     """Updates Render components on entities with an Animation component."""
