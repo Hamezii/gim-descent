@@ -13,6 +13,7 @@ class System:
     def __init__(self):
         self.world: World
         self.game = None
+        self.priority = 0
 
     def process(self, **args):
         """Run a tick of the system."""
@@ -317,7 +318,7 @@ class World:
         Call the *process* method on all assigned Systems, respecting their
         optional priority setting. In addition, any Entities that were marked
         for deletion since the last call to *World.process*, will be deleted
-        at the start of this method call.
+        at the end of this method call.
 
         :param args: Optional arguments that will be passed through to the
         *process* method of all Systems.

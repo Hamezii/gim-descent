@@ -137,13 +137,14 @@ class Camera:
         rect = self.get_rect()
         return (pixelpos[0] - rect.x, pixelpos[1] - rect.y)
 
-    def update(self, t_frame, pos):
+    def update(self, t_frame, pos=None):
         """Update shake amount and move towards target position."""
-        if self.start:
-            self.start = False
-            self.set(pos, direct=True)
-        else:
-            self.set(pos)
+        if pos is not None:
+            if self.start:
+                self.start = False
+                self.set(pos, direct=True)
+            else:
+                self.set(pos)
 
         self._pos.update(t_frame)
 
@@ -167,10 +168,7 @@ class Game:
 
     #@lru_cache()
     def entity_draw_data(self, entity):
-        """Return a dictionary of draw data about an entity.
-
-        NOT CURRENTLY IN USE
-        """
+        """Return a dictionary of draw data about an entity."""
         data = {}
         # Image name
         data["name"] = self.world.entity_component(entity, c.Render).imagename
@@ -475,7 +473,7 @@ def get_input():
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pass # You can make this quit if you want
+            ui.leave()
 
         if event.type == pygame.KEYDOWN:
             keypress = event.key

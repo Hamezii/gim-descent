@@ -75,7 +75,7 @@ class Renderer:
             if character in self.SPECIAL_CHARS:
                 char_name = "txt_"+self.SPECIAL_CHARS[character]
             else:
-                char_name = "txt-"+character
+                char_name = "txt-"+character.lower()
             surface.blit(self.get_image(name=char_name, scale=size*0.2, color=color), (pos[0] + i * character_width, pos[1]))
 
     def make_text(self, color, text, size):

@@ -15,6 +15,7 @@ from systems import GridSystem
 
 def leave():
     """Close the game."""
+    pygame.quit()
     sys.exit(0)
 
 class DynamicPos:
