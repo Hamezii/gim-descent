@@ -529,7 +529,7 @@ def main():
             t_frame = delta
             game.world.process(playerinput=None, t_frame=t_frame)
 
-            while game.world.get_system(s.InitiativeSystem).tick: # Waiting for input
+            while not game.world.has_component(game.world.tags.player, c.MyTurn): # Waiting for input
                 game.world.process(playerinput=None, t_frame=0)
 
         RENDERER.t_elapsed += delta
