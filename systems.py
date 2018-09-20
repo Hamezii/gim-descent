@@ -560,19 +560,24 @@ class StairsSystem(System):
 
 
         for _, (stair, stair_pos) in self.world.get_components(c.Stairs, c.TilePosition):
-            if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y:
+            if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y: # If player on stairs
                 if stair.direction == "down":
                     self.world.entity_component(player, c.Level).level_num += 1
+
+                # Get all entities relating to the player
                 player_entities = [player]
                 if self.world.has_component(player, c.Inventory):
                     for entity in self.world.entity_component(player, c.Inventory).contents:
                         player_entities.append(entity)
+                # Delete all stored entities and entities with a position not relating to the player
                 for entity, _ in self.world.get_component(c.TilePosition):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
                 for entity, _ in self.world.get_component(c.Stored):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
+
+                self.game.camera.start = True # Makes the camera go directly to the player on the next update
                 self.game.generate_level()
                 self.game.save_game()
 
@@ -624,7 +629,7 @@ class DeadSystem(System):
                     self.world.add_component(bomb, self.world.entity_component(entity, c.Explosive))
                     self.world.entity_component(bomb, c.Explosive).primed = True
 
-            if self.world.has_component(entity, c.Boss):
+            if self.world.has_component(entity, c.Boss): # Killing minions and adding stairs on boss death
                 for minion in self.world.entity_component(entity, c.Boss).minions:
                     if self.world.has_entity(minion):
                         self.world.add_component(minion, c.Delete())
