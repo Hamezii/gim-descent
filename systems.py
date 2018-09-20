@@ -144,7 +144,13 @@ class InitiativeSystem(System):
         except KeyError:
             pass
 
-        for entity, freeturn in self.world.get_component(c.FreeTurn):
+        for entity, (initiative, render) in self.world.get_components(c.Initiative, c.Render):  # Activate blinking
+            if entity != self.world.tags.player:
+                entity_nextturn = self.world.entity_component(entity, c.Initiative).nextturn
+                player_nextturn = 1 #self.world.entity_component(self.world.tags.player, c.Initiative).nextturn
+                render.blinking = entity_nextturn <= player_nextturn
+
+        for entity, freeturn in self.world.get_component(c.FreeTurn):   # Free turn stuff
             if self.world.has_component(entity, c.Initiative):
                 if self.tick:
                     freeturn.life -= 1
@@ -161,7 +167,7 @@ class InitiativeSystem(System):
                 self.world.remove_component(entity, c.FreeTurn)
             return
 
-        for entity, initiative in self.world.get_component(c.Initiative):
+        for entity, initiative in self.world.get_component(c.Initiative):  # Normal initiative stuff
             if not self.world.has_component(entity, c.MyTurn):
                 if self.tick:
                     initiative.nextturn -= 1
@@ -225,10 +231,6 @@ class AIFlyWizardSystem(System):
             if ai.state == "asleep":
                 if dist(pos, player_pos) <= 4:
                     self.change_state(entity, "normal")
-
-
-
-
 
 class AISystem(System):
     """Lets all AI controlled entities decide what action to make."""
@@ -415,6 +417,8 @@ class ExplosionSystem(System):
             for entity, explosive in self.world.get_component(c.Explosive):
                 if explosive.primed:
                     explosive.fuse -= 1
+                    if explosive.fuse <= 1 and self.world.has_component(entity, c.Render):
+                        self.world.entity_component(entity, c.Render).blinking = True
                     if explosive.fuse <= 0:
                         self.world.add_component(entity, c.Explode())
 

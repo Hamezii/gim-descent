@@ -214,6 +214,7 @@ class UseEffect:
 class Render:
     """Stores imagename of image to render."""
     imagename: str
+    blinking: bool = False
 
 @dataclass
 class Animation:

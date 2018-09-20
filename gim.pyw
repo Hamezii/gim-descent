@@ -183,12 +183,8 @@ class Game:
         if any(color):
             data["color"] = (color[0], color[1], color[2], pygame.BLEND_ADD)
         # Blinking tag
-        if entity != self.world.tags.player:
-            if self.world.has_component(entity, c.Initiative):
-                entity_nextturn = self.world.entity_component(entity, c.Initiative).nextturn
-                player_nextturn = self.world.entity_component(self.world.tags.player, c.Initiative).nextturn
-                if entity_nextturn <= player_nextturn:
-                    data["blinking"] = RENDERER.is_blinking()
+        if self.world.has_component(entity, c.Render):
+            data["blinking"] = self.world.entity_component(entity, c.Render).blinking and RENDERER.is_blinking()
 
         # Icons
         icons = []
