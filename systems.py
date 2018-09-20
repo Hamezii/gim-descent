@@ -139,6 +139,8 @@ class InitiativeSystem(System):
 
         self.tick = True
         try:
+            if not self.world.has_entity(self.world.tags.player):
+                self.tick = False
             for _ in self.world.get_component(c.MyTurn):
                 self.tick = False
         except KeyError:
@@ -226,11 +228,15 @@ class AIFlyWizardSystem(System):
 
 
     def process(self, **args):
+        if not self.world.has_entity(self.world.tags.player):
+            return
+
         player_pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
         for entity, (ai, pos) in self.world.get_components(c.AIFlyWizard, c.TilePosition):
             if ai.state == "asleep":
                 if dist(pos, player_pos) <= 4:
                     self.change_state(entity, "normal")
+
 
 class AISystem(System):
     """Lets all AI controlled entities decide what action to make."""
@@ -546,6 +552,9 @@ class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
 
     def process(self, **args):
+        if not self.world.has_entity(self.world.tags.player):
+            return
+
         player = self.world.tags.player
         player_pos = self.world.entity_component(player, c.TilePosition)
 
@@ -589,10 +598,8 @@ class AnimationSystem(System):
             playing_animation = animation.animations["idle"]
 
             if self.world.has_component(entity, c.Initiative):
-                entity_nextturn = self.world.entity_component(
-                    entity, c.Initiative).nextturn
-                player_nextturn = self.world.entity_component(
-                    self.world.tags.player, c.Initiative).nextturn
+                entity_nextturn = self.world.entity_component(entity, c.Initiative).nextturn
+                player_nextturn = 1 #self.world.entity_component(self.world.tags.player, c.Initiative).nextturn
                 if entity_nextturn <= player_nextturn:
                     playing_animation = animation.animations["ready"]
 

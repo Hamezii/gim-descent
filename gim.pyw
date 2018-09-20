@@ -528,13 +528,11 @@ def main():
         UI.send_event(("input", UI.get_focus(), keypress))
 
         if game.world:    # Processing ecs
-            done = False
             t_frame = delta
-            while not done:
-                game.world.process(playerinput=None, t_frame=t_frame)
-                t_frame = 0
-                if game.world.has_component(game.world.tags.player, c.MyTurn):
-                    done = True
+            game.world.process(playerinput=None, t_frame=t_frame)
+
+            while game.world.get_system(s.InitiativeSystem).tick: # Waiting for input
+                game.world.process(playerinput=None, t_frame=0)
 
         RENDERER.t_elapsed += delta
         UI.send_event(("update", avgms))
