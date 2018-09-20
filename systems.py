@@ -139,7 +139,7 @@ class InitiativeSystem(System):
 
         self.tick = True
         try:
-            if not self.world.has_entity(self.world.tags.player):
+            if self.world.has_component(self.world.tags.player, c.Dead):
                 self.tick = False
             for _ in self.world.get_component(c.MyTurn):
                 self.tick = False
@@ -182,6 +182,8 @@ class PlayerInputSystem(System):
     """Interprets input from the player, applying it to all entities with a PlayerInput component."""
 
     def process(self, **args):
+        if self.world.has_component(self.world.tags.player, c.Dead): # Don't let the player move if they are dead
+            return
         playerinput = args["playerinput"]
         if playerinput in constants.DIRECTIONS:
             for entity, _ in self.world.get_components(c.PlayerInput, c.MyTurn):
@@ -637,7 +639,8 @@ class DeadSystem(System):
                     pos = self.world.entity_component(entity, c.TilePosition)
                     self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
 
-            self.world.add_component(entity, c.Delete())
+            if entity != self.world.tags.player:
+                self.world.add_component(entity, c.Delete())
 
 class DeleteSystem(System):
     """Deletes any entities that have been tagged with a Delete component."""

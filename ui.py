@@ -206,6 +206,11 @@ class MenuManager:
         if focus:
             self.focuses.append(menu)
 
+    def remove_all_menus(self):
+        """Remove all menu instances."""
+        for menu in self.menus:
+            self.remove_menu(menu)
+
     def remove_menu(self, menu):
         """Remove a menu instance."""
         self.menus.remove(menu)
@@ -424,6 +429,10 @@ class GameMenu(Menu):
 
             if keypress == pygame.K_ESCAPE:
                 self.menu_manager.add_menu(ExitMenu)
+            
+            if keypress == pygame.K_DELETE:
+                self.menu_manager.remove_all_menus()
+                self.menu_manager.add_menu(MainMenu)
 
             if event[1] is self:
                 if keypress == pygame.K_z:
