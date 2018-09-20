@@ -31,8 +31,6 @@ import systems as s
 import ui
 from ecs import World
 
-FULLSCREEN_MODE = True
-
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
 
@@ -543,7 +541,10 @@ def main():
 
 def init_screen():
     """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
-    if FULLSCREEN_MODE:
+
+    pygame.display.set_caption("Gim 4")
+
+    if constants.FULLSCREEN_MODE:
         info_object = pygame.display.Info()
         width = info_object.current_w
         height = info_object.current_h
@@ -553,6 +554,8 @@ def init_screen():
         height = 800
         screen = pygame.display.set_mode((width, height))
 
+    pygame.display.set_icon(RENDERER.get_image(name="logo"))
+
     return (screen, width, height)
 
 
@@ -560,11 +563,12 @@ if __name__ == "__main__":
     CLOCK = pygame.time.Clock()
 
     # VARIABLES
+    RENDERER = renderer.Renderer()
+
     SCREEN, constants.WIDTH, constants.HEIGHT = init_screen()
 
     constants.MENU_SCALE = round(constants.WIDTH/600)
 
-    RENDERER = renderer.Renderer()
     UI = ui.MenuManager(RENDERER)
 
     # Playing music

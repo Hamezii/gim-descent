@@ -2,6 +2,8 @@
 Contains all the constants for Gim.
 '''
 
+FULLSCREEN_MODE = False
+
 TILE_SIZE = 40
 
 FOLDER = "assets/"

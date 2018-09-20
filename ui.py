@@ -429,7 +429,7 @@ class GameMenu(Menu):
 
             if keypress == pygame.K_ESCAPE:
                 self.menu_manager.add_menu(ExitMenu)
-            
+
             if keypress == pygame.K_DELETE:
                 self.menu_manager.remove_all_menus()
                 self.menu_manager.add_menu(MainMenu)
