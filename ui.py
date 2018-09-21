@@ -438,7 +438,7 @@ class GameMenu(Menu):
                 if keypress == pygame.K_z:
                     self.menu_manager.add_menu(Inventory)
                 if keypress in constants.DIRECTIONS:
-                    self.game.world.process(playerinput=keypress, t_frame=0)
+                    self.game.world.process(playerinput=keypress, d_t=0)
 
     def draw(self, screen):
         camerarect = self.game.camera.get_rect()
@@ -522,11 +522,19 @@ class HUD(Menu):
             color=constants.LIGHT_GRAY
         )
 
+        self.time_text = Text(
+            renderer=self.renderer,
+            size=10*constants.MENU_SCALE,
+            offset=(self.health_bar.x + 80 * constants.MENU_SCALE, self.health_bar.bottom + 17.5*constants.MENU_SCALE),
+            color=constants.LIGHT_GRAY
+        )
+
         self.widgets = [
             self.max_health_text,
             self.health_text,
             self.level_text,
-            self.kills_text
+            self.kills_text,
+            self.time_text
         ]
 
     def get_event(self, event):
@@ -556,6 +564,14 @@ class HUD(Menu):
 
         kills = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).kills
         self.kills_text.text = "Kills " + str(kills)
+
+        time = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).time
+        time_s = str(round(time % 60))
+        if len(time_s) == 1:
+            time_s = "0" + time_s 
+        time_m = str(int(time // 60))
+
+        self.time_text.text = "Time " + time_m + ":" + time_s
 
         level = self.game.world.entity_component(self.game.world.tags.player, c.Level).level_num
         self.level_text.text = "Level " + str(level)

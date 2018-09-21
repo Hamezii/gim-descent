@@ -21,6 +21,14 @@ def clamp(value, minimum, maximum):
 
 #_________________
 
+class GameStatsSystem(System):
+    """Updates the GameStats component, incrementing time."""
+
+    def process(self, **args):
+        for _, gamestats in self.world.get_component(c.GameStats):
+            gamestats.time += args["d_t"] * 0.001
+
+
 class GridSystem(System):
     """Stores grid attributes and a grid of blocker entities."""
     adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
@@ -594,7 +602,7 @@ class AnimationSystem(System):
 
     def process(self, **args):
 
-        self.t_last_frame += args["t_frame"]
+        self.t_last_frame += args["d_t"]
 
         frames_elapsed = self.t_last_frame // self.ANIMATION_RATE
 
@@ -618,6 +626,7 @@ class AnimationSystem(System):
                                     len(animation.current_animation))
 
             render.imagename = animation.current_animation[animation.pos]
+
 
 class DeadSystem(System):
     """Handles any entities that have been tagged as dead and queues them for deletion."""

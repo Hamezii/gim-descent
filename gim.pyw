@@ -433,6 +433,9 @@ class Game:
     def new_game(self):
         """Initialise for a new game."""
         self.world = World(self)
+
+        self.world.add_system(s.GameStatsSystem())
+
         self.world.add_system(s.GridSystem())
         self.world.add_system(s.InitiativeSystem())
 
@@ -526,11 +529,10 @@ def main():
         UI.send_event(("input", UI.get_focus(), keypress))
 
         if game.world:    # Processing ecs
-            t_frame = delta
-            game.world.process(playerinput=None, t_frame=t_frame)
+            game.world.process(playerinput=None, d_t=delta)
 
             while not game.world.has_component(game.world.tags.player, c.MyTurn): # Waiting for input
-                game.world.process(playerinput=None, t_frame=0)
+                game.world.process(playerinput=None, d_t=0)
 
         RENDERER.t_elapsed += delta
         UI.send_event(("update", avgms))

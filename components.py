@@ -30,6 +30,7 @@ class Level:
 class GameStats:
     """Stores stats about the game."""
     kills: int = 0
+    time: float = 0
 
 @dataclass
 class Stairs:

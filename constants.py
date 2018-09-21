@@ -2,7 +2,7 @@
 Contains all the constants for Gim.
 '''
 
-FULLSCREEN_MODE = False
+FULLSCREEN_MODE = True
 
 TILE_SIZE = 40
 
