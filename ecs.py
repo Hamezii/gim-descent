@@ -261,12 +261,12 @@ class World:
         except KeyError:
             pass
 
-    @lru_cache()
+    @lru_cache(maxsize=None)
     def get_component(self, component_type):
         """Get a list for Entity, Component pairs."""
         return [query for query in self._get_component(component_type)]
 
-    @lru_cache()
+    @lru_cache(maxsize=None)
     def get_components(self, *component_types):
         """Get a list for Entity and multiple Component sets."""
         return [query for query in self._get_components(*component_types)]

@@ -12,7 +12,7 @@ import constants
 # Initialising audio
 CACHE = {}
 
-def init_cache():
+def load_audio():
     '''Initialise the cache of Sound objects.'''
     for name in glob.glob(constants.AUDIO+"*.wav"):
         add_to_cache(name)

@@ -36,9 +36,7 @@ pygame.init()
 
 pygame.mixer.set_num_channels(8)
 
-audio.init_cache()
-
-#random.seed(1)
+audio.load_audio()
 
 
 # CLASSES
@@ -459,6 +457,8 @@ class Game:
 
         self.world.add_system(s.DeadSystem())
         self.world.add_system(s.DeleteSystem())
+
+        #random.seed(0)
 
         self.generate_level()
 
