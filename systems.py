@@ -557,6 +557,8 @@ class SplitSystem(System):
                             self.world.add_component(new_entity, c.IceElement())
                         if self.world.has_component(entity, c.FireElement):
                             self.world.add_component(new_entity, c.FireElement())
+                        if self.world.has_component(entity, c.Boss):
+                            self.world.add_component(new_entity, c.Boss())
 
 class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
@@ -640,13 +642,17 @@ class DeadSystem(System):
                     self.world.add_component(bomb, self.world.entity_component(entity, c.Explosive))
                     self.world.entity_component(bomb, c.Explosive).primed = True
 
-            if self.world.has_component(entity, c.Boss): # Killing minions and adding stairs on boss death
+            if self.world.has_component(entity, c.Boss):
+                # Deleting boss' minions
                 for minion in self.world.entity_component(entity, c.Boss).minions:
                     if self.world.has_entity(minion):
                         self.world.add_component(minion, c.Delete())
+
                 if self.world.has_component(entity, c.TilePosition):
-                    pos = self.world.entity_component(entity, c.TilePosition)
-                    self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
+                    # If this is the final boss entity, make stairs
+                    if len(self.world.get_components(c.Boss, c.TilePosition)) == 1:
+                        pos = self.world.entity_component(entity, c.TilePosition)
+                        self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
 
             if entity != self.world.tags.player:
                 self.world.add_component(entity, c.Delete())

@@ -232,7 +232,7 @@ class Menu:
     def __init__(self, game, renderer):
         self.game = game
         self.renderer = renderer
-        self.menu_manager = None # Set by the ManuManager after instancing
+        self.menu_manager: MenuManager = None # Set by the ManuManager after instancing
 
     def get_event(self, event):
         """React to an event.
@@ -568,7 +568,7 @@ class HUD(Menu):
         time = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).time
         time_s = str(round(time % 60))
         if len(time_s) == 1:
-            time_s = "0" + time_s 
+            time_s = "0" + time_s
         time_m = str(int(time // 60))
 
         self.time_text.text = "Time " + time_m + ":" + time_s
