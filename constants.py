@@ -3,6 +3,7 @@ Contains all the constants for Gim.
 '''
 
 FULLSCREEN_MODE = True
+SEED = None
 
 TILE_SIZE = 40
 

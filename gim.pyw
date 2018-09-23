@@ -458,7 +458,8 @@ class Game:
         self.world.add_system(s.DeadSystem())
         self.world.add_system(s.DeleteSystem())
 
-        #random.seed(0)
+        if constants.SEED is not None:
+            random.seed(constants.SEED)
 
         self.generate_level()
 
