@@ -1,6 +1,34 @@
 """Entity Component System."""
 
-from functools import lru_cache
+#from functools import lru_cache
+
+def memoize(func):
+    """Cache decorator."""
+    cache = {}
+    def wrapper(*args):
+        """A wrapper for the function."""
+        if args in cache:
+            return cache[args]
+        result = func(*args)
+        cache[args] = result
+        return result
+
+    def cache_clear():
+        """Clear the cache."""
+        cache.clear()
+
+    def cache_remove(arg):
+        """Remove a specific argument from the cache."""
+        if arg in cache:
+            del cache[arg]
+            return
+        for key in list(cache):
+            if arg in key:
+                del cache[key]
+
+    wrapper.cache_clear = cache_clear
+    wrapper.cache_remove = cache_remove
+    return wrapper
 
 class TagManager:
     """Stores tags about the world."""
@@ -42,6 +70,11 @@ class World:
         """Not really sure what this one does."""
         self.get_component.cache_clear()
         self.get_components.cache_clear()
+
+    def remove_cache(self, component_type):
+        """Remove a specific component group from the cache because it has changed."""
+        self.get_component.cache_remove(component_type)
+        self.get_components.cache_remove(component_type)
 
     def clear_all(self):
         """Remove all Entities and Components from the World."""
@@ -112,7 +145,6 @@ class World:
         for component in components:
             self.add_component(self._next_entity_id, component)
 
-        # self.clear_cache()
         return self._next_entity_id
 
     def delete_entity(self, entity, immediate=False):
@@ -135,8 +167,10 @@ class World:
                 if not self._components[component_type]:
                     del self._components[component_type]
 
+                self.remove_cache(component_type)
             del self._entities[entity]
-            self.clear_cache()
+
+
 
         else:
             self._dead_entities.add(entity)
@@ -207,7 +241,7 @@ class World:
             self._entities[entity] = {}
 
         self._entities[entity][component_type] = component_instance
-        self.clear_cache()
+        self.remove_cache(component_type)
 
     def remove_component(self, entity, component_type):
         """Remove a Component instance from an Entity, by type.
@@ -231,7 +265,7 @@ class World:
         if not self._entities[entity]:
             del self._entities[entity]
 
-        self.clear_cache()
+        self.remove_cache(component_type)
         return entity
 
     def _get_component(self, component_type):
@@ -261,12 +295,12 @@ class World:
         except KeyError:
             pass
 
-    @lru_cache(maxsize=None)
+    @memoize
     def get_component(self, component_type):
         """Get a list for Entity, Component pairs."""
         return [query for query in self._get_component(component_type)]
 
-    @lru_cache(maxsize=None)
+    @memoize
     def get_components(self, *component_types):
         """Get a list for Entity and multiple Component sets."""
         return [query for query in self._get_components(*component_types)]
@@ -302,11 +336,10 @@ class World:
 
                 if not self._components[component_type]:
                     del self._components[component_type]
-
+                self.remove_cache(component_type)
             del self._entities[entity]
 
         self._dead_entities.clear()
-        self.clear_cache()
 
     def _process(self, *args, **kwargs):
         for system in self._systems:
