@@ -160,7 +160,7 @@ class Game:
 
     def __init__(self):
         self.camera = Camera(speed=5)
-        self.world = None
+        self.world: World = None
 
     #@lru_cache()
     def entity_draw_data(self, entity):

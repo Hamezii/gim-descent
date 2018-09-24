@@ -17,13 +17,13 @@ def memoize(func):
         """Clear the cache."""
         cache.clear()
 
-    def cache_remove(arg):
-        """Remove a specific argument from the cache."""
-        if arg in cache:
-            del cache[arg]
+    def cache_remove(component_type):
+        """Remove a specific component type from the cache."""
+        if component_type in cache:
+            del cache[component_type]
             return
         for key in list(cache):
-            if arg in key:
+            if component_type in key:
                 del cache[key]
 
     wrapper.cache_clear = cache_clear

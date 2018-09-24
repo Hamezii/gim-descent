@@ -6,8 +6,8 @@ import animations
 import components as c
 
 
-def item_template(**args):
-    """Item template."""
+def item(**args):
+    """Item components."""
     return [
         c.Describable(args["name"], args["desc"]),
         c.Render(args["image"]),
@@ -52,7 +52,7 @@ def normal_ai_creature(**args):
 def potion(**args):
     """Potion components."""
     return [
-        *item_template(
+        *item(
             **args,
             consumable=True,
             image="potion-"+args["color"]
@@ -92,7 +92,7 @@ def speed_potion(x, y):
 
 def bomb(x, y):
     """Bomb components."""
-    components = item_template(
+    components = item(
         x=x, y=y,
         name="Bomb",
         desc="Explodes after a cooldown",
