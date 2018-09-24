@@ -566,7 +566,7 @@ class HUD(Menu):
         self.kills_text.text = "Kills " + str(kills)
 
         time = self.game.world.entity_component(self.game.world.tags.player, c.GameStats).time
-        time_s = str(round(time % 60))
+        time_s = str(int(time % 60))
         if len(time_s) == 1:
             time_s = "0" + time_s
         time_m = str(int(time // 60))
