@@ -493,6 +493,9 @@ def get_input():
 
 def main():
     """Run the game."""
+
+    screen = init_screen()
+
     game = Game()
 
     RENDERER.camera = game.camera
@@ -511,7 +514,7 @@ def main():
         else:
             avgms = delta
 
-        SCREEN.fill(constants.BLACK)
+        screen.fill(constants.BLACK)
 
         keypress = get_input()
 
@@ -537,10 +540,9 @@ def main():
 
         RENDERER.t_elapsed += delta
         UI.send_event(("update", avgms))
-        UI.draw_menus(SCREEN)
+        UI.draw_menus(screen)
 
         pygame.display.update()
-
 
 def init_screen():
     """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
@@ -557,20 +559,19 @@ def init_screen():
         height = 800
         screen = pygame.display.set_mode((width, height))
 
+    constants.WIDTH = width
+    constants.HEIGHT = height
+    constants.MENU_SCALE = round(width/600)
+
     pygame.display.set_icon(RENDERER.get_image(name="logo"))
 
-    return (screen, width, height)
-
+    return screen
 
 if __name__ == "__main__":
     CLOCK = pygame.time.Clock()
 
     # VARIABLES
     RENDERER = renderer.Renderer()
-
-    SCREEN, constants.WIDTH, constants.HEIGHT = init_screen()
-
-    constants.MENU_SCALE = round(constants.WIDTH/600)
 
     UI = ui.MenuManager(RENDERER)
 
