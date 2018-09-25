@@ -41,6 +41,7 @@ class System:
     def __init__(self):
         self.world: World
         self.game = None
+        self.renderer = None
         self.priority = 0
 
     def process(self, **args):
@@ -102,6 +103,7 @@ class World:
         system_instance.priority = priority
         system_instance.world = self
         system_instance.game = self._game
+        system_instance.renderer = self._game.renderer
         self._systems.append(system_instance)
         self._systems.sort(key=lambda proc: proc.priority, reverse=True)
 

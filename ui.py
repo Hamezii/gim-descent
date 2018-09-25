@@ -178,9 +178,9 @@ class MenuManager:
     Used to update, draw and send messages to the menus.
     """
 
-    def __init__(self, renderer):
-        self.renderer = renderer
-        self.game = None
+    def __init__(self, game):
+        self.renderer = game.renderer
+        self.game = game
 
         self.menus = []
         self.focuses = []
@@ -422,8 +422,8 @@ class GameMenu(Menu):
         if event[0] == "update":
             delta = event[1]
             cameragoal = self.game.world.entity_component(self.game.world.tags.player, c.TilePosition)
-            cameragoal = self.game.camera.tile_to_camera_pos(cameragoal.x, cameragoal.y)
-            self.game.camera.update(delta, cameragoal)
+            cameragoal = self.renderer.camera.tile_to_camera_pos(cameragoal.x, cameragoal.y)
+            self.renderer.camera.update(delta, cameragoal)
         if event[0] == "input":
             keypress = event[2]
 
@@ -441,8 +441,8 @@ class GameMenu(Menu):
                     self.game.world.process(playerinput=keypress, d_t=0)
 
     def draw(self, screen):
-        camerarect = self.game.camera.get_rect()
-        camerazoom = self.game.camera.get_zoom()
+        camerarect = self.renderer.camera.get_rect()
+        camerazoom = self.renderer.camera.get_zoom()
         camerascale = camerazoom/constants.TILE_SIZE
 
         if self._zoom_cache != camerazoom:
@@ -461,7 +461,7 @@ class GameMenu(Menu):
         for entity, comps in self.game.world.get_components(c.Render, c.TilePosition):
             pos = comps[1]
 
-            pixelpos = self.game.camera.tile_to_pixel_pos(pos.x, pos.y)
+            pixelpos = self.renderer.camera.tile_to_pixel_pos(pos.x, pos.y)
             rect = pygame.Rect(0, 0, camerazoom*1.5, camerazoom*1.5)
             rect.center = pixelpos
 
@@ -880,11 +880,12 @@ class ThrowOptions(Menu):
 
     def draw(self, screen):
         if self.menu_manager.get_focus() == self:
-            itempos = (constants.WIDTH//2+self.dir[0]*self.game.camera.get_zoom()/2, constants.HEIGHT//2+self.dir[1]*self.game.camera.get_zoom()/2)
-            self.game.draw_centered_entity(screen, self.item, self.game.camera.get_scale(), itempos)
+            item_x = constants.WIDTH//2+self.dir[0]*self.renderer.camera.get_zoom()/2
+            item_y = constants.HEIGHT//2+self.dir[1]*self.renderer.camera.get_zoom()/2
+            self.game.draw_centered_entity(screen, self.item, self.renderer.camera.get_scale(), (item_x, item_y))
             if self.targettile is not None:
                 self.renderer.draw_centered_image(screen, self.renderer.get_image(
-                    name="crosshair", scale=self.game.camera.get_scale()), self.game.camera.tile_to_screen_pos(*self.targettile))
+                    name="crosshair", scale=self.renderer.camera.get_scale()), self.renderer.camera.tile_to_screen_pos(*self.targettile))
 
         for text in self.help_text:
             text.draw(screen, (self.help_pos.x, self.help_pos.y))

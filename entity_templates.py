@@ -268,6 +268,13 @@ def wall(x, y):
         c.TilePosition(x, y),
         c.Blocker(),
         c.Destructible(),
+        # For alive walls
+        #c.Health(15),
+        #c.Initiative(4),
+        #c.AI(),
+        #c.Movement(False),
+
+        #   c.Attack(5),
     ]
 
 def stairs(x, y, direction="down"):

@@ -41,125 +41,11 @@ audio.load_audio()
 
 # CLASSES
 
-class DynamicPos:
-    """A vector value which linearly interpolates to a position."""
-
-    def __init__(self, pos, speed):
-        self.current = pos
-        self.goal = pos
-        self.speed = speed
-
-    def move(self, pos, instant=False):
-        """Set a target position. Instant moves it there instantly."""
-        self.goal = pos
-        if instant:
-            self.current = pos
-
-    def update(self, delta):
-        """Linearly interpolate to target position."""
-        x = (self.goal[0] - self.current[0])*min(1, delta*self.speed*0.001)
-        y = (self.goal[1] - self.current[1])*min(1, delta*self.speed*0.001)
-        self.current = (self.current[0]+x, self.current[1] + y)
-
-    @property
-    def x(self):
-        """Get x value of vector."""
-        return self.current[0]
-
-    @property
-    def y(self):
-        """Get y value of vector."""
-        return self.current[1]
-
-
-class Camera:
-    """The game camera.
-
-    Can follow a point and shake.
-    """
-
-    def __init__(self, speed):
-        self._ppt = round(constants.MENU_SCALE*1.5)*20
-        self._shake = 0
-        self._shake_x = 0
-        self._shake_y = 0
-        self._pos = DynamicPos((0, 0), speed=speed)
-
-        self._t_lastshake = 0
-        self.start = True
-
-    def get_rect(self):
-        """Return the rect in which the camera can see.
-
-        Rect position and size is in pixels.
-        """
-        x = (self._pos.x + random.uniform(-self._shake_x, self._shake_x)) * self._ppt / constants.TILE_SIZE
-        y = (self._pos.y + random.uniform(-self._shake_y, self._shake_y)) * self._ppt / constants.TILE_SIZE
-        rect = pygame.Rect(0, 0, constants.WIDTH, constants.HEIGHT)
-        rect.center = (x, y)
-        return rect
-
-    def get_scale(self):
-        """Return scale of camera. Larger number means more zoomed in."""
-        return self._ppt / constants.TILE_SIZE
-
-    def get_zoom(self):
-        """Get pixels per tile of camera. Larger number means larger tiles."""
-        return self._ppt
-
-    def zoom(self, zoom):
-        """Change the pixels per tile of the camera. Positive zoom means zooming in."""
-        self._ppt += zoom
-
-    def shake(self, amount):
-        """Shake the camera."""
-        self._shake += amount
-
-    def set(self, pos, direct=False):
-        """Set target position of the camera."""
-        self._pos.move(pos, direct)
-
-    def tile_to_pixel_pos(self, x, y):
-        """Including zoom, return the position of the center of a tile relative to the top-left of the map."""
-        return ((x+0.5)*self._ppt, (y+0.5)*self._ppt)
-
-    def tile_to_camera_pos(self, x, y):
-        """Excluding zoom, return the position of the center of a tile relative to the top-left of the map."""
-        return ((x+0.5)*constants.TILE_SIZE, (y+0.5)*constants.TILE_SIZE)
-
-    def tile_to_screen_pos(self, x, y):
-        """Return the position of the center of a tile relative to the top-left of the screen."""
-        pixelpos = self.tile_to_pixel_pos(x, y)
-        rect = self.get_rect()
-        return (pixelpos[0] - rect.x, pixelpos[1] - rect.y)
-
-    def update(self, t_frame, pos=None):
-        """Update shake amount and move towards target position."""
-        if pos is not None:
-            if self.start:
-                self.start = False
-                self.set(pos, direct=True)
-            else:
-                self.set(pos)
-
-        self._pos.update(t_frame)
-
-        self._t_lastshake += t_frame
-        while self._t_lastshake >= 1000/30:
-            self._t_lastshake -= 1000/30
-            self._shake_x = random.uniform(-self._shake, self._shake)
-            self._shake_y = random.uniform(-self._shake, self._shake)
-
-            self._shake *= 0.75
-            if self._shake < 0.1:
-                self._shake = 0
-
-
 class Game:
     """The game. Can perform functions on the ECS."""
 
     def __init__(self):
-        self.camera = Camera(speed=5)
+        self.renderer = renderer.Renderer()
         self.world: World = None
 
     #@lru_cache()
@@ -180,7 +66,7 @@ class Game:
             data["color"] = (color[0], color[1], color[2], pygame.BLEND_ADD)
         # Blinking tag
         if self.world.has_component(entity, c.Render):
-            data["blinking"] = self.world.entity_component(entity, c.Render).blinking and RENDERER.is_blinking()
+            data["blinking"] = self.world.entity_component(entity, c.Render).blinking and self.renderer.is_blinking()
 
         # Icons
         icons = []
@@ -208,8 +94,8 @@ class Game:
 
     def draw_centered_entity(self, surface, entity, scale, pos):
         """Draw an entity, including icons etc."""
-        entity_surface = RENDERER.entity_image(scale, **self.entity_draw_data(entity))
-        RENDERER.draw_centered_image(surface, entity_surface, pos)
+        entity_surface = self.renderer.entity_image(scale, **self.entity_draw_data(entity))
+        self.renderer.draw_centered_image(surface, entity_surface, pos)
 
     def teleport_entity(self, entity, amount):
         """Teleport an entity to a random position in a specific radius."""
@@ -412,7 +298,7 @@ class Game:
         fps = CLOCK.get_fps()
         info = (
             "FPS: " + str(int(fps)),
-            "TOTAL IMAGES: " + str(RENDERER.total_images),
+            "TOTAL IMAGES: " + str(self.renderer.total_images),
             "OBJECTS: " + str(len([*self.world.get_component(c.TilePosition)]))
         )
         return info
@@ -498,12 +384,9 @@ def main():
 
     game = Game()
 
-    RENDERER.camera = game.camera
-    UI.game = game
+    menus = ui.MenuManager(game)
 
-    #game.new_game()
-
-    UI.add_menu(ui.MainMenu)
+    menus.add_menu(ui.MainMenu)
 
     while True:
 
@@ -519,18 +402,18 @@ def main():
         keypress = get_input()
 
         if keypress == pygame.K_MINUS:  # Zooming out
-            if game.camera.get_zoom() > 20:
-                game.camera.zoom(-20)
+            if game.renderer.camera.get_zoom() > 20:
+                game.renderer.camera.zoom(-20)
 
         if keypress == pygame.K_EQUALS:  # Zooming in
-            game.camera.zoom(20)
+            game.renderer.camera.zoom(20)
 
         if keypress == pygame.K_F10: # Save
             game.save_game()
         if keypress == pygame.K_F11: # Load
             game.load_game()
 
-        UI.send_event(("input", UI.get_focus(), keypress))
+        menus.send_event(("input", menus.get_focus(), keypress))
 
         if game.world:    # Processing ecs
             game.world.process(playerinput=None, d_t=delta)
@@ -538,9 +421,9 @@ def main():
             while not game.world.has_component(game.world.tags.player, c.MyTurn): # Waiting for input
                 game.world.process(playerinput=None, d_t=0)
 
-        RENDERER.t_elapsed += delta
-        UI.send_event(("update", avgms))
-        UI.draw_menus(screen)
+        game.renderer.t_elapsed += delta
+        menus.send_event(("update", avgms))
+        menus.draw_menus(screen)
 
         pygame.display.update()
 
@@ -563,17 +446,12 @@ def init_screen():
     constants.HEIGHT = height
     constants.MENU_SCALE = round(width/600)
 
-    pygame.display.set_icon(RENDERER.get_image(name="logo"))
+    pygame.display.set_icon(pygame.image.load(constants.IMAGES+"logo.png").convert_alpha())
 
     return screen
 
 if __name__ == "__main__":
     CLOCK = pygame.time.Clock()
-
-    # VARIABLES
-    RENDERER = renderer.Renderer()
-
-    UI = ui.MenuManager(RENDERER)
 
     # Playing music
     audio.play_music()

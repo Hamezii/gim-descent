@@ -412,7 +412,7 @@ class BumpSystem(System):
                         )
 
                         if entity == self.world.tags.player:
-                            self.game.camera.shake(5)
+                            self.renderer.camera.shake(5)
                             audio.play("punch", 0.5)
 
                         if self.world.has_component(entity, c.Bomber):
@@ -464,7 +464,7 @@ class ExplosionSystem(System):
 
                 dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, c.TilePosition))
                 if dist_to_player < 10:
-                    self.game.camera.shake(40 - dist_to_player * 3)
+                    self.renderer.camera.shake(40 - dist_to_player * 3)
                     audio.play("explosion", 0.6 - dist_to_player * 0.05)
 
 class DamageSystem(System):
@@ -477,7 +477,7 @@ class DamageSystem(System):
 
                 targethealth.current -= damage.amount
                 if damage.target == self.world.tags.player:
-                    self.game.camera.shake(5 + damage.amount*2)
+                    self.renderer.camera.shake(5 + damage.amount*2)
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, c.Dead())
@@ -589,7 +589,7 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
 
-                self.game.camera.start = True # Makes the camera go directly to the player on the next update
+                self.renderer.camera.start = True # Makes the camera go directly to the player on the next update
                 self.game.generate_level()
                 self.game.save_game()
 
