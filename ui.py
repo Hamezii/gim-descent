@@ -179,7 +179,6 @@ class MenuManager:
     """
 
     def __init__(self, game):
-        self.renderer = game.renderer
         self.game = game
 
         self.menus = []
@@ -200,7 +199,7 @@ class MenuManager:
 
         If focus is True, focus will change to the new menu.
         """
-        menu = menu_type(self.game, self.renderer, *args)
+        menu = menu_type(self.game, *args)
         menu.menu_manager = self
         self.menus.append(menu)
         if focus:
@@ -229,9 +228,9 @@ class MenuManager:
 class Menu:
     """A class that can be interacted with and drawn to the screen."""
 
-    def __init__(self, game, renderer):
+    def __init__(self, game):
         self.game = game
-        self.renderer = renderer
+        self.renderer = game.renderer
         self.menu_manager: MenuManager = None # Set by the ManuManager after instancing
 
     def get_event(self, event):
@@ -249,14 +248,14 @@ class Menu:
 class DebugMenu(Menu):
     """Prints debug info."""
 
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
 
         self.active = False
 
         self.debug_text = [
             Text(
-                renderer=renderer,
+                renderer=self.renderer,
                 size=10,
                 color=constants.RED,
                 offset=(0, 12*i),
@@ -281,8 +280,8 @@ class DebugMenu(Menu):
 class MainMenu(Menu):
     """The starting menu of the game."""
 
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         self.animation_done = False
         self.title_background = None
 
@@ -369,8 +368,8 @@ class CharacterSelect(Menu):
     """Allows you to choose who you play as. Opens at new game."""
     characters = ("magnum", "edward", "sentinel")
     num_characters = 3
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         self.cursor_pos = 0
         self.widgets = [
             Text(
@@ -413,8 +412,8 @@ class CharacterSelect(Menu):
 class GameMenu(Menu):
     """The main game menu. Takes player input and draws the game."""
 
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         self._floor_cache = None
         self._zoom_cache = 0
 
@@ -491,8 +490,8 @@ class GameMenu(Menu):
 class HUD(Menu):
     """Displays information about your health, etc."""
 
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         health_bar_pos = constants.MENU_SCALE*8*4, constants.HEIGHT - constants.MENU_SCALE*8*5
         health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
         self.health_bar = pygame.Rect(health_bar_pos, health_bar_size)
@@ -591,8 +590,8 @@ class HUD(Menu):
 
 class ExitMenu(Menu):
     """Popup on exit."""
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         leave()
 
     def get_event(self, event):
@@ -604,8 +603,8 @@ class ExitMenu(Menu):
 class Inventory(Menu):
     """Main inventory menu."""
 
-    def __init__(self, game, renderer):
-        super().__init__(game, renderer)
+    def __init__(self, game):
+        super().__init__(game)
         self.cursorpos = [0, 0]
         self.size = [2, 5]
         self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
@@ -689,8 +688,8 @@ class Inventory(Menu):
 class InventoryOptions(Menu):
     """Option menu for item selected in menu."""
 
-    def __init__(self, game, renderer, item):
-        super().__init__(game, renderer)
+    def __init__(self, game, item):
+        super().__init__(game)
         self.item = item
         self.options = []
         if self.game.world.has_component(item, c.UseEffect):
@@ -790,8 +789,8 @@ class InventoryOptions(Menu):
 class ThrowOptions(Menu):
     """Throw direction selector once an item has been chosen to throw."""
 
-    def __init__(self, game, renderer, item):
-        super().__init__(game, renderer)
+    def __init__(self, game, item):
+        super().__init__(game)
         self.item = item
         self.dir = (0, 0)
         self.targettile = None
