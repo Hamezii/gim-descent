@@ -66,7 +66,7 @@ class Widget:
         pass
 
     def update(self, delta):
-        """Update the widget."""
+        """Update the widget every frame."""
         pass
 
     def _is_dirty(self):
@@ -171,6 +171,40 @@ class Text(Widget):
             center = self._draw_surface.get_rect().center
             for i in range(2):
                 self.offset = tuple(self.offset[i]-center[i]*0.5 for i in range(2))
+
+class TextLines(Widget):
+    """Multiple lines of text"""
+    def __init__(self, size=None, color=constants.WHITE, texts=None, centered=False, **kwargs):
+        super().__init__(**kwargs)
+
+        if texts is None:
+            texts = []
+
+        self.size = size
+        self.color = color
+        self.centered = centered
+        self.texts = texts
+        self.lines = []
+
+        self.dirty_attributes = ("size", "color", "centered", "texts")
+
+    def _update_surface(self):
+        if len(self.texts) > len(self.lines):
+            for i in range(len(self.texts) - len(self.lines)):
+                self.lines.append(Text(renderer=self.renderer))
+
+        for i in range(len(self.texts)):
+            self.lines[i].text = self.texts[i]
+            self.lines[i].size = self.size
+            self.lines[i].color = self.color
+            self.lines[i].centered = self.centered
+
+    def draw(self, surface, pos=(0, 0)):
+        if self._is_dirty():
+            self._update_surface()
+        for i in range(len(self.texts)):
+            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*i*1.5))
+
 
 class MenuManager:
     """Stores all the menu instances.
@@ -366,11 +400,33 @@ class MainMenu(Menu):
 
 class CharacterSelect(Menu):
     """Allows you to choose who you play as. Opens at new game."""
-    characters = ("magnum", "edward", "sentinel")
+    characters = ("magnum", "mecha", "edward")
     num_characters = 3
+    character_desc = (
+        "Relies on skill",
+        "Actually comes prepared",
+        "Potential phychopath",
+    )
+    character_detail = (
+        ("To summarise: a good allrounder", "In general: a pretty solid guy"),
+        ("Thick armour comes in handy", "Hard to drink potions from it"),
+        ("Gets an adreneline rush from killing things", "Fragile physically and emotionally")
+    )
+
     def __init__(self, game):
         super().__init__(game)
         self.cursor_pos = 0
+        self.desc_widget = Text(
+            renderer=self.renderer,
+            size=constants.MENU_SCALE * 10,
+            offset=(constants.WIDTH/4, constants.HEIGHT/2 + constants.MENU_SCALE * 45)
+        )
+        self.detail_widget = TextLines(
+            renderer=self.renderer,
+            size=constants.MENU_SCALE * 5,
+            offset=(constants.WIDTH/4, constants.HEIGHT/2 + constants.MENU_SCALE * 60)
+        )
+
         self.widgets = [
             Text(
                 renderer=self.renderer,
@@ -378,7 +434,9 @@ class CharacterSelect(Menu):
                 size=constants.MENU_SCALE * 15,
                 offset=(constants.WIDTH / 2, constants.MENU_SCALE * 100),
                 centered=True
-            )
+            ),
+            self.desc_widget,
+            self.detail_widget
         ]
 
     def get_event(self, event):
@@ -393,6 +451,17 @@ class CharacterSelect(Menu):
 
             if keypress == pygame.K_z:
                 self.game.world.entity_component(self.game.world.tags.player, c.Render).imagename = self.characters[self.cursor_pos]
+                if self.cursor_pos == 1: # Mecha
+                    self.game.world.add_component(self.game.world.tags.player, c.WeakPotions())
+                    health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
+                    health.max = 100
+                    health.current = 100
+                if self.cursor_pos == 2: # Edward
+                    self.game.world.add_component(self.game.world.tags.player, c.SpeedOnKill())
+                    health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
+                    health.max = 30
+                    health.current = 30
+
                 self.menu_manager.remove_menu(self)
 
     def draw(self, screen):
@@ -405,6 +474,9 @@ class CharacterSelect(Menu):
             self.renderer.draw_centered_image(screen, self.renderer.get_image(name=character, scale=constants.MENU_SCALE), (x, constants.HEIGHT/2))
             if self.cursor_pos == i:
                 self.renderer.draw_centered_image(screen, cursor_image, (x, constants.HEIGHT/2))
+
+        self.desc_widget.text = self.character_desc[self.cursor_pos]
+        self.detail_widget.texts = self.character_detail[self.cursor_pos]
 
         for widget in self.widgets:
             widget.draw(screen)
@@ -740,8 +812,13 @@ class InventoryOptions(Menu):
                 if selection == "use":
                     self.menu_manager.remove_menu(self)
                     use = self.game.world.entity_component(self.item, c.UseEffect)
-                    for effect in use.effects:
-                        getattr(self.game, effect[0])(self.game.world.tags.player, *effect[1:])
+                    if self.game.world.has_component(self.game.world.tags.player, c.WeakPotions):
+                        for effect in use.effects: # Weak potions for mecha
+                            getattr(self.game, effect[0])(self.game.world.tags.player, int(effect[1]/2), *effect[2:])
+                    else:
+                        for effect in use.effects: # Normal effect
+                            getattr(self.game, effect[0])(self.game.world.tags.player, *effect[1:])
+
                     if self.game.world.entity_component(self.item, c.Item).consumable:
                         self.game.world.entity_component(self.game.world.tags.player, c.Inventory).contents.remove(self.item)
                         self.game.world.delete_entity(self.item)

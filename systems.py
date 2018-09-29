@@ -482,6 +482,8 @@ class DamageSystem(System):
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, c.Dead())
                     self.world.entity_component(self.world.tags.player, c.GameStats).kills += 1
+                    if self.world.has_component(self.world.tags.player, c.SpeedOnKill):
+                        self.game.speed_entity(self.world.tags.player, 1)
 
                 if damage.burn and not self.world.has_component(damage.target, c.FireElement):
                     self.world.add_component(damage.target, c.Burning(5))

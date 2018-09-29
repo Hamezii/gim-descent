@@ -205,11 +205,24 @@ class FreeTurn:
     life: int
 
 @dataclass
+class SpeedOnKill:
+    """Gives the entity 1 free turn whenever it kills something.
+    
+    Currently only works when put on player
+    """
+    pass
+
+@dataclass
 class UseEffect:
     """Stores names of methods that are called when this entity is 'used'"""
     effects: List
     def __init__(self, *effects):
         self.effects = effects
+
+@dataclass
+class WeakPotions:
+    """Halves effeciency of any items used on this entity. Used for when playing as Mecha."""
+    pass
 
 @dataclass
 class Render:
