@@ -374,7 +374,7 @@ class MainMenu(Menu):
                         self.game.load_game()
 
             if keypress == pygame.K_ESCAPE:
-                leave()
+                self.menu_manager.add_menu(ExitMenu) # Kind of redundant
 
 
     def draw(self, screen: pygame.surface.SurfaceType):
@@ -499,9 +499,6 @@ class GameMenu(Menu):
             keypress = event[2]
 
             if keypress == pygame.K_ESCAPE:
-                self.menu_manager.add_menu(ExitMenu)
-
-            if keypress == pygame.K_DELETE:
                 self.menu_manager.remove_all_menus()
                 self.menu_manager.add_menu(MainMenu)
 
