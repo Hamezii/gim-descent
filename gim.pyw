@@ -293,16 +293,6 @@ class Game:
             for _ in range(3):
                 self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
 
-    def get_debug_info(self):
-        """Return a tuple of text for debug info."""
-        fps = CLOCK.get_fps()
-        info = (
-            "FPS: " + str(int(fps)),
-            "TOTAL IMAGES: " + str(self.renderer.total_images),
-            "OBJECTS: " + str(len([*self.world.get_component(c.TilePosition)]))
-        )
-        return info
-
     def save_game(self):
         """Save the game state."""
         with open("save.save", "wb") as save_file:

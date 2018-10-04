@@ -89,7 +89,8 @@ class World:
         """Set the game which the World and systems have a reference to."""
         self._game = game
         for system in self._systems:
-            system.game = game
+            system.game = self._game
+            system.renderer = self._game.renderer
 
 
     def add_system(self, system_instance, priority=0):

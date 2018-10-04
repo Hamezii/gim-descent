@@ -174,27 +174,27 @@ class Text(Widget):
 
 class TextLines(Widget):
     """Multiple lines of text"""
-    def __init__(self, size=None, color=constants.WHITE, texts=None, centered=False, **kwargs):
+    def __init__(self, size=None, color=constants.WHITE, text=None, centered=False, **kwargs):
         super().__init__(**kwargs)
 
-        if texts is None:
-            texts = []
+        if text is None:
+            text = []
 
         self.size = size
         self.color = color
         self.centered = centered
-        self.texts = texts
+        self.text = text
         self.lines = []
 
-        self.dirty_attributes = ("size", "color", "centered", "texts")
+        self.dirty_attributes = ("size", "color", "centered", "text")
 
     def _update_surface(self):
-        if len(self.texts) > len(self.lines):
-            for i in range(len(self.texts) - len(self.lines)):
+        if len(self.text) > len(self.lines):
+            for i in range(len(self.text) - len(self.lines)):
                 self.lines.append(Text(renderer=self.renderer))
 
-        for i in range(len(self.texts)):
-            self.lines[i].text = self.texts[i]
+        for i in range(len(self.text)):
+            self.lines[i].text = self.text[i]
             self.lines[i].size = self.size
             self.lines[i].color = self.color
             self.lines[i].centered = self.centered
@@ -202,8 +202,8 @@ class TextLines(Widget):
     def draw(self, surface, pos=(0, 0)):
         if self._is_dirty():
             self._update_surface()
-        for i in range(len(self.texts)):
-            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*i*1.5))
+        for i in range(len(self.text)):
+            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*i*1.2))
 
 
 class MenuManager:
@@ -233,7 +233,7 @@ class MenuManager:
 
         If focus is True, focus will change to the new menu.
         """
-        menu = menu_type(self.game, *args)
+        menu = menu_type(*args, self.game)
         menu.menu_manager = self
         self.menus.append(menu)
         if focus:
@@ -241,8 +241,8 @@ class MenuManager:
 
     def remove_all_menus(self):
         """Remove all menu instances."""
-        for menu in self.menus:
-            self.remove_menu(menu)
+        self.menus = []
+        self.focuses = []
 
     def remove_menu(self, menu):
         """Remove a menu instance."""
@@ -282,40 +282,50 @@ class Menu:
 class DebugMenu(Menu):
     """Prints debug info."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
 
+        self.avgms = 0
         self.active = False
 
-        self.debug_text = [
-            Text(
-                renderer=self.renderer,
-                size=10,
-                color=constants.RED,
-                offset=(0, 12*i),
-            ) for i in range(3)
-        ]
+        self.debug_text = TextLines(
+            renderer=self.renderer,
+            size=10,
+            color=constants.RED,
+            offset=(0, 12),
+        )
 
     def get_event(self, event):
         if event[0] == "input":
             keypress = event[2]
             if keypress == pygame.K_F12:
                 self.active = not self.active
+        if event[0] == "update":
+            self.avgms = event[1]
 
     def draw(self, screen):
         if not self.active:
             return
-        info = self.game.get_debug_info()
-        for i, widget in enumerate(self.debug_text):
-            widget.text = info[i]
-            widget.draw(screen)
+        info = self.get_debug_info()
+        self.debug_text.text = info
+        self.debug_text.draw(screen)
+
+    def get_debug_info(self):
+        """Return a tuple of text for debug info."""
+        info = (
+            "FPS: " + str(int(1000/self.avgms)),
+            "TOTAL IMAGES: " + str(self.renderer.total_images),
+            "OBJECTS: " + str(len([*self.game.world.get_component(c.TilePosition)])),
+            "MENUS: " + str(len(self.menu_manager.menus))
+        )
+        return info
 
 
 class MainMenu(Menu):
     """The starting menu of the game."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.animation_done = False
         self.title_background = None
 
@@ -413,8 +423,8 @@ class CharacterSelect(Menu):
         ("Gets an adreneline rush from killing things", "Fragile physically and emotionally")
     )
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.cursor_pos = 0
         self.desc_widget = Text(
             renderer=self.renderer,
@@ -476,7 +486,7 @@ class CharacterSelect(Menu):
                 self.renderer.draw_centered_image(screen, cursor_image, (x, constants.HEIGHT/2))
 
         self.desc_widget.text = self.character_desc[self.cursor_pos]
-        self.detail_widget.texts = self.character_detail[self.cursor_pos]
+        self.detail_widget.text = self.character_detail[self.cursor_pos]
 
         for widget in self.widgets:
             widget.draw(screen)
@@ -484,8 +494,8 @@ class CharacterSelect(Menu):
 class GameMenu(Menu):
     """The main game menu. Takes player input and draws the game."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         self._floor_cache = None
         self._zoom_cache = 0
 
@@ -499,7 +509,10 @@ class GameMenu(Menu):
             keypress = event[2]
 
             if keypress == pygame.K_ESCAPE:
+                print(len(self.menu_manager.menus))
                 self.menu_manager.remove_all_menus()
+                print(len(self.menu_manager.menus))
+                assert len(self.menu_manager.menus) == 0
                 self.menu_manager.add_menu(MainMenu)
 
             if event[1] is self:
@@ -559,8 +572,8 @@ class GameMenu(Menu):
 class HUD(Menu):
     """Displays information about your health, etc."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         health_bar_pos = constants.MENU_SCALE*8*4, constants.HEIGHT - constants.MENU_SCALE*8*5
         health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
         self.health_bar = pygame.Rect(health_bar_pos, health_bar_size)
@@ -659,8 +672,8 @@ class HUD(Menu):
 
 class ExitMenu(Menu):
     """Popup on exit."""
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         leave()
 
     def get_event(self, event):
@@ -672,8 +685,8 @@ class ExitMenu(Menu):
 class Inventory(Menu):
     """Main inventory menu."""
 
-    def __init__(self, game):
-        super().__init__(game)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.cursorpos = [0, 0]
         self.size = [2, 5]
         self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
@@ -757,8 +770,8 @@ class Inventory(Menu):
 class InventoryOptions(Menu):
     """Option menu for item selected in menu."""
 
-    def __init__(self, game, item):
-        super().__init__(game)
+    def __init__(self, item, *args):
+        super().__init__(*args)
         self.item = item
         self.options = []
         if self.game.world.has_component(item, c.UseEffect):
@@ -863,8 +876,8 @@ class InventoryOptions(Menu):
 class ThrowOptions(Menu):
     """Throw direction selector once an item has been chosen to throw."""
 
-    def __init__(self, game, item):
-        super().__init__(game)
+    def __init__(self, item, *args):
+        super().__init__(*args)
         self.item = item
         self.dir = (0, 0)
         self.targettile = None
