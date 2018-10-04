@@ -8,8 +8,9 @@ import sys
 import pygame
 
 import audio
-import constants
 import components as c
+import constants
+import entity_templates
 from systems import GridSystem
 
 
@@ -373,14 +374,13 @@ class MainMenu(Menu):
                     self.cursor_pos = max(0, self.cursor_pos - 1)
 
                 if keypress in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_z):
-                    self.menu_manager.add_menu(GameMenu)
-                    self.menu_manager.add_menu(HUD, focus=False)
-                    self.menu_manager.add_menu(DebugMenu, focus=False)
                     self.menu_manager.remove_menu(self)
                     if self.options[self.cursor_pos] == "New game":
-                        self.game.new_game()
                         self.menu_manager.add_menu(CharacterSelect)
                     if self.options[self.cursor_pos] == "Load game":
+                        self.menu_manager.add_menu(GameMenu)
+                        self.menu_manager.add_menu(HUD, focus=False)
+                        self.menu_manager.add_menu(DebugMenu, focus=False)
                         self.game.load_game()
 
             if keypress == pygame.K_ESCAPE:
@@ -459,20 +459,24 @@ class CharacterSelect(Menu):
             if keypress == constants.LEFT:
                 self.cursor_pos = max(self.cursor_pos-1, 0)
 
-            if keypress == pygame.K_z:
-                self.game.world.entity_component(self.game.world.tags.player, c.Render).imagename = self.characters[self.cursor_pos]
-                if self.cursor_pos == 1: # Mecha
-                    self.game.world.add_component(self.game.world.tags.player, c.WeakPotions())
-                    health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
-                    health.max = 100
-                    health.current = 100
-                if self.cursor_pos == 2: # Edward
-                    self.game.world.add_component(self.game.world.tags.player, c.SpeedOnKill())
-                    health = self.game.world.entity_component(self.game.world.tags.player, c.Health)
-                    health.max = 30
-                    health.current = 30
-
+            if keypress == pygame.K_ESCAPE:
                 self.menu_manager.remove_menu(self)
+                self.menu_manager.add_menu(MainMenu)
+
+            if keypress == pygame.K_z:
+                self.game.init_world()
+                if self.cursor_pos == 0: # Magnum
+                    self.game.world.tags.player = self.game.world.create_entity(*entity_templates.magnum(0, 0))
+                if self.cursor_pos == 1: # Mecha
+                    self.game.world.tags.player = self.game.world.create_entity(*entity_templates.mecha(0, 0))
+                if self.cursor_pos == 2: # Edward
+                    self.game.world.tags.player = self.game.world.create_entity(*entity_templates.edward(0, 0))
+
+                self.menu_manager.add_menu(GameMenu)
+                self.menu_manager.add_menu(HUD, focus=False)
+                self.menu_manager.add_menu(DebugMenu, focus=False)
+                self.menu_manager.remove_menu(self)
+                self.game.new_game()
 
     def draw(self, screen):
         screen.fill(constants.ALMOST_BLACK)
@@ -509,10 +513,7 @@ class GameMenu(Menu):
             keypress = event[2]
 
             if keypress == pygame.K_ESCAPE:
-                print(len(self.menu_manager.menus))
                 self.menu_manager.remove_all_menus()
-                print(len(self.menu_manager.menus))
-                assert len(self.menu_manager.menus) == 0
                 self.menu_manager.add_menu(MainMenu)
 
             if event[1] is self:

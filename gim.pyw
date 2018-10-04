@@ -276,10 +276,7 @@ class Game:
 
 
     def generate_level(self):
-        """Generate a level depending on how far the player got."""
-
-        if not self.world.tags.player:
-            self.world.tags.player = self.world.create_entity(*entity_templates.player(0, 0))
+        """Generate a level depending on how far the player is."""
 
         level = self.world.entity_component(self.world.tags.player, c.Level).level_num
 
@@ -304,7 +301,7 @@ class Game:
             self.world = pickle.load(save_file)
             self.world.set_game_reference(self)
 
-    def new_game(self):
+    def init_world(self):
         """Initialise for a new game."""
         self.world = World(self)
 
@@ -334,6 +331,8 @@ class Game:
         self.world.add_system(s.DeadSystem())
         self.world.add_system(s.DeleteSystem())
 
+    def new_game(self):
+        """Set the seed then generate a level."""
         if constants.SEED is not None:
             random.seed(constants.SEED)
 

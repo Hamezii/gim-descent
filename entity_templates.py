@@ -243,15 +243,15 @@ def fly_wizard(x, y):
         c.AIDodge()
     ]
 
-def player(x, y):
+def player(x, y, image, health):
     """Player components."""
     return [
         *creature(
             x=x, y=y,
-            image="magnum",
+            image=image,
             diagonal=False,
             speed=1,
-            health=50,
+            health=health,
             attack=5
         ),
         c.PlayerInput(),
@@ -259,6 +259,38 @@ def player(x, y):
         c.Level(1),
         c.GameStats(),
         c.FreeTurn(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
+    ]
+
+def magnum(x, y):
+    """Magnum components."""
+    return [
+        *player(
+            x=x, y=y,
+            image="magnum",
+            health=50
+        ),
+    ]
+
+def mecha(x, y):
+    """Mecha components."""
+    return [
+        *player(
+            x=x, y=y,
+            image="mecha",
+            health=100
+        ),
+        c.WeakPotions()
+    ]
+
+def edward(x, y):
+    """Edward components."""
+    return [
+        *player(
+            x=x, y=y,
+            image="edward",
+            health=30
+        ),
+        c.SpeedOnKill()
     ]
 
 def wall(x, y):
