@@ -207,7 +207,7 @@ class FreeTurn:
 @dataclass
 class SpeedOnKill:
     """Gives the entity 1 free turn whenever it kills something.
-    
+
     Currently only works when put on player
     """
     pass

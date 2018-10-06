@@ -52,7 +52,7 @@ class GridSystem(System):
         """Return a random adjacent tile, or None if they are all blocked."""
         for offset in [*random.sample(self.adjacent, len(self.adjacent)), (0, 0)]:
             test_pos = [pos[i]+offset[i] for i in range(2)]
-            if self.world.get_system(GridSystem).get_blocker_at(test_pos) == 0:
+            if self.world.get_system(GridSystem).get_blocker_at(test_pos) == 0 and self.on_grid(test_pos):
                 return test_pos
         return None
 
@@ -656,7 +656,11 @@ class DeadSystem(System):
                         pos = self.world.entity_component(entity, c.TilePosition)
                         self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
 
-            if entity != self.world.tags.player:
+            if entity == self.world.tags.player:
+                if self.game.has_save():
+                    self.game.delete_save()
+
+            else:
                 self.world.add_component(entity, c.Delete())
 
 class DeleteSystem(System):

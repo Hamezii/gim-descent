@@ -175,13 +175,14 @@ class Text(Widget):
 
 class TextLines(Widget):
     """Multiple lines of text"""
-    def __init__(self, size=None, color=constants.WHITE, text=None, centered=False, **kwargs):
+    def __init__(self, size=None, v_spacing=1.2, color=constants.WHITE, text=None, centered=False, **kwargs):
         super().__init__(**kwargs)
 
         if text is None:
             text = []
 
         self.size = size
+        self.v_spacing = v_spacing
         self.color = color
         self.centered = centered
         self.text = text
@@ -204,7 +205,7 @@ class TextLines(Widget):
         if self._is_dirty():
             self._update_surface()
         for i in range(len(self.text)):
-            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*i*1.2))
+            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*self.v_spacing*i))
 
 
 class MenuManager:
@@ -329,11 +330,22 @@ class MainMenu(Menu):
         self.animation_done = False
         self.title_background = None
 
+        self.options = ["New game"]
+        if self.game.has_save():
+            self.options.insert(0, "Continue game")
+
         self.title = MainMenuTitle(renderer=self.renderer)
-        self.options = ("New game", "Load game")
 
         self.cursor_pos = 0
 
+        self.options_widget = TextLines(
+            renderer=self.renderer,
+            text=self.options,
+            size=constants.MENU_SCALE*5,
+            v_spacing=1.6,
+            offset=(constants.WIDTH // 2, constants.HEIGHT//2),
+            centered=True
+        )
         self.widgets = [
             self.title
         ]
@@ -348,18 +360,7 @@ class MainMenu(Menu):
             if not self.animation_done:
                 if self.title.offset[1] == self.title.y_goal:
                     self.animation_done = True
-                    y = constants.HEIGHT//2
-                    for option in self.options:
-                        self.widgets.append(
-                            Text(
-                                renderer=self.renderer,
-                                text=option,
-                                size=constants.MENU_SCALE*5,
-                                offset=(constants.WIDTH // 2, y),
-                                centered=True
-                            )
-                        )
-                        y += constants.MENU_SCALE * 8
+                    self.widgets.append(self.options_widget)
 
 
         if event[0] == "input" and event[1] == self:
@@ -367,7 +368,7 @@ class MainMenu(Menu):
             if self.animation_done:
 
                 if keypress == constants.DOWN:
-                    self.cursor_pos = min(1, self.cursor_pos + 1)
+                    self.cursor_pos = min(len(self.options)-1, self.cursor_pos + 1)
 
                 if keypress == constants.UP:
                     self.cursor_pos = max(0, self.cursor_pos - 1)
@@ -376,7 +377,7 @@ class MainMenu(Menu):
                     self.menu_manager.remove_menu(self)
                     if self.options[self.cursor_pos] == "New game":
                         self.menu_manager.add_menu(CharacterSelect)
-                    if self.options[self.cursor_pos] == "Load game":
+                    if self.options[self.cursor_pos] == "Continue game":
                         self.menu_manager.add_menu(GameMenu)
                         self.menu_manager.add_menu(HUD, focus=False)
                         self.menu_manager.add_menu(DebugMenu, focus=False)
@@ -512,6 +513,7 @@ class GameMenu(Menu):
             keypress = event[2]
 
             if keypress == pygame.K_ESCAPE:
+                self.game.save_game()
                 self.menu_manager.remove_all_menus()
                 self.menu_manager.add_menu(MainMenu)
 

@@ -2,12 +2,6 @@
 GIM Descent 4
 
 James Lecomte
-
-To do:
-- Delete save on death
-- Only show "load game" when a save is available
-
-- Clean up ui code
 '''
 
 # VV Do this to profile VV
@@ -15,6 +9,7 @@ To do:
 
 import pickle
 import random
+import os
 
 import pygame
 
@@ -29,8 +24,6 @@ import ui
 from ecs import World
 
 #from functools import lru_cache
-
-
 
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
@@ -144,10 +137,20 @@ class Game:
             for _ in range(3):
                 self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
 
+    def has_save(self):
+        """Return True if there is a save file and False otherwise."""
+        return os.path.isfile("save.save")
+
+    def delete_save(self):
+        """Delete the save file."""
+        os.remove("save.save")
+
     def save_game(self):
         """Save the game state."""
-        with open("save.save", "wb") as save_file:
-            pickle.dump(self.world, save_file)
+        if self.world is not None: # If there is a world to save
+            if not self.world.has_component(self.world.tags.player, c.Dead): # If the player is not dead
+                with open("save.save", "wb") as save_file:
+                    pickle.dump(self.world, save_file)
 
     def load_game(self):
         """Load the game from where it was last saved."""
@@ -200,14 +203,11 @@ class Game:
 
 # MAIN
 
-def get_input():
-    """Return the key that was just pressed."""
+def get_input(events):
+    """Return the last key that was just pressed."""
     keypress = None
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            ui.leave()
-
+    for event in events:
         if event.type == pygame.KEYDOWN:
             keypress = event.key
 
@@ -248,7 +248,12 @@ def main():
 
         screen.fill(constants.BLACK)
 
-        keypress = get_input()
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                game.save_game()
+                ui.leave()
+        keypress = get_input(events)
 
         if keypress == pygame.K_MINUS:  # Zooming out
             if game.renderer.camera.get_zoom() > 20:
