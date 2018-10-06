@@ -305,7 +305,6 @@ def wall(x, y):
         #c.Initiative(4),
         #c.AI(),
         #c.Movement(False),
-
         #   c.Attack(5),
     ]
 

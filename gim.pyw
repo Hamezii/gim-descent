@@ -4,13 +4,10 @@ GIM Descent 4
 James Lecomte
 
 To do:
+- Delete save on death
+- Only show "load game" when a save is available
+
 - Clean up ui code
-
-- Maybe implement an event system, where Systems emit events which other Systems recieve
- - This one might be a bad idea though
-
-- Fix the grid cache system
- - I think this is done
 '''
 
 # VV Do this to profile VV
@@ -18,7 +15,6 @@ To do:
 
 import pickle
 import random
-#from functools import lru_cache
 
 import pygame
 
@@ -26,10 +22,15 @@ import audio
 import components as c
 import constants
 import entity_templates
+import levelgen
 import renderer
 import systems as s
 import ui
 from ecs import World
+
+#from functools import lru_cache
+
+
 
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
@@ -121,171 +122,24 @@ class Game:
             health = self.world.entity_component(entity, c.Health)
             health.current = min(health.max, health.current+amount)
 
-    def random_loot(self, x, y):
-        """Spawn random loot at a certain position."""
-        item = random.randint(1, 4)
-        if item == 1:
-            self.world.create_entity(*entity_templates.health_potion(x, y))
-
-        if item == 2:
-            self.world.create_entity(*entity_templates.speed_potion(x, y))
-
-        if item == 3:
-            self.world.create_entity(*entity_templates.teleport_potion(x, y))
-
-        if item == 4:
-            self.world.create_entity(*entity_templates.bomb(x, y))
-
-    def generate_fly_wizard_level(self):
-        """Make the fly wizard level."""
-        grid = []
-        gridwidth = self.world.get_system(s.GridSystem).gridwidth
-        gridheight = self.world.get_system(s.GridSystem).gridheight
-
-        main_room = pygame.Rect(5, 5, 20, 20)
-
-        for y in range(0, gridheight):  # Walls
-            grid.append([])
-
-            for x in range(0, gridwidth):
-                if main_room.collidepoint(x, y):
-                    grid[y].append(0)
-                else:
-                    grid[y].append(1)
-
-        for x in range(1, 5):
-            for y in range(14, 17):
-                grid[y][x] = 0
-
-        for y in range(14, 17):
-            grid[y][8] = 1
-
-        self.world.create_entity(*entity_templates.fly(7, 15))
-        self.world.create_entity(*entity_templates.fly_wizard(22, 15))
-
-        for y in range(0, gridheight):
-            for x in range(0, gridwidth):
-                if grid[y][x] == 1:                  # Creating walls on positions which have been marked
-                    self.world.create_entity(*entity_templates.wall(x, y))
-
-        self.world.add_component(self.world.tags.player, c.TilePosition(2, 15))
-
-
-
-    def generate_random_level(self, level):
-        """Initialise the entities for a random level."""
-
-        level_type = "normal"
-        if random.random() < 0.5 and level > 1:
-            level_type = random.choice(("ice", "fire"))
-
-        grid = []
-        gridwidth = self.world.get_system(s.GridSystem).gridwidth
-        gridheight = self.world.get_system(s.GridSystem).gridheight
-
-        for y in range(0, gridheight):  # Walls
-            grid.append([])
-
-            for x in range(0, gridwidth):
-                grid[y].append(1)
-
-        for roomy in range(0, gridheight):  # Rooms
-            for roomx in range(0, gridwidth):
-                roomheight = random.randint(2, 6)
-                roomwidth = random.randint(2, 6)
-                if roomx + roomwidth <= gridwidth and roomy + roomheight <= gridheight and random.randint(1, 15) == 1:
-                    for y in range(0, roomheight):
-                        for x in range(0, roomwidth):
-                            grid[roomy+y][roomx+x] = 0
-
-        # Stairs down
-        exit_x = random.randrange(gridwidth)
-        exit_y = random.randrange(gridheight)
-        while grid[exit_y][exit_x]:
-            exit_x = random.randrange(gridwidth)
-            exit_y = random.randrange(gridheight)
-
-        grid[exit_y][exit_x] = 2
-        self.world.create_entity(*entity_templates.stairs(exit_x, exit_y))
-
-        # Loot
-        loot_x = random.randint(1, gridwidth-2)
-        loot_y = random.randint(1, gridheight-2)
-        while grid[loot_y][loot_x]:
-            loot_x = random.randint(1, gridwidth-2)
-            loot_y = random.randint(1, gridheight-2)
-        for y in range(loot_y - 1, loot_y + 2):
-            for x in range(loot_x - 1, loot_x + 2):
-                if not grid[y][x]:
-                    self.random_loot(x, y)
-
-        for _ in range(random.randint(2, 5)):
-            x = random.randrange(gridwidth)
-            y = random.randrange(gridheight)
-            while grid[loot_y][loot_x]:
-                x = random.randrange(gridwidth)
-                y = random.randrange(gridheight)
-            self.random_loot(x, y)
-
-        #Spawn pool
-        spawn_pool = [*["snake"]*4]
-        if 1 <= level <= 6:
-            spawn_pool.extend(["ogre"]*3)
-        if 1 <= level <= 6:
-            spawn_pool.extend(["snake"]*4)
-        else:
-            spawn_pool.extend(["snake"]*2)
-
-        if 1 <= level <= 5:
-            spawn_pool.extend(["slime_medium"]*1)
-        else:
-            spawn_pool.extend(["slime_large"]*1)
-
-        if level >= 7:
-            spawn_pool.extend(["bomb_goblin"]*1)
-        if level >= 7:
-            spawn_pool.extend(["caterkiller"]*1)
-        if level >= 10:
-            spawn_pool.extend(["golem"]*1)
-
-
-        for y in range(0, gridheight):
-            for x in range(0, gridwidth):
-                if grid[y][x] == 1:                  # Creating walls on positions which have been marked
-                    wall = self.world.create_entity(*entity_templates.wall(x, y))
-                    if random.randint(1, 3) == 1:
-                        if level_type == "ice":
-                            self.world.add_component(wall, c.IceElement())
-                        if level_type == "fire":
-                            self.world.add_component(wall, c.FireElement())
-
-                elif grid[y][x] == 0:
-                    if random.randint(1, max(45-level*2, 10)) == 1:       # Creating enemies
-                        choice = random.choice(spawn_pool)
-                        entity = self.world.create_entity(*getattr(entity_templates, choice)(x, y))
-
-                        if random.randint(1, 2) == 1:
-                            if level_type == "ice":
-                                self.world.add_component(entity, c.IceElement())
-                            if level_type == "fire":
-                                self.world.add_component(entity, c.FireElement())
-
-        self.world.get_system(s.GridSystem).process()
-        x, y = self.world.get_system(s.GridSystem).random_free_pos()
-        self.world.add_component(self.world.tags.player, c.TilePosition(x, y))
-
-
     def generate_level(self):
         """Generate a level depending on how far the player is."""
 
-        level = self.world.entity_component(self.world.tags.player, c.Level).level_num
+        level_num = self.world.entity_component(self.world.tags.player, c.Level).level_num
 
-        if level == 12:
-            self.generate_fly_wizard_level()
+        g_sys = self.world.get_system(s.GridSystem)
+        gridsize = (g_sys.gridwidth, g_sys.gridheight)
+
+        if level_num == 12:
+            level = levelgen.generate_fly_boss_level(gridsize)
         else:
-            self.generate_random_level(level)
+            level = levelgen.generate_random_level(gridsize, level_num)
 
-        if level == 1:
+        for components in level.entities:
+            self.world.create_entity(*components)
+        self.world.add_component(self.world.tags.player, c.TilePosition(*level.player_start))
+
+        if level_num == 1:
             pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
             for _ in range(3):
                 self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
@@ -301,35 +155,41 @@ class Game:
             self.world = pickle.load(save_file)
             self.world.set_game_reference(self)
 
+    def add_system(self, system_instance):
+        """Add a system to the ECS and give it a reference to this game."""
+        self.world.add_system(system_instance)
+        system_instance.game = self
+        system_instance.renderer = self.renderer
+
     def init_world(self):
         """Initialise for a new game."""
-        self.world = World(self)
+        self.world = World()
 
-        self.world.add_system(s.GameStatsSystem())
+        self.add_system(s.GameStatsSystem())
 
-        self.world.add_system(s.GridSystem())
-        self.world.add_system(s.InitiativeSystem())
+        self.add_system(s.GridSystem())
+        self.add_system(s.InitiativeSystem())
 
-        self.world.add_system(s.PlayerInputSystem())
-        self.world.add_system(s.AIFlyWizardSystem())
-        self.world.add_system(s.AISystem())
-        self.world.add_system(s.FreezingSystem())
-        self.world.add_system(s.BurningSystem())
-        self.world.add_system(s.AIDodgeSystem())
-        self.world.add_system(s.BumpSystem())
+        self.add_system(s.PlayerInputSystem())
+        self.add_system(s.AIFlyWizardSystem())
+        self.add_system(s.AISystem())
+        self.add_system(s.FreezingSystem())
+        self.add_system(s.BurningSystem())
+        self.add_system(s.AIDodgeSystem())
+        self.add_system(s.BumpSystem())
 
-        self.world.add_system(s.ExplosionSystem())
-        self.world.add_system(s.DamageSystem())
-        self.world.add_system(s.RegenSystem())
-        self.world.add_system(s.PickupSystem())
-        self.world.add_system(s.IdleSystem())
-        self.world.add_system(s.SplitSystem())
-        self.world.add_system(s.StairsSystem())
+        self.add_system(s.ExplosionSystem())
+        self.add_system(s.DamageSystem())
+        self.add_system(s.RegenSystem())
+        self.add_system(s.PickupSystem())
+        self.add_system(s.IdleSystem())
+        self.add_system(s.SplitSystem())
+        self.add_system(s.StairsSystem())
 
-        self.world.add_system(s.AnimationSystem())
+        self.add_system(s.AnimationSystem())
 
-        self.world.add_system(s.DeadSystem())
-        self.world.add_system(s.DeleteSystem())
+        self.add_system(s.DeadSystem())
+        self.add_system(s.DeleteSystem())
 
     def new_game(self):
         """Set the seed then generate a level."""

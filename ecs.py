@@ -53,14 +53,13 @@ class World:
 
     Stores systems and components, as well as tags.
     """
-    def __init__(self, game):
+    def __init__(self):
         """A World object keeps track of all Entities, Components, and Systems.
 
         A World contains a database of all Entity/Component assignments. It also
         handles calling the process method on any Systems assigned to it.
         """
         self.tags = TagManager()
-        self._game = game
         self._systems = []
         self._next_entity_id = 0
         self._components = {}
@@ -87,10 +86,9 @@ class World:
 
     def set_game_reference(self, game):
         """Set the game which the World and systems have a reference to."""
-        self._game = game
         for system in self._systems:
-            system.game = self._game
-            system.renderer = self._game.renderer
+            system.game = game
+            system.renderer = game.renderer
 
 
     def add_system(self, system_instance, priority=0):
@@ -103,8 +101,6 @@ class World:
         assert issubclass(system_instance.__class__, System)
         system_instance.priority = priority
         system_instance.world = self
-        system_instance.game = self._game
-        system_instance.renderer = self._game.renderer
         self._systems.append(system_instance)
         self._systems.sort(key=lambda proc: proc.priority, reverse=True)
 

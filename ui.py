@@ -234,8 +234,7 @@ class MenuManager:
 
         If focus is True, focus will change to the new menu.
         """
-        menu = menu_type(*args, self.game)
-        menu.menu_manager = self
+        menu = menu_type(*args, self.game, self)
         self.menus.append(menu)
         if focus:
             self.focuses.append(menu)
@@ -263,10 +262,10 @@ class MenuManager:
 class Menu:
     """A class that can be interacted with and drawn to the screen."""
 
-    def __init__(self, game):
+    def __init__(self, game, menu_manager):
         self.game = game
         self.renderer = game.renderer
-        self.menu_manager: MenuManager = None # Set by the ManuManager after instancing
+        self.menu_manager: MenuManager = menu_manager
 
     def get_event(self, event):
         """React to an event.
@@ -518,7 +517,9 @@ class GameMenu(Menu):
 
             if event[1] is self:
                 if keypress == pygame.K_z:
-                    self.menu_manager.add_menu(Inventory)
+                    # Only open if player does not have Dead component
+                    if not self.game.world.has_component(self.game.world.tags.player, c.Dead):
+                        self.menu_manager.add_menu(Inventory)
                 if keypress in constants.DIRECTIONS:
                     self.game.world.process(playerinput=keypress, d_t=0)
 
