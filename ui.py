@@ -175,7 +175,7 @@ class Text(Widget):
 
 class TextLines(Widget):
     """Multiple lines of text"""
-    def __init__(self, size=None, v_spacing=1.2, color=constants.WHITE, text=None, centered=False, **kwargs):
+    def __init__(self, size=None, v_spacing=1.4, color=constants.WHITE, text=None, centered=False, **kwargs):
         super().__init__(**kwargs)
 
         if text is None:
@@ -205,7 +205,7 @@ class TextLines(Widget):
         if self._is_dirty():
             self._update_surface()
         for i in range(len(self.text)):
-            self.lines[i].draw(surface, (self.offset[0], self.offset[1] + self.size*self.v_spacing*i))
+            self.lines[i].draw(surface, (self.offset[0] + pos[0], self.offset[1] + pos[1] + self.size*self.v_spacing*i))
 
 
 class MenuManager:
@@ -292,6 +292,7 @@ class DebugMenu(Menu):
         self.debug_text = TextLines(
             renderer=self.renderer,
             size=10,
+            v_spacing=1.2,
             color=constants.RED,
             offset=(0, 12),
         )
@@ -341,8 +342,8 @@ class MainMenu(Menu):
         self.options_widget = TextLines(
             renderer=self.renderer,
             text=self.options,
-            size=constants.MENU_SCALE*5,
             v_spacing=1.6,
+            size=constants.MENU_SCALE*5,
             offset=(constants.WIDTH // 2, constants.HEIGHT//2),
             centered=True
         )
@@ -414,13 +415,13 @@ class CharacterSelect(Menu):
     num_characters = 3
     character_desc = (
         "Relies on skill",
-        "Actually comes prepared",
-        "Potential phychopath",
+        "Armoured guy",
+        "Crazy brawler",
     )
     character_detail = (
-        ("To summarise: a good allrounder", "In general: a pretty solid guy"),
+        ("Default character", "Most playtested"),
         ("Thick armour comes in handy", "Hard to drink potions from it"),
-        ("Gets an adreneline rush from killing things", "Fragile physically and emotionally")
+        ("Gets an adreneline rush from killing things", "Cant take many hits")
     )
 
     def __init__(self, *args):
@@ -697,8 +698,10 @@ class Inventory(Menu):
         self.pos = DynamicPos((-self.slot_size*2-21, constants.HEIGHT/2-self.slot_size*3), speed=10)
 
         self.widgets = (
-            Text(renderer=self.renderer, size=5*constants.MENU_SCALE, text="Z to select", offset=(0, - 19*constants.MENU_SCALE)),
-            Text(renderer=self.renderer, size=5*constants.MENU_SCALE, text="X to return", offset=(0, - 12*constants.MENU_SCALE)),
+            TextLines(
+                renderer=self.renderer, size=5*constants.MENU_SCALE, offset=(0, - 19*constants.MENU_SCALE),
+                text=["Z to select", "X to return"]
+            ),
             ImageGrid(renderer=self.renderer, grid_size=[2, 5], image=self.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)),
         )
 
@@ -903,15 +906,10 @@ class ThrowOptions(Menu):
                 offset=(0, 0),
                 color=constants.LIGHT_GRAY
             ),
-            Text(
+            TextLines(
                 **text_args,
-                text="Z to throw",
+                text=["Z to throw", "X to cancel"],
                 offset=(0, 7*constants.MENU_SCALE)
-            ),
-            Text(
-                **text_args,
-                text="X to cancel",
-                offset=(0, 14*constants.MENU_SCALE)
             )
         )
 

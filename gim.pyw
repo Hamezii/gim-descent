@@ -2,6 +2,9 @@
 GIM Descent 4
 
 James Lecomte
+
+To do:
+- Improve AI
 '''
 
 # VV Do this to profile VV
