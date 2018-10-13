@@ -104,7 +104,7 @@ class MainMenuTitle(Widget):
         c_x, c_y = self._draw_surface.get_rect().center
 
         self.offset = [constants.WIDTH//2-c_x, -c_y*2]
-        self.y_goal = constants.HEIGHT/2 - 50*constants.MENU_SCALE - 200
+        self.y_goal = constants.HEIGHT/2 - 150*constants.MENU_SCALE
         self.speed = 0
         self.shake_x = 0
         self.shake_y = 0
