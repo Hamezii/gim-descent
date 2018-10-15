@@ -624,7 +624,9 @@ class HUD(Menu):
         ]
 
     def get_event(self, event):
-        pass
+        if event[0] == "input":
+            if event[2] == pygame.K_F8:
+                self.menu_manager.remove_menu(self)
 
     def draw(self, screen):
         # Health bar
