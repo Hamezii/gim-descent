@@ -3,6 +3,8 @@ Contains all the constants for Gim.
 '''
 
 FULLSCREEN_MODE = True
+WIDTH = 1200
+HEIGHT = 800
 SEED = None
 
 TILE_SIZE = 40
@@ -36,6 +38,4 @@ UP = (0, -1)
 DOWN = (0, 1)
 DIRECTIONS = (UP, DOWN, LEFT, RIGHT)
 
-WIDTH = None
-HEIGHT = None
 MENU_SCALE = None

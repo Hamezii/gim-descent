@@ -291,17 +291,14 @@ def init_screen():
 
     if constants.FULLSCREEN_MODE:
         info_object = pygame.display.Info()
-        width = info_object.current_w
-        height = info_object.current_h
-        screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
-    else:
-        width = 1200
-        height = 800
-        screen = pygame.display.set_mode((width, height))
+        constants.WIDTH = info_object.current_w
+        constants.HEIGHT = info_object.current_h
 
-    constants.WIDTH = width
-    constants.HEIGHT = height
-    constants.MENU_SCALE = round(width/600)
+        screen = pygame.display.set_mode((constants.WIDTH, constants.HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+    else:
+        screen = pygame.display.set_mode((constants.WIDTH, constants.HEIGHT))
+
+    constants.MENU_SCALE = round(constants.WIDTH/600)
 
     pygame.display.set_icon(pygame.image.load(constants.IMAGES+"logo.png").convert_alpha())
 
