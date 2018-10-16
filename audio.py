@@ -51,3 +51,7 @@ def dim_music():
 def undim_music():
     '''Return the playback of the music to its original volume.'''
     pygame.mixer.music.set_volume(constants.MUSIC_NORMAL_VOLUME)
+
+def stop_music():
+    """Stop the playback of music."""
+    pygame.mixer.music.stop()

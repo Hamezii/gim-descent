@@ -512,6 +512,9 @@ class GameMenu(Menu):
             cameragoal = self.game.world.entity_component(self.game.world.tags.player, c.TilePosition)
             cameragoal = self.renderer.camera.tile_to_camera_pos(cameragoal.x, cameragoal.y)
             self.renderer.camera.update(delta, cameragoal)
+            # Cut out music when the player is dead
+            if self.game.world.has_component(self.game.world.tags.player, c.Dead): 
+                audio.stop_music()
         if event[0] == "input":
             keypress = event[2]
 
