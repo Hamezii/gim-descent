@@ -51,24 +51,20 @@ def __random_loot():
 
 def __generate_spawn_pool(levelnum):
     """Return a list of creatures which can spawn on a level."""
-    spawn_pool = [*["snake"]*4]
+    spawn_pool = [*["snake"]*10]
     if 1 <= levelnum <= 6:
-        spawn_pool.extend(["ogre"]*3)
-    if 1 <= levelnum <= 6:
-        spawn_pool.extend(["snake"]*4)
-    else:
-        spawn_pool.extend(["snake"]*2)
+        spawn_pool.extend(["ogre"]*4)
 
     if 1 <= levelnum <= 5:
-        spawn_pool.extend(["slime_medium"]*1)
+        spawn_pool.extend(["slime_medium"]*2)
     else:
-        spawn_pool.extend(["slime_large"]*1)
+        spawn_pool.extend(["slime_large"]*2)
 
     if levelnum >= 7:
-        spawn_pool.extend(["bomb_goblin"]*1)
+        spawn_pool.extend(["bomb_goblin"]*2)
     if levelnum >= 7:
-        spawn_pool.extend(["caterkiller"]*1)
-    if levelnum >= 10:
+        spawn_pool.extend(["caterkiller"]*3)
+    if levelnum >= 9:
         spawn_pool.extend(["golem"]*1)
     return spawn_pool
 
