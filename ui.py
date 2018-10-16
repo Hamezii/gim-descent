@@ -351,6 +351,8 @@ class MainMenu(Menu):
             self.title
         ]
 
+        audio.play_music()
+
     def get_event(self, event):
         if event[0] == "update":
             delta = event[1]

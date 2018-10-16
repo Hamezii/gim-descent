@@ -307,7 +307,4 @@ def init_screen():
 if __name__ == "__main__":
     CLOCK = pygame.time.Clock()
 
-    # Playing music
-    audio.play_music()
-
     main()

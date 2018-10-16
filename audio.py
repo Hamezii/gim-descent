@@ -36,9 +36,11 @@ def play(name, volume=1, replace=False):
     if channel:
         channel.set_volume(volume)
 
-def play_music():
+def play_music(music_path=None):
     '''Loop a random piece of music.'''
-    pygame.mixer.music.load(random.choice(glob.glob(constants.MUSIC+"*")))
+    if music_path is None:
+        music_path = random.choice(glob.glob(constants.MUSIC+"*"))
+    pygame.mixer.music.load(music_path)
     pygame.mixer.music.set_volume(constants.MUSIC_NORMAL_VOLUME)
     pygame.mixer.music.play(-1)
 
