@@ -7,6 +7,8 @@ WIDTH = 1200
 HEIGHT = 800
 SEED = None
 
+BLINK_RATE = 250
+
 TILE_SIZE = 40
 
 FOLDER = "assets/"
