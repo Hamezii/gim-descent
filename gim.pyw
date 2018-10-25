@@ -10,13 +10,12 @@ To do:
 # VV Do this to profile VV
 # py -m cProfile -s tottime gim.pyw
 
-import sys
-
 import pygame
 
 import audio
 import constants
-import scene
+from assets.scenes.main_menu import MainMenu
+from assets.scenes.scene import GameManager
 from misc import leave
 
 #from functools import lru_cache
@@ -57,9 +56,9 @@ def main():
 
     screen = init_screen()
 
-    game = scene.GameManager()
+    game = GameManager()
 
-    game.change_base_scene(scene.MainMenu)
+    game.change_base_scene(MainMenu)
 
     while True:
         events = pygame.event.get()
