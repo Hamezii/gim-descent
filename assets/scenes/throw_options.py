@@ -94,7 +94,7 @@ class ThrowOptions(Scene):
                     if self.world.has_component(self.item, c.UseEffect):
                         use = self.world.entity_component(self.item, c.UseEffect)
                         for effect in use.effects:
-                            getattr(self.game, effect[0])(target, *effect[1:])
+                            getattr(self.parent.parent, effect[0])(target, *effect[1:])
                     if self.world.entity_component(self.item, c.Item).consumable:
                         self.world.add_component(self.item, c.Dead())
                 self.remove_scene()
