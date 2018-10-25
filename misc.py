@@ -1,4 +1,4 @@
-"""Contains miscellaneous classes and functions which are used throughout the code."""
+"""Contains miscellaneous classes and functions which are used by multiple modules."""
 
 import sys
 
