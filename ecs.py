@@ -84,11 +84,11 @@ class World:
         self._entities.clear()
         self.clear_cache()
 
-    def set_game_reference(self, game):
+    def set_game_reference(self, dungeon):
         """Set the game which the World and systems have a reference to."""
         for system in self._systems:
-            system.game = game
-            system.renderer = game.renderer
+            system.game = dungeon
+            system.renderer = dungeon.game.renderer
 
 
     def add_system(self, system_instance, priority=0):

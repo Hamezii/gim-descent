@@ -209,18 +209,18 @@ class AIFlyWizardSystem(System):
         if self.world.has_component(entity, c.Dead): # So it doesn't emit flies when getting hit the last time
             return
 
-        ai = self.world.entity_component(entity, c.AIFlyWizard)
+        fly_ai = self.world.entity_component(entity, c.AIFlyWizard)
         render = self.world.entity_component(entity, c.Render)
 
-        if ai.state != "asleep":
+        if fly_ai.state != "asleep":
             self.game.teleport_entity(entity, 6)
 
-        ai.state = new_state
+        fly_ai.state = new_state
 
-        if ai.state == "asleep":
+        if fly_ai.state == "asleep":
             render.imagename = "fly-wizard-i"
 
-        if ai.state == "normal":
+        if fly_ai.state == "normal":
             self.world.add_component(entity, c.Initiative(2))
             render.imagename = "fly-wizard-r2"
             pos = self.world.entity_component(entity, c.TilePosition)
@@ -232,7 +232,7 @@ class AIFlyWizardSystem(System):
                         self.world.entity_component(entity, c.Boss).minions.append(fly)
                     self.world.get_system(GridSystem).process()
 
-        if ai.state == "angry":
+        if fly_ai.state == "angry":
             self.world.add_component(entity, c.Initiative(1))
             render.imagename = "fly-wizard-r"
 
@@ -242,8 +242,8 @@ class AIFlyWizardSystem(System):
             return
 
         player_pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
-        for entity, (ai, pos) in self.world.get_components(c.AIFlyWizard, c.TilePosition):
-            if ai.state == "asleep":
+        for entity, (fly_ai, pos) in self.world.get_components(c.AIFlyWizard, c.TilePosition):
+            if fly_ai.state == "asleep":
                 if dist(pos, player_pos) <= 4:
                     self.change_state(entity, "normal")
 
@@ -412,7 +412,7 @@ class BumpSystem(System):
                         )
 
                         if entity == self.world.tags.player:
-                            self.renderer.camera.shake(5)
+                            self.game.camera.shake(5)
                             audio.play("punch", 0.5)
 
                         if self.world.has_component(entity, c.Bomber):
@@ -464,7 +464,7 @@ class ExplosionSystem(System):
 
                 dist_to_player = dist(pos, self.world.entity_component(self.world.tags.player, c.TilePosition))
                 if dist_to_player < 10:
-                    self.renderer.camera.shake(40 - dist_to_player * 3)
+                    self.game.camera.shake(40 - dist_to_player * 3)
                     audio.play("explosion", 0.6 - dist_to_player * 0.05)
 
 class DamageSystem(System):
@@ -477,7 +477,7 @@ class DamageSystem(System):
 
                 targethealth.current -= damage.amount
                 if damage.target == self.world.tags.player:
-                    self.renderer.camera.shake(5 + damage.amount*2)
+                    self.game.camera.shake(5 + damage.amount*2)
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, c.Dead())
@@ -591,7 +591,6 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
 
-                self.renderer.camera.start = True # Makes the camera go directly to the player on the next update
                 self.game.generate_level()
                 self.game.save_game()
 
