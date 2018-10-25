@@ -30,6 +30,7 @@ class Dungeon(Scene):
         self.world: World = None
         self.camera = Camera(speed=5)
         self.keypress = None
+        self.player_alive = True
 
         self.add_child_scene(Viewport)
         self.add_child_scene(HUD)
@@ -59,17 +60,23 @@ class Dungeon(Scene):
         return True
 
     def update(self, delta):
+        if not self.player_alive:
+            self.keypress = None
         self.world.process(playerinput=self.keypress, d_t=delta)
         self.keypress = None
-        while not self.world.has_component(self.world.tags.player, c.MyTurn): # Waiting for input
+        while not self.world.has_component(self.world.tags.player, c.MyTurn) and self.player_alive: # Waiting for input
             self.world.process(playerinput=None, d_t=0)
 
         # Move the camera towards the player and update it
         cameragoal = self.__player_pos_to_camera_pos()
         self.camera.update(delta, cameragoal)
         # Cut out music when the player is dead
-        if self.world.has_component(self.world.tags.player, c.Dead):
-            audio.stop_music()
+        if self.player_alive:
+            if self.world.has_component(self.world.tags.player, c.Dead):
+                self.player_alive = False
+                if self.game.has_save():
+                    self.game.delete_save()
+                audio.stop_music()
 
     def is_blinking(self):
         """Return True if blinking images should be lit up at the moment."""
@@ -201,7 +208,7 @@ class Dungeon(Scene):
         """
         pass
         # if self.world is not None: # If there is a world to save
-        #     if not self.world.has_component(self.world.tags.player, c.Dead): # If the player is not dead
+        #     if self.player_alive: # If the player is not dead
         #         with open("save.save", "wb") as save_file:
         #             pickle.dump(self.world, save_file)
 
@@ -256,4 +263,5 @@ class Dungeon(Scene):
         if constants.SEED is not None:
             random.seed(constants.SEED)
 
+        self.player_alive = True
         self.generate_level()
