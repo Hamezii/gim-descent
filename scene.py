@@ -1,6 +1,10 @@
 """Contains the GameManager and the Scene classes."""
 
 import os
+<<<<<<< HEAD
+=======
+import pickle
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
 import random
 
 import pygame
@@ -46,12 +50,17 @@ class GameManager:
         self.base_scene.get_event(event_name, *args, **kwargs)
 
     def has_save(self):
+<<<<<<< HEAD
         """Return True if there is a save file and False otherwise.
 
         Temporarily disabled.
         """
         pass
         # return os.path.isfile("save.save")
+=======
+        """Return True if there is a save file and False otherwise."""
+        return os.path.isfile("save.save")
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
 
     def input(self, keypress):
         """Send an input to the currently focused scene.
@@ -70,6 +79,10 @@ class GameManager:
         self.t_elapsed += delta
         self.fps = int(self.clock.get_fps())
         self.send_event("update", delta)
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
     def draw(self, screen):
         """Draw the whole scene tree, taking into account draw order."""
         self.__draw_scene(screen, self.base_scene)
@@ -199,7 +212,11 @@ class MainMenu(Scene):
         # for different sized sceens
         if self.title_background is None:
             # Logic to get title image to scale on differently sized monitors
+<<<<<<< HEAD
             if constants.WIDTH/1920 > constants.HEIGHT/1080:
+=======
+            if constants.WIDTH/1920 > constants.HEIGHT/1080:  
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
                 size = (constants.WIDTH, int(constants.WIDTH/1920*1080))
             else:
                 size = (int(constants.HEIGHT/1080*1920), constants.HEIGHT)
@@ -475,17 +492,23 @@ class Dungeon(Scene):
         os.remove("save.save")
 
     def save_game(self):
+<<<<<<< HEAD
         """Save the game state.
 
         Temporarily disabled.
         """
         pass
+=======
+        """Save the game state."""
+        return "disabled temporarily"
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
         # if self.world is not None: # If there is a world to save
         #     if not self.world.has_component(self.world.tags.player, c.Dead): # If the player is not dead
         #         with open("save.save", "wb") as save_file:
         #             pickle.dump(self.world, save_file)
 
     def load_game(self):
+<<<<<<< HEAD
         """Load the game from where it was last saved.
 
         Temporarily disabled.
@@ -494,6 +517,12 @@ class Dungeon(Scene):
         # with open("save.save", "rb") as save_file:
         #     self.world = pickle.load(save_file)
         #     self.world.set_game_reference(self)
+=======
+        """Load the game from where it was last saved."""
+        with open("save.save", "rb") as save_file:
+            self.world = pickle.load(save_file)
+            self.world.set_game_reference(self)
+>>>>>>> 262464466c9f513d5fcfba61b887d4aa9b0081cd
 
     def add_system(self, system_instance):
         """Add a system to the ECS and give it a reference to this game."""
