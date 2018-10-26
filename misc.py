@@ -43,3 +43,14 @@ class DynamicPos:
     def y(self):
         """Get y value of vector."""
         return self.current[1]
+
+    def __str__(self):
+        keys = ("current", "goal", "speed")
+        string = "DynamicPos("
+        for key in keys:
+            string += key+"="+str(getattr(self, key))+" "
+        string += ")"
+        return string
+
+    def __getitem__(self, index):
+        return self.current[index]

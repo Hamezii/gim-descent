@@ -8,6 +8,7 @@ import constants
 import widget as wgt
 from misc import DynamicPos
 
+from .image_grid import ImageGrid
 from .inventory_options import InventoryOptions
 from .scene import Scene
 
@@ -22,17 +23,20 @@ class Inventory(Scene):
         self.size = [2, 5]
         self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
         self.pos = DynamicPos((-self.slot_size*2-21, constants.HEIGHT/2-self.slot_size*3), speed=10)
+        self.image_grid_pos = [0, 0]
 
-        self.widgets = (
+        self.widgets = [
             wgt.TextLines(
                 renderer=self.game.renderer, size=5*constants.MENU_SCALE, offset=(0, - 19*constants.MENU_SCALE),
                 text=["Z to select", "X to return"]
-            ),
-            wgt.ImageGrid(
-                renderer=self.game.renderer,
-                grid_size=[2, 5],
-                image=self.game.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE)
-            ),
+            )
+        ]
+
+        self.add_child_scene(
+            ImageGrid,
+            grid_size=self.size,
+            image=self.game.renderer.get_image(name="inventory-slot", scale=constants.MENU_SCALE),
+            pos=self.image_grid_pos
         )
 
     def get_input(self, keypress):
@@ -71,16 +75,15 @@ class Inventory(Scene):
             else:
                 self.visible = True
 
+        for i in range(2):
+            self.image_grid_pos[i] = self.pos[i]
+
     def draw(self, screen):
         if not self.visible:
             return
 
         drawposx = round(self.pos.x)
         drawposy = round(self.pos.y)
-
-        black_box_pos = (drawposx-5*constants.MENU_SCALE, drawposy-5*constants.MENU_SCALE)
-        black_box_size = tuple(self.slot_size * self.size[i] +10*constants.MENU_SCALE for i in range(2))
-        pygame.draw.rect(screen, constants.BLACK, (black_box_pos, black_box_size))
 
         inventory = self.parent.world.entity_component(self.parent.world.tags.player, c.Inventory)
 

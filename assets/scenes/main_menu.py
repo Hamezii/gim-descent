@@ -9,6 +9,7 @@ from misc import leave
 
 from .character_select import CharacterSelect
 from .dungeon import Dungeon
+from .main_menu_title import MainMenuTitle
 from .scene import Scene
 
 
@@ -24,7 +25,7 @@ class MainMenu(Scene):
         if self.game.has_save():
             self.options.insert(0, "Continue game")
 
-        self.title = wgt.MainMenuTitle(renderer=self.game.renderer)
+        self.title = self.add_child_scene(MainMenuTitle)
 
         self.cursor_pos = 0
 
@@ -36,9 +37,8 @@ class MainMenu(Scene):
             offset=(constants.WIDTH // 2, constants.HEIGHT//2),
             centered=True
         )
-        self.widgets = [
-            self.title
-        ]
+
+        self.widgets = []
 
         audio.play_music()
 
