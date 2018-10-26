@@ -1,5 +1,6 @@
 """Contains the base Scene class."""
 
+import game_manager
 
 class Scene:
     """A node in the scene tree."""
@@ -7,7 +8,7 @@ class Scene:
         "draw_above_parent": True
     }
     def __init__(self, game, parent=None):
-        self.game = game
+        self.game: game_manager.GameManager = game
         self.parent = parent
         self.children = []
 
