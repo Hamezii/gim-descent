@@ -9,7 +9,7 @@ import audio
 import components as c
 import constants
 import entity_templates
-import levelgen
+import level_gen
 import systems as s
 from camera import Camera
 from ecs import World
@@ -173,9 +173,9 @@ class Dungeon(Scene):
         g_sys = self.world.get_system(s.GridSystem)
         gridsize = (g_sys.gridwidth, g_sys.gridheight)
         if level_num == 12:
-            level = levelgen.generate_fly_boss_level(gridsize)
+            level = level_gen.generate_fly_boss_level(gridsize)
         else:
-            level = levelgen.generate_random_level(gridsize, level_num)
+            level = level_gen.generate_random_level(gridsize, level_num)
 
         for components in level.entities:
             self.world.create_entity(*components)
