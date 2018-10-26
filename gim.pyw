@@ -15,7 +15,7 @@ import pygame
 import audio
 import constants
 from assets.scenes.main_menu import MainMenu
-from assets.scenes.scene import GameManager
+from game_manager import GameManager
 from misc import leave
 
 #from functools import lru_cache
@@ -64,7 +64,7 @@ def main():
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
-                game.base_scene.save_game()
+                game.save_game()
                 leave()
         keypress = get_input(events)
         game.input(keypress)
