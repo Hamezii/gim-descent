@@ -1,5 +1,7 @@
 """Contains all the Widget classes."""
 
+import math
+
 import pygame
 
 import constants
@@ -113,18 +115,37 @@ class TextLines(Widget):
 
 class LevelNode(Widget):
     """Represents a node in the dungeon."""
-    OUTER_COLOR = constants.GRAY
-    INNER_COLOR = constants.LIGHT_GRAY
+    OUTER_COLOR = constants.DARK_GRAY
+    INNER_COLOR = constants.GRAY
     def __init__(self, level_node, **kwargs):
         super().__init__(**kwargs)
 
         self.level_node = level_node
+        self.scale = 1
+        self.t = 0
 
-        self.dirty_attributes = ("level_node",)
+        self.dirty_attributes = ("level_node", "scale")
+
+    def update(self, delta):
+        if self.level_node.can_be_explored:
+            self.t += delta * math.pi* 0.001
+            self.scale = 1 + math.sin(self.t) * 0.15
+        else:
+            self.t = 0
+            self.scale = 1
 
     def _update_surface(self):
-        scale = constants.MENU_SCALE
-        self._draw_surface = pygame.Surface((40*scale, 30*scale))
-        self._draw_surface.fill(self.INNER_COLOR)
-        outer_rect = (2*scale, 2*scale, (40-4)*scale, (30-4)*scale)
-        pygame.draw.rect(self._draw_surface, self.OUTER_COLOR, outer_rect, 4*scale)
+        if self._draw_surface is not None:
+            center = self._draw_surface.get_rect().center
+            self.offset = tuple(self.offset[i]+center[i] for i in range(2))
+
+        color = (0, 0, 0, pygame.BLEND_ADD)
+        if not self.level_node.explored and not self.level_node.can_be_explored:
+            color = (120, 120, 120, pygame.BLEND_MULT)
+
+        scale = constants.MENU_SCALE*2*self.scale
+        self._draw_surface = self.renderer.get_image(name="level_icon", color=color, scale=scale)
+
+        center = self._draw_surface.get_rect().center
+        for i in range(2):
+            self.offset = tuple(self.offset[i]-center[i]*0.5 for i in range(2))
