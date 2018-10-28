@@ -113,6 +113,7 @@ class Dungeon(Scene):
         self.world.add_component(self.world.tags.player, c.TilePosition(*level.player_start))
 
         if level_num == 1:
+            self.world.add_component(self.world.tags.player, c.FreeTurn(1)) # To fix off-by-one turn timing
             inv = self.world.entity_component(self.world.tags.player, c.Inventory)
             for _ in range(3):
                 # This code will create the bomb, remove its tile position then
@@ -121,6 +122,8 @@ class Dungeon(Scene):
                 self.world.remove_component(bomb, c.TilePosition)
                 self.world.add_component(bomb, c.Stored(self.world.tags.player))
                 inv.contents.append(bomb)
+        else:
+            self.world.remove_component(self.world.tags.player, c.MyTurn) # To fix off-by-one turn timing
 
     def get_health_bar_color(self, health_comp):
         """Return what color an entity's health bar should be given its health component."""

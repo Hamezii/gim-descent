@@ -257,8 +257,7 @@ def player(x, y, image, health):
         c.PlayerInput(),
         c.Inventory(10),
         c.Level(1),
-        c.GameStats(),
-        #c.FreeTurn(1),      # TEMPORARY: stops player from getting hit at the beginning of the level.
+        c.GameStats()
     ]
 
 def magnum(x, y):

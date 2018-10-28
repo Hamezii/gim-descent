@@ -58,7 +58,7 @@ class Initiative:
     speed: int
     nextturn: int = field(init=False)
     def __post_init__(self):
-        self.nextturn = randint(1, self.speed)
+        self.nextturn = randint(2, self.speed+1)
 
 @dataclass
 class AI:
