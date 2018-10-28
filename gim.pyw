@@ -4,6 +4,8 @@ GIM Descent 4
 James Lecomte
 
 To do:
+- Maybe add a signal system for scenes
+
 - Improve AI
 '''
 
