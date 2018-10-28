@@ -103,7 +103,7 @@ class Dungeon(Scene):
         level_num = self.world.entity_component(self.world.tags.player, c.Level).level_num
         g_sys = self.world.get_system(s.GridSystem)
         gridsize = (g_sys.gridwidth, g_sys.gridheight)
-        if level_num == 12: # TEMPORARY to test off by one error for turns
+        if level_num == 12:
             level = level_gen.generate_fly_boss_level(gridsize)
         else:
             level = level_gen.generate_random_level(gridsize, level_num)
@@ -113,9 +113,14 @@ class Dungeon(Scene):
         self.world.add_component(self.world.tags.player, c.TilePosition(*level.player_start))
 
         if level_num == 1:
-            pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
+            inv = self.world.entity_component(self.world.tags.player, c.Inventory)
             for _ in range(3):
-                self.world.create_entity(*entity_templates.bomb(pos.x, pos.y))
+                # This code will create the bomb, remove its tile position then
+                # manually put it into the player's inventory.
+                bomb = self.world.create_entity(*entity_templates.bomb(0, 0))
+                self.world.remove_component(bomb, c.TilePosition)
+                self.world.add_component(bomb, c.Stored(self.world.tags.player))
+                inv.contents.append(bomb)
 
     def get_health_bar_color(self, health_comp):
         """Return what color an entity's health bar should be given its health component."""
