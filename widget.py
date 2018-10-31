@@ -117,17 +117,17 @@ class LevelNode(Widget):
     """Represents a node in the dungeon."""
     OUTER_COLOR = constants.DARK_GRAY
     INNER_COLOR = constants.GRAY
-    def __init__(self, level_node, **kwargs):
+    def __init__(self, node, **kwargs):
         super().__init__(**kwargs)
 
-        self.level_node = level_node
+        self.node = node
         self.scale = 1
         self.t = 0
 
-        self.dirty_attributes = ("level_node", "scale")
+        self.dirty_attributes = ("node", "scale")
 
     def update(self, delta):
-        if self.level_node.can_be_explored:
+        if self.node.can_be_explored:
             self.t += delta * math.pi* 0.001
             self.scale = 1 + math.sin(self.t) * 0.15
         else:
@@ -140,7 +140,7 @@ class LevelNode(Widget):
             self.offset = tuple(self.offset[i]+center[i] for i in range(2))
 
         color = (0, 0, 0, pygame.BLEND_ADD)
-        if not self.level_node.explored and not self.level_node.can_be_explored:
+        if not self.node.explored and not self.node.can_be_explored:
             color = (120, 120, 120, pygame.BLEND_MULT)
 
         scale = constants.MENU_SCALE*2*self.scale
