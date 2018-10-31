@@ -157,15 +157,16 @@ def generate_random_level(gridsize, levelnum):
     grid[exit_x][exit_y].append("stairs")
 
     # Loot
-    loot_x = random.randint(1, grid.width-2)
-    loot_y = random.randint(1, grid.height-2)
+    loot_x = random.randint(0, grid.width-2)
+    loot_y = random.randint(0, grid.height-2)
     while "wall" in grid[loot_x][loot_y]:
-        loot_x = random.randint(1, grid.width-2)
-        loot_y = random.randint(1, grid.height-2)
-    for x in range(loot_x - 1, loot_x + 2):
-        for y in range(loot_y - 1, loot_y + 2):
-            if not "wall" in grid[x][y]:
-                grid[x][y].append(__random_loot())
+        loot_x = random.randint(0, grid.width-2)
+        loot_y = random.randint(0, grid.height-2)
+    for x in range(loot_x, loot_x + 2):
+        for y in range(loot_y, loot_y + 2):
+            if "wall" in grid[x][y]:
+                grid[x][y].remove("wall")
+            grid[x][y].append(__random_loot())
 
     for _ in range(random.randint(2, 5)):
         x, y = __random_empty_pos(grid)
