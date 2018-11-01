@@ -52,7 +52,7 @@ class CharacterSelect(Scene):
             self.detail_widget
         ]
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if keypress == constants.RIGHT:
             self.cursor_pos = min(self.cursor_pos+1, 2)
 

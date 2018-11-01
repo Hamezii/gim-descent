@@ -27,7 +27,7 @@ class Dungeon(Scene):
         self.world: World = None
         self.dungeon_network = None
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if keypress == pygame.K_F10: # Save
             self.save_game()
         if keypress == pygame.K_F11: # Load

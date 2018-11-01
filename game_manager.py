@@ -53,10 +53,10 @@ class GameManager:
         Send the input up the tree until it is handled.
         """
         input_scene = self.focus_scene
-        input_handled = input_scene.get_input(keypress)
+        input_handled = input_scene.handle_input(keypress)
         while (not input_handled) and (input_scene.parent is not None):
             input_scene = input_scene.parent
-            input_handled = input_scene.get_input(keypress)
+            input_handled = input_scene.handle_input(keypress)
 
     def update(self):
         """Run a tick of the scenes."""

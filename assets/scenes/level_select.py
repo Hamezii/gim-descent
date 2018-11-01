@@ -43,7 +43,7 @@ class LevelSelect(Scene):
                 if node.pos == (0, 0):
                     node.can_be_explored = True
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if keypress in constants.DIRECTIONS:
             player_node = self.network.player_node
             node = player_node.connections[keypress]

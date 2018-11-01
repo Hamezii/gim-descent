@@ -42,7 +42,7 @@ class MainMenu(Scene):
 
         audio.play_music()
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if self.animation_done:
 
             if keypress == constants.DOWN:

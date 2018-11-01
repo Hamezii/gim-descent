@@ -41,7 +41,7 @@ class Scene:
         for child in self.children:
             child.get_event(event_name, *args, **kwargs)
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         """Handle a user input.
 
         Return True if the input was handled.

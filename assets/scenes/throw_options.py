@@ -50,7 +50,7 @@ class ThrowOptions(Scene):
             )
         )
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         handled = False
         if keypress == pygame.K_x:
             self.game.set_focus(self.parent.add_child_scene(inventory_options.InventoryOptions, self.item))

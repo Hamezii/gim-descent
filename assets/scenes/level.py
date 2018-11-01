@@ -37,7 +37,7 @@ class Level(Scene):
         self.add_child_scene(Debug)
         self.inventory = self.add_child_scene(Inventory)
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if keypress == pygame.K_MINUS:  # Zooming out
             if self.camera.get_zoom() > 20:
                 self.camera.zoom(-20)

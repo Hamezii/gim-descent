@@ -46,7 +46,7 @@ class InventoryOptions(Scene):
                 wgt.Text(renderer=self.game.renderer, size=5*constants.MENU_SCALE, text=describe.desc, offset=(text_x, 15*constants.MENU_SCALE)),
             ))
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         if keypress == constants.DOWN:
             self.cursorpos = min(self.cursorpos + 1, self.size-1)
             audio.play("click2", replace=True)

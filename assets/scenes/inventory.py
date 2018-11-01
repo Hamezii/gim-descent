@@ -39,7 +39,7 @@ class Inventory(Scene):
             pos=self.image_grid_pos
         )
 
-    def get_input(self, keypress):
+    def handle_input(self, keypress):
         handled = False
         if keypress == pygame.K_x:
             handled = True
