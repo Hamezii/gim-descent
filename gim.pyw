@@ -4,7 +4,7 @@ GIM Descent 4
 James Lecomte
 
 To do:
-- Maybe add a signal system for scenes
+- Add an exit option and settings option to main menu
 
 - Improve AI
 '''
@@ -55,6 +55,7 @@ def get_input(events):
 
 def main():
     """Run the game."""
+    audio.play_music(constants.MUSIC_DUNGEON)
 
     screen = init_screen()
 

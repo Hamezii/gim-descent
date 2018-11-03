@@ -2,7 +2,6 @@
 
 import pygame
 
-import audio
 import constants
 from misc import leave
 
@@ -22,8 +21,6 @@ class MainMenu(Scene):
         self.title_background = None
 
         self.title = self.add_child_scene(MainMenuTitle)
-
-        audio.play_music()
 
     def selected_option(self, option):
         """Respond to an option being selected."""
