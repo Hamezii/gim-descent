@@ -76,6 +76,14 @@ def __random_empty_pos(grid):
         y = random.randrange(grid.height)
     return (x, y)
 
+def __random_enemy_spawn(level, grid):
+    x = random.randrange(grid.width)
+    y = random.randrange(grid.height)
+    while "wall" in grid[x][y] or "stairs" in grid[x][y] or (x, y) == level.player_start:
+        x = random.randrange(grid.width)
+        y = random.randrange(grid.height)
+    return (x, y)
+
 def __add_grid_to_level(level, grid, level_type=None):
     """Add a grid to the list of entities in a Level object."""
     for x, y, cell in grid:
@@ -92,17 +100,16 @@ def __add_grid_to_level(level, grid, level_type=None):
 def __add_random_enemies_to_level(level, grid, levelnum, level_type=None):
     """Add enemies to a level, making sure to place them in valid positions."""
     spawn_pool = __generate_spawn_pool(levelnum)
-    for x, y, cell in grid:
-        can_spawn_here = "wall" not in cell and "stairs" not in cell and (x, y) != level.player_start
-        if can_spawn_here:
-            if random.randint(1, max(45-levelnum*2, 10)) == 1:       # Adding enemy
-                entity = getattr(entity_templates, random.choice(spawn_pool))(x, y)
-                if random.randint(1, 2) == 1:
-                    if level_type == "ice":
-                        entity.append(IceElement())
-                    if level_type == "fire":
-                        entity.append(FireElement())
-                level.entities.append(entity)
+    for _ in range(20 + 2*levelnum):
+        x, y = __random_enemy_spawn(level, grid)
+        entity = getattr(entity_templates, random.choice(spawn_pool))(x, y)
+        if random.randint(1, 2) == 1:
+            if level_type == "ice":
+                entity.append(IceElement())
+            if level_type == "fire":
+                entity.append(FireElement())
+        level.entities.append(entity)
+
 
 def generate_fly_boss_level(gridsize):
     """Return a Level object for the fly boss level."""
