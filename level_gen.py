@@ -79,7 +79,7 @@ def __random_empty_pos(grid):
 def __random_enemy_spawn(level, grid):
     x = random.randrange(grid.width)
     y = random.randrange(grid.height)
-    while "wall" in grid[x][y] or "stairs" in grid[x][y] or (x, y) == level.player_start:
+    while "wall" in grid[x][y] or "stairs" in grid[x][y] or "enemy" in grid[x][y] or (x, y) == level.player_start:
         x = random.randrange(grid.width)
         y = random.randrange(grid.height)
     return (x, y)
@@ -102,6 +102,7 @@ def __add_random_enemies_to_level(level, grid, levelnum, level_type=None):
     spawn_pool = __generate_spawn_pool(levelnum)
     for _ in range(20 + 2*levelnum):
         x, y = __random_enemy_spawn(level, grid)
+        grid[x][y].append("enemy")
         entity = getattr(entity_templates, random.choice(spawn_pool))(x, y)
         if random.randint(1, 2) == 1:
             if level_type == "ice":
