@@ -40,7 +40,7 @@ class LevelSelect(Scene):
                     if adj_node is not None:
                         if adj_node.explored:
                             node.can_be_explored = True
-                if node.pos == (0, 0):
+                if "start" in node.properties:
                     node.can_be_explored = True
 
     def handle_input(self, keypress):
