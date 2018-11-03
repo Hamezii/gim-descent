@@ -55,12 +55,10 @@ def get_input(events):
 
 def main():
     """Run the game."""
-    audio.play_music(constants.MUSIC_DUNGEON)
 
     screen = init_screen()
 
     game = GameManager()
-
     game.change_base_scene(MainMenu)
 
     while True:
