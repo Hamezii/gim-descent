@@ -11,6 +11,7 @@ class Scene:
         self.game: game_manager.GameManager = game
         self.parent = parent
         self.children = []
+        self.signals = {}
 
     def add_child_scene(self, scene_type, *args, **kwargs):
         """Add a child scene given its type and input parameters."""
@@ -40,6 +41,20 @@ class Scene:
             function(*args, **kwargs)
         for child in self.children:
             child.get_event(event_name, *args, **kwargs)
+
+    def connect(self, signal_name, function_obj):
+        """Connect a signal so that it calls a function when it is emitted."""
+        if not signal_name in self.signals:
+            self.signals[signal_name] = []
+        self.signals[signal_name].append(function_obj)
+
+    def emit_signal(self, signal_name, *args, **kwargs):
+        """Emit a signal, calling all connected functions.
+
+        Optional parameters can also be passed to the functions.
+        """
+        for function in self.signals[signal_name]:
+            function(*args, **kwargs)
 
     def handle_input(self, keypress):
         """Handle a user input.
