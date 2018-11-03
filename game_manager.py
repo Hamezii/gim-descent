@@ -54,7 +54,7 @@ class GameManager:
         """
         input_scene = self.focus_scene
         input_handled = input_scene.handle_input(keypress)
-        while (not input_handled) and (input_scene.parent is not None):
+        while (input_handled is not True) and (input_scene.parent is not None):
             input_scene = input_scene.parent
             input_handled = input_scene.handle_input(keypress)
 
