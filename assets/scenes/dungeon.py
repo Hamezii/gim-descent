@@ -13,10 +13,10 @@ import level_gen
 import systems as s
 from ecs import World
 
-from . import main_menu
-from .scene import Scene
-from .level_select import LevelSelect
+from .game_options import GameOptions
 from .level import Level
+from .level_select import LevelSelect
+from .scene import Scene
 
 
 class Dungeon(Scene):
@@ -33,8 +33,7 @@ class Dungeon(Scene):
         if keypress == pygame.K_F11: # Load
             self.load_game()
         if keypress == pygame.K_ESCAPE: # Exiting to menu
-            self.save_game()
-            self.game.change_base_scene(main_menu.MainMenu)
+            self.game.set_focus(self.game.focus_scene.add_child_scene(GameOptions))
 
         return True
 
