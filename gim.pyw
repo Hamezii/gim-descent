@@ -1,5 +1,5 @@
 '''
-GIM Descent 4
+GIM Descent 4.1.1
 
 James Lecomte
 
@@ -80,7 +80,7 @@ def main():
 def init_screen():
     """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
 
-    pygame.display.set_caption("Gim 4")
+    pygame.display.set_caption("Gim Descent")
 
     if constants.FULLSCREEN_MODE:
         info_object = pygame.display.Info()
