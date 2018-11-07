@@ -23,8 +23,7 @@ class MainMenu(Scene):
 
         self.title = self.add_child_scene(MainMenuTitle)
 
-        if not pygame.mixer.music.get_busy():
-            audio.play_music(constants.MUSIC_DUNGEON)
+        audio.stop_music()
 
     def selected_option(self, option):
         """Respond to an option being selected."""
@@ -42,6 +41,7 @@ class MainMenu(Scene):
         if not self.animation_done:
             if self.title.offset[1] == self.title.y_goal:
                 self.animation_done = True
+                audio.play_music(constants.MUSIC_DUNGEON)
                 options = ["New game"]
                 if self.game.has_save():
                     options.insert(0, "Continue game")
