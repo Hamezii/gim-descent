@@ -22,12 +22,6 @@ class Bomber:
     pass
 
 @dataclass
-class GameStats:
-    """Stores stats about the game."""
-    kills: int = 0
-    time: float = 0
-
-@dataclass
 class Stairs:
     """Stores the direction the stairs go in."""
     direction: str = "down"

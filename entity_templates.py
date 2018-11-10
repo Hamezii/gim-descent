@@ -256,7 +256,6 @@ def player(x, y, image, health):
         ),
         c.PlayerInput(),
         c.Inventory(10),
-        c.GameStats()
     ]
 
 def magnum(x, y):

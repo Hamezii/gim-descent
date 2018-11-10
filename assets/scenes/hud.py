@@ -86,10 +86,10 @@ class HUD(Scene):
         text_len = len(self.max_health_text.text)
         self.max_health_text.offset = (self.health_bar.right + (1 - text_len*4)*3*constants.MENU_SCALE, self.health_bar.top - 15*constants.MENU_SCALE)
 
-        kills = self.parent.world.entity_component(self.parent.world.tags.player, c.GameStats).kills
+        kills = self.parent.parent.kills
         self.kills_text.text = "Kills " + str(kills)
 
-        time = self.parent.world.entity_component(self.parent.world.tags.player, c.GameStats).time
+        time = self.parent.parent.game_time
         time_s = str(int(time % 60))
         if len(time_s) == 1:
             time_s = "0" + time_s

@@ -44,6 +44,9 @@ class Dungeon(Scene):
 
         return True
 
+    def update(self, delta):
+        self.game_time += delta * 0.001
+
     def is_blinking(self):
         """Return True if blinking images should be lit up at the moment."""
         if self.game.t_elapsed % constants.BLINK_RATE < constants.BLINK_RATE/2:
@@ -167,8 +170,6 @@ class Dungeon(Scene):
     def init_world(self):
         """Initialise for a new game."""
         self.world = World()
-
-        self.world.add_system(s.GameStatsSystem())
 
         self.world.add_system(s.GridSystem())
         self.world.add_system(s.InitiativeSystem())

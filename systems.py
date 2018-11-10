@@ -21,14 +21,6 @@ def clamp(value, minimum, maximum):
 
 #_________________
 
-class GameStatsSystem(System):
-    """Updates the GameStats component, incrementing time."""
-
-    def process(self, **args):
-        for _, gamestats in self.world.get_component(c.GameStats):
-            gamestats.time += args["d_t"] * 0.001
-
-
 class GridSystem(System):
     """Stores grid attributes and a grid of blocker entities."""
     adjacent = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
@@ -477,7 +469,7 @@ class DamageSystem(System):
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, c.Dead())
-                    self.world.entity_component(self.world.tags.player, c.GameStats).kills += 1
+                    self.game.parent.kills += 1
                     if self.world.has_component(self.world.tags.player, c.SpeedOnKill):
                         self.game.speed_entity(self.world.tags.player, 1)
 
