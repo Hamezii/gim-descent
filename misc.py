@@ -10,6 +10,13 @@ def leave():
     pygame.quit()
     sys.exit(0)
 
+def time_to_str(seconds):
+    """Return a time string given a time in seconds."""
+    time_s = str(int(seconds % 60))
+    if len(time_s) == 1:
+        time_s = "0" + time_s
+    time_m = str(int(seconds // 60))
+    return time_m + ":" + time_s
 
 class DynamicPos:
     """A vector value which linearly interpolates to a position.

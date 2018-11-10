@@ -5,6 +5,7 @@ import pygame
 import components as c
 import constants
 import widget as wgt
+from misc import time_to_str
 
 from .scene import Scene
 
@@ -89,13 +90,8 @@ class HUD(Scene):
         kills = self.parent.parent.kills
         self.kills_text.text = "Kills " + str(kills)
 
-        time = self.parent.parent.game_time
-        time_s = str(int(time % 60))
-        if len(time_s) == 1:
-            time_s = "0" + time_s
-        time_m = str(int(time // 60))
-
-        self.time_text.text = "Time " + time_m + ":" + time_s
+        time = time_to_str(self.parent.parent.game_time)
+        self.time_text.text = "Time " + time
 
         level = self.parent.parent.level_num
         self.level_text.text = "Level " + str(level)
