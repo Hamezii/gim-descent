@@ -78,7 +78,7 @@ class LevelSelect(Scene):
                         color = constants.GRAY
                     start = self.__node_to_screen_pos(node)
                     end = self.__node_to_screen_pos(other_node)
-                    pygame.draw.line(screen, color, start, end, 5)
+                    pygame.draw.line(screen, color, start, end, max(int(2.5*constants.MENU_SCALE), 1))
 
         for widget in self.widgets:
             widget.draw(screen)
