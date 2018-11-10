@@ -18,6 +18,19 @@ def time_to_str(seconds):
     time_m = str(int(seconds // 60))
     return time_m + ":" + time_s
 
+def pluralise(value, singular, plural=None):
+    """Return the singular or plural of a word depending on whether the value is non-one.
+
+    If plural is None (default), add an 's' to the end of the word instead.
+    """
+    if value == 1:
+        word = singular
+    elif plural is None:
+        word = singular + "s"
+    else:
+        word = plural
+    return str(value) + " " + word
+
 class DynamicPos:
     """A vector value which linearly interpolates to a position.
 
