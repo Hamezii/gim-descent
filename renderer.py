@@ -1,7 +1,7 @@
 '''
 Contains the Renderer of Gim Descent.
 '''
-import random
+
 from functools import lru_cache
 
 import pygame
