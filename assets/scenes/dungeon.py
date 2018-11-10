@@ -20,10 +20,17 @@ from .scene import Scene
 
 
 class Dungeon(Scene):
-    """The current dungeon. Stores the layout and can perform functions on the ECS."""
+    """The current dungeon. Stores the layout and can perform functions on the ECS.
+
+    Some of this will likely have to be seperated out into a 'Game' scene when more
+    than one dungeon exists in the game e.g. game_time, kills, etc.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.game_time = 0
+        self.kills = 0
+        self.level_num = 1
         self.world: World = None
         self.dungeon_network = None
 
@@ -99,19 +106,18 @@ class Dungeon(Scene):
     def generate_level(self):
         """Generate a level depending on how far the player is."""
 
-        level_num = self.world.entity_component(self.world.tags.player, c.Level).level_num
         g_sys = self.world.get_system(s.GridSystem)
         gridsize = (g_sys.gridwidth, g_sys.gridheight)
-        if level_num == 12:
+        if self.level_num == 12:
             level = level_gen.generate_fly_boss_level(gridsize)
         else:
-            level = level_gen.generate_random_level(gridsize, level_num)
+            level = level_gen.generate_random_level(gridsize, self.level_num)
 
         for components in level.entities:
             self.world.create_entity(*components)
         self.world.add_component(self.world.tags.player, c.TilePosition(*level.player_start))
 
-        if level_num == 1:
+        if self.level_num == 1:
             self.world.add_component(self.world.tags.player, c.FreeTurn(1)) # To fix off-by-one turn timing
             inv = self.world.entity_component(self.world.tags.player, c.Inventory)
             for _ in range(3):

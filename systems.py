@@ -572,7 +572,7 @@ class StairsSystem(System):
         for _, (stair, stair_pos) in self.world.get_components(c.Stairs, c.TilePosition):
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y: # If player on stairs
                 if stair.direction == "down":
-                    self.world.entity_component(player, c.Level).level_num += 1
+                    self.game.parent.level_num += 1
 
                 # Get all entities relating to the player
                 player_entities = [player]

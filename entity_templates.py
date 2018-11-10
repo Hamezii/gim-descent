@@ -256,7 +256,6 @@ def player(x, y, image, health):
         ),
         c.PlayerInput(),
         c.Inventory(10),
-        c.Level(1),
         c.GameStats()
     ]
 

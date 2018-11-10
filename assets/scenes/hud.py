@@ -97,7 +97,7 @@ class HUD(Scene):
 
         self.time_text.text = "Time " + time_m + ":" + time_s
 
-        level = self.parent.world.entity_component(self.parent.world.tags.player, c.Level).level_num
+        level = self.parent.parent.level_num
         self.level_text.text = "Level " + str(level)
 
         for widget in self.widgets:

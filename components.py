@@ -22,11 +22,6 @@ class Bomber:
     pass
 
 @dataclass
-class Level:
-    """Stores what level the entity is on."""
-    level_num: int
-
-@dataclass
 class GameStats:
     """Stores stats about the game."""
     kills: int = 0
