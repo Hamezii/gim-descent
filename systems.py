@@ -469,7 +469,8 @@ class DamageSystem(System):
                     audio.play("ow", 0.4)
                 if targethealth.current <= 0:
                     self.world.add_component(damage.target, c.Dead())
-                    self.game.parent.kills += 1
+                    if damage.target != self.world.tags.player:
+                        self.game.parent.kills += 1
                     if self.world.has_component(self.world.tags.player, c.SpeedOnKill):
                         self.game.speed_entity(self.world.tags.player, 1)
 
