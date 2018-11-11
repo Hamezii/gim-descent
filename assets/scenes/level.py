@@ -17,6 +17,7 @@ from .inventory import Inventory
 from .scene import Scene
 from .viewport import Viewport
 from .level_select import LevelSelect
+from .game_over import GameOver
 
 
 class Level(Scene):
@@ -72,6 +73,8 @@ class Level(Scene):
                 if self.game.has_save():
                     self.game.delete_save()
                 audio.stop_music()
+                self.game.set_focus(self.add_child_scene(GameOver, self.parent))
+
 
     def __player_pos_to_camera_pos(self):
         """
