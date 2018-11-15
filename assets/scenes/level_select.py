@@ -57,7 +57,7 @@ class LevelSelect(Scene):
             node = self.network.player_node
             if node.can_be_explored:
                 node.explored = True
-                self.parent.generate_level()
+                self.parent.generate_level(node.properties)
                 self.parent.show_level()
                 self.remove_scene()
             return True

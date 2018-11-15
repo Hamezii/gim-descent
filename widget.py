@@ -18,7 +18,7 @@ class Widget:
 
         #self.redraws = 0 # Used for debugging
 
-        self._draw_surface = None
+        self._draw_surface: pygame.Surface = None
 
     def _update_surface(self):
         """Update the draw surface."""
@@ -139,12 +139,17 @@ class LevelNode(Widget):
             center = self._draw_surface.get_rect().center
             self.offset = tuple(self.offset[i]+center[i] for i in range(2))
 
-        color = (0, 0, 0, pygame.BLEND_ADD)
-        if not self.node.explored and not self.node.can_be_explored:
-            color = (120, 120, 120, pygame.BLEND_MULT)
+        fire = "fire" in self.node.properties
+        if self.node.explored or self.node.can_be_explored:
+            color = (fire*50, 0, 0, pygame.BLEND_ADD)
+        else:
+            color = (120+fire*135, 120, 120, pygame.BLEND_MULT)
 
         scale = constants.MENU_SCALE*2*self.scale
-        self._draw_surface = self.renderer.get_image(name="level_icon", color=color, scale=scale)
+        image = "level_icon"
+        if "boss" in self.node.properties:
+            image = "boss_icon"
+        self._draw_surface = self.renderer.get_image(name=image, color=color, scale=scale)
 
         center = self._draw_surface.get_rect().center
         for i in range(2):

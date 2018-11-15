@@ -138,12 +138,8 @@ def generate_fly_boss_level(gridsize):
 
     return level
 
-def generate_random_level(gridsize, levelnum):
+def generate_random_level(gridsize, levelnum, level_type):
     """Return a randomly generated Level object."""
-
-    level_type = "normal"
-    if random.random() < 0.5 and levelnum > 1:
-        level_type = random.choice(("ice", "fire"))
 
     grid = Grid(gridsize)
 

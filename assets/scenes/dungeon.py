@@ -106,15 +106,18 @@ class Dungeon(Scene):
         """Add the level scene and focus on it."""
         self.game.set_focus(self.add_child_scene(Level, self.world))
 
-    def generate_level(self):
+    def generate_level(self, properties):
         """Generate a level depending on how far the player is."""
 
         g_sys = self.world.get_system(s.GridSystem)
         gridsize = (g_sys.gridwidth, g_sys.gridheight)
-        if self.level_num == 12:
+        if "boss" in properties:
             level = level_gen.generate_fly_boss_level(gridsize)
         else:
-            level = level_gen.generate_random_level(gridsize, self.level_num)
+            level_type = "normal"
+            if "fire" in properties:
+                level_type = "fire"
+            level = level_gen.generate_random_level(gridsize, self.level_num, level_type)
 
         for components in level.entities:
             self.world.create_entity(*components)

@@ -15,7 +15,6 @@ def default_connections():
         constants.LEFT: None
     }
 
-
 @dataclass
 class LevelNode:
     """A node representing a level than the player can go to."""
@@ -51,7 +50,7 @@ class DungeonNetwork:
         return None
 
     def get_nodes(self):
-        """Return all the nodes in the network in position-node pairs."""
+        """Return a list of all the nodes."""
         return self.__nodes
 
     def connect(self, node, direction):
@@ -90,6 +89,7 @@ def __generate_main_path(network):
         node = LevelNode((x, y))
         network.add_node(node)
         network.connect(node, network.opposite[move])
+    network.get_node_at((x, y)).properties.append("boss")
 
 def __add_random_rooms(network, amount, depth):
     """Add random rooms coming off of the rooms already placed.
@@ -114,6 +114,14 @@ def __add_random_connections(network, chance):
             if random.random() < chance:
                 network.connect(node, direction)
 
+def __add_elemental_effect(node, element_type):
+    """Add the given type of effect to the the node's properties.
+
+    Don't add the effect if the node is the starting level.
+    """
+    if not "start" in node.properties and not "boss" in node.properties:
+        node.properties.append(element_type)
+
 def generate_dungeon_layout():
     """Return a DungeonNetwork object containing the layout of the dungeon."""
     network = DungeonNetwork()
@@ -124,18 +132,11 @@ def generate_dungeon_layout():
     __generate_main_path(network)
     __add_random_rooms(network, 3, 5)
     __add_random_connections(network, 0.15)
-    # for y in range(1, 6):
-    #     node = LevelNode((0, y))
-    #     network.add_node(node)
-    #     network.connect(node, constants.UP)
-    #     if random.random() < 0.5:
-    #         for x in range(1, random.randint(1, 4)):
-    #             node = LevelNode((x, y))
-    #             network.add_node(node)
-    #             network.connect(node, constants.LEFT)
-
-    # node = LevelNode((0, 6), properties=["boss"])
-    # network.add_node(node)
-    # network.connect(node, constants.UP)
+    # Add random fire sections
+    for node in random.choices(network.get_nodes(), k=2):
+        __add_elemental_effect(node, "fire")
+        for _, connected_node in node.connections.items():
+            if connected_node is not None:
+                __add_elemental_effect(connected_node, "fire")
 
     return network
