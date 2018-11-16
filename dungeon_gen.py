@@ -69,7 +69,7 @@ def __generate_main_path(network):
     y = 0
     x = 0
     move = None
-    while y < 6:
+    while y < 5:
         direction = random.randint(-(y+1), y+1) # More winding near the bottom
 
         if direction < 0:
