@@ -135,6 +135,7 @@ class Dungeon(Scene):
                 inv.contents.append(bomb)
         else:
             self.world.remove_component(self.world.tags.player, c.MyTurn) # To fix off-by-one turn timing
+        self.world.get_system(s.GridSystem).process() # Fixes glitch with no collision on first turn of level
 
     def get_health_bar_color(self, health_comp):
         """Return what color an entity's health bar should be given its health component."""
