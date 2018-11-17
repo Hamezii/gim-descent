@@ -16,14 +16,14 @@ class CharacterSelect(Scene):
     characters = ("magnum", "mecha", "edward")
     num_characters = 3
     character_desc = (
-        "Relies on skill",
-        "Armoured guy",
-        "Crazy brawler",
+        "Magnum",
+        "Mecha",
+        "Punchout",
     )
     character_detail = (
-        ("Default character", "Most playtested"),
-        ("Thick armour comes in handy", "Hard to drink potions from it"),
-        ("Gets an adreneline rush from killing things", "Cant take many hits")
+        ("Balanced and reliable", "Disciplined fighter"),
+        ("Thick armour comes in handy", "Half efficiency when drinking potions"),
+        ("Gets a free turn after any kill", "Cant take many hits")
     )
 
     def __init__(self, **kwargs):
