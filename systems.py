@@ -245,7 +245,7 @@ class AISystem(System):
         for entity, (movement, pos, ai, _) in self.world.get_components(c.Movement, c.TilePosition, c.AI, c.MyTurn):
 
             playerpos = self.world.entity_component(self.world.tags.player, c.TilePosition)
-            if dist(pos, playerpos) <= 15:
+            if dist(pos, playerpos) <= 8:
                 ai.target = self.world.tags.player
             else:
                 ai.target = 0
@@ -321,6 +321,21 @@ class AISystem(System):
                     if grid.get_blocker_at((movex, movey)) in (0, ai.target):
                         moved = True
                         self.world.add_component(entity, c.Bump(movex, movey))
+            else:
+                if movement.diagonal:
+                    moves = (*constants.DIRECTIONS, (-1, -1), (-1, 1), (1, -1), (1, 1))
+                else:
+                    moves = constants.DIRECTIONS
+                moves = random.sample(moves, len(moves))
+                moved = False
+                move_id = 0
+                while not moved and move_id < len(moves):
+                    move = moves[move_id]
+                    move_pos = (pos.x+move[0], pos.y+move[1])
+                    if grid.on_grid(move_pos) and grid.get_blocker_at(move_pos) == 0:
+                        self.world.add_component(entity, c.Bump(*move))
+                        moved = True
+                    move_id += 1
 
 class FreezingSystem(System):
     """Cancels the action of frozen entities attempting to move, defreezing them instead."""
