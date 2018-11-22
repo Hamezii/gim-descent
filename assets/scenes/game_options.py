@@ -29,7 +29,7 @@ class GameOptions(Scene):
     def handle_input(self, keypress):
         if self.option_scene.handle_input(keypress):
             return True
-        if keypress == pygame.K_ESCAPE:
+        if keypress in [pygame.K_ESCAPE, pygame.K_x]:
             self.remove_scene()
             return True
         if keypress in constants.DIRECTIONS:
