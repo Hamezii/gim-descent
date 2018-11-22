@@ -67,7 +67,8 @@ def main():
                 game.save_game()
                 leave()
         keypress = get_input(events)
-        game.input(keypress)
+        if keypress is not None:
+            game.input(keypress)
         game.send_event("unfocused_input", keypress)
 
         game.update()
