@@ -49,8 +49,9 @@ class Scene:
 
         Optional parameters can also be passed to the functions.
         """
-        for function in self.signals[signal_name]:
-            function(*args, **kwargs)
+        if signal_name in self.signals:
+            for function in self.signals[signal_name]:
+                function(*args, **kwargs)
 
     def handle_input(self, keypress):
         """Handle a user input.
