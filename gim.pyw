@@ -15,6 +15,7 @@ To do:
 import pygame
 
 import audio
+import config
 import constants
 from assets.scenes.main_menu import MainMenu
 from game_manager import GameManager
@@ -56,9 +57,9 @@ def get_input(events):
 def main():
     """Run the game."""
 
-    screen = init_screen()
+    screen, width, height = init_screen()
 
-    game = GameManager()
+    game = GameManager(width, height)
     game.change_base_scene(MainMenu)
 
     while True:
@@ -81,21 +82,24 @@ def init_screen():
     """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
 
     pygame.display.set_caption("Gim Descent")
+    settings = config.Settings()
 
-    if constants.FULLSCREEN_MODE:
+    if settings.FULLSCREEN_MODE:
         info_object = pygame.display.Info()
-        constants.WIDTH = info_object.current_w
-        constants.HEIGHT = info_object.current_h
+        width = info_object.current_w
+        height = info_object.current_h
 
-        screen = pygame.display.set_mode((constants.WIDTH, constants.HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
     else:
-        screen = pygame.display.set_mode((constants.WIDTH, constants.HEIGHT))
+        width = settings.WIDTH
+        height = settings.HEIGHT
+        screen = pygame.display.set_mode((width, height))
 
-    constants.MENU_SCALE = round(constants.WIDTH/600)
+    constants.MENU_SCALE = round(width/600)
 
     pygame.display.set_icon(pygame.image.load(constants.IMAGES+"logo.png").convert_alpha())
 
-    return screen
+    return screen, width, height
 
 if __name__ == "__main__":
     main()

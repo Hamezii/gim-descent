@@ -10,11 +10,13 @@ class GameManager:
 
     Stores global objects as well as the scene tree.
     """
-    def __init__(self):
+    def __init__(self, width, height):
         self.renderer = renderer.Renderer()
         self.clock = pygame.time.Clock()
         self.t_elapsed = 0
         self.fps = 0
+        self.width = width
+        self.height = height
 
         self.base_scene = None
         self.focus_scene = None
