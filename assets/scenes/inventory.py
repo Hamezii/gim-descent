@@ -43,7 +43,6 @@ class Inventory(Scene):
         handled = False
         if keypress == pygame.K_x:
             handled = True
-            self.game.set_focus(self.parent)
             self.hide()
 
         if keypress in constants.DIRECTIONS:
@@ -109,4 +108,4 @@ class Inventory(Scene):
         self.pos.move((-self.slot_size*2-21, self.pos.y))
         audio.play("drop", replace=True)
         audio.undim_music()
-        self.game.set_focus(self.parent)
+        self.game.remove_focus(self)

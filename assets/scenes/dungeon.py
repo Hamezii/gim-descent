@@ -40,7 +40,7 @@ class Dungeon(Scene):
         if keypress == pygame.K_F11: # Load
             self.load_game()
         if keypress == pygame.K_ESCAPE: # Exiting to menu
-            self.game.set_focus(self.game.focus_scene.add_child_scene(GameOptions))
+            self.game.set_focus(self.add_child_scene(GameOptions))
 
         return True
 

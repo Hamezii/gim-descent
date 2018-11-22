@@ -21,11 +21,7 @@ class Scene:
 
     def remove_scene(self):
         """Remove this scene from the scene tree."""
-        if self is self.game.base_scene:
-            raise ValueError("Base scene can't be removed, only replaced.")
-        if self.has_focus_scene():
-            self.game.set_focus(self.parent)
-        self.parent.children.remove(self)
+        self.game.remove_scene(self)
 
     def has_focus_scene(self):
         """Return True if this scene or any of its children are the focus scene."""

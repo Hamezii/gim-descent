@@ -20,16 +20,36 @@ class GameManager:
         self.fps = 0
 
         self.base_scene = None
-        self.focus_scene = None
+        self._focus_scene_stack = []
 
     def change_base_scene(self, scene_type, *args, **kwargs):
         """Replace the scene tree with a base scene given its type and input parameters. Focus on this scene."""
         self.base_scene = scene_type(*args, **kwargs, game=self)
         self.set_focus(self.base_scene)
 
+    @property
+    def focus_scene(self):
+        """Get the scene being currently focused on."""
+        return self._focus_scene_stack[-1]
+
     def set_focus(self, scene):
         """Set the focused scene."""
-        self.focus_scene = scene
+        self._focus_scene_stack.append(scene)
+
+    def remove_focus(self, scene):
+        """Remove focus from a scene."""
+        self._focus_scene_stack.remove(scene)
+
+    def remove_scene(self, scene, parent_being_removed=False):
+        """Remove a scene from the scene tree."""
+        if scene is self.base_scene:
+            raise ValueError("Base scene can't be removed, only replaced.")
+        for child in scene.children:
+            self.remove_scene(child, parent_being_removed=True)
+        if scene in self._focus_scene_stack:
+            self.remove_focus(scene)
+        if not parent_being_removed:
+            scene.parent.children.remove(scene)
 
     def send_event(self, event_name, *args, **kwargs):
         """Recursively call a function on all scenes in the scene tree."""
@@ -55,11 +75,11 @@ class GameManager:
 
         Send the input up the tree until it is handled.
         """
-        input_scene = self.focus_scene
-        input_handled = input_scene.handle_input(keypress)
-        while (input_handled is not True) and (input_scene.parent is not None):
-            input_scene = input_scene.parent
-            input_handled = input_scene.handle_input(keypress)
+        stack_pos = len(self._focus_scene_stack) - 1
+        input_handled = self._focus_scene_stack[stack_pos].handle_input(keypress)
+        while (input_handled is not True) and stack_pos > 0:
+            stack_pos -= 1
+            input_handled = self._focus_scene_stack[stack_pos].handle_input(keypress)
 
     def update(self):
         """Run a tick of the scenes."""
@@ -67,6 +87,7 @@ class GameManager:
         self.t_elapsed += delta
         self.fps = int(self.clock.get_fps())
         self.send_event("update", delta)
+
     def draw(self, screen):
         """Draw the whole scene tree, taking into account draw order."""
         self.__draw_scene(screen, self.base_scene)
