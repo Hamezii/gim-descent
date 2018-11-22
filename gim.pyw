@@ -1,5 +1,5 @@
 '''
-GIM Descent 4.1.1
+GIM Descent 4.1.2
 
 James Lecomte
 

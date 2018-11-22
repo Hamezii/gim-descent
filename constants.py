@@ -2,6 +2,9 @@
 Contains all the constants for Gim.
 '''
 
+import os
+import sys
+
 FULLSCREEN_MODE = True
 WIDTH = 1200
 HEIGHT = 800
@@ -11,11 +14,13 @@ BLINK_RATE = 250
 
 TILE_SIZE = 40
 
-FOLDER = "assets/"
-IMAGES = FOLDER + "images/"
-AUDIO = FOLDER + "audio/"
-MUSIC = AUDIO + "music/"
-DEFAULT_IMAGES = FOLDER + "images/"
+PATH = getattr(sys, '_MEIPASS', os.getcwd())
+ASSETS = os.path.join(PATH, "assets", "")
+IMAGES = os.path.join(ASSETS, "images", "")
+AUDIO = os.path.join(ASSETS, "audio", "")
+MUSIC = os.path.join(AUDIO, "music", "")
+DEFAULT_IMAGES = os.path.join(ASSETS, "images", "")
+# DEFAULT_IMAGES is sort of redundant, would be used if there were texture packs
 
 MUSIC_NORMAL_VOLUME = 0.5
 MUSIC_DIMMED_VOLUME = 0.25
