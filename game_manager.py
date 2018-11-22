@@ -13,10 +13,11 @@ class GameManager:
     def __init__(self, width, height):
         self.renderer = renderer.Renderer()
         self.clock = pygame.time.Clock()
-        self.t_elapsed = 0
-        self.fps = 0
         self.width = width
         self.height = height
+
+        self.t_elapsed = 0
+        self.fps = 0
 
         self.base_scene = None
         self.focus_scene = None
