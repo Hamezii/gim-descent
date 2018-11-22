@@ -103,7 +103,7 @@ def __add_random_rooms(network, amount, depth):
         for node in random.choices(network.get_nodes(), k=amount):
             direction = random.choice(constants.DIRECTIONS)
             pos = tuple(node.pos[i]+direction[i] for i in range(2))
-            if network.get_node_at(pos) is None and -1 <= pos[0] <= 4 and 0 <= pos[1] <= 6:
+            if network.get_node_at(pos) is None and -1 <= pos[0] <= 4 and 0 <= pos[1] <= 5:
                 network.add_node(LevelNode(pos))
                 network.connect(node, direction)
 
