@@ -1,6 +1,4 @@
 '''
-GIM Descent 4.1.2
-
 James Lecomte
 
 To do:
