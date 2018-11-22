@@ -15,7 +15,7 @@ class HUD(Scene):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        health_bar_pos = constants.MENU_SCALE*8*4, constants.HEIGHT - constants.MENU_SCALE*8*5
+        health_bar_pos = constants.MENU_SCALE*8*4, self.game.height - constants.MENU_SCALE*8*5
         health_bar_size = constants.MENU_SCALE*8*14, constants.MENU_SCALE*8
         self.health_bar = pygame.Rect(health_bar_pos, health_bar_size)
 

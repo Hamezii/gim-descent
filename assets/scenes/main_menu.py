@@ -45,7 +45,7 @@ class MainMenu(Scene):
                 options = ["New game"]
                 if self.game.has_save():
                     options.insert(0, "Continue game")
-                pos = (constants.WIDTH // 2, constants.HEIGHT//2)
+                pos = (self.game.width // 2, self.game.height//2)
                 option_select = self.add_child_scene(OptionSelect, options, pos)
                 self.game.set_focus(option_select)
                 option_select.connect("selected", self.selected_option)
@@ -53,11 +53,11 @@ class MainMenu(Scene):
     def draw(self, screen):
         if self.title_background is None:
             # Logic to get title image to scale on differently sized monitors
-            if constants.WIDTH/1920 > constants.HEIGHT/1080:
-                size = (constants.WIDTH, int(constants.WIDTH/1920*1080))
+            if self.game.width/1920 > self.game.height/1080:
+                size = (self.game.width, int(self.game.width/1920*1080))
             else:
-                size = (int(constants.HEIGHT/1080*1920), constants.HEIGHT)
+                size = (int(self.game.height/1080*1920), self.game.height)
             self.title_background = pygame.transform.scale(self.game.renderer.get_image(name="title_background"), size)
         # Logic to get title background to show in the right place
         # for different sized sceens
-        screen.blit(self.title_background, (0, constants.HEIGHT-self.title_background.get_height()))
+        screen.blit(self.title_background, (0, self.game.height-self.title_background.get_height()))

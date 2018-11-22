@@ -12,7 +12,7 @@ class LevelSelect(Scene):
     """Displays the dungeon layout and lets the player choose which level to go to."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.background_surface = pygame.Surface((constants.WIDTH, constants.HEIGHT))
+        self.background_surface = pygame.Surface((self.game.width, self.game.height))
         self.background_surface.blit(self.game.renderer.get_image(name="dungeon_surface", scale=constants.MENU_SCALE*3), (0, 0))
 
         self.dungeon_center_x = 100 * constants.MENU_SCALE

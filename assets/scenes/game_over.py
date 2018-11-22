@@ -20,8 +20,8 @@ class GameOver(Scene):
         self.dungeon = dungeon
         self.width = self.REL_WIDTH * constants.MENU_SCALE
         self.height = self.REL_HEIGHT * constants.MENU_SCALE
-        self.x = (constants.WIDTH - self.width) / 2
-        self.y = (constants.HEIGHT - self.height) / 2
+        self.x = (self.game.width - self.width) / 2
+        self.y = (self.game.height - self.height) / 2
 
         levels = dungeon.level_num - 1
         text_x = self.x + 5 * constants.MENU_SCALE

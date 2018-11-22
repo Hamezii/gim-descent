@@ -14,14 +14,14 @@ class GameOptions(Scene):
     V_BORDER = 5
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        x = constants.WIDTH/2 - constants.MENU_SCALE * 55
-        y = constants.HEIGHT/2 - constants.MENU_SCALE * (2.5 + self.V_BORDER)
+        x = self.game.width/2 - constants.MENU_SCALE * 55
+        y = self.game.height/2 - constants.MENU_SCALE * (2.5 + self.V_BORDER)
         width = constants.MENU_SCALE * 110
         height = constants.MENU_SCALE * (13 + self.V_BORDER * 2)
         self.box_rect = pygame.Rect(x, y, width, height)
         self.option_scene = self.add_child_scene(
             OptionSelect,
-            pos=(constants.WIDTH/2, constants.HEIGHT/2),
+            pos=(self.game.width/2, self.game.height/2),
             options=("Resume", "Main Menu")
         )
         self.option_scene.connect("selected", self.selected)

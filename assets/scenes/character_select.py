@@ -32,12 +32,12 @@ class CharacterSelect(Scene):
         self.desc_widget = wgt.Text(
             renderer=self.game.renderer,
             size=constants.MENU_SCALE * 10,
-            offset=(constants.WIDTH/4, constants.HEIGHT/2 + constants.MENU_SCALE * 45)
+            offset=(self.game.width/4, self.game.height/2 + constants.MENU_SCALE * 45)
         )
         self.detail_widget = wgt.TextLines(
             renderer=self.game.renderer,
             size=constants.MENU_SCALE * 5,
-            offset=(constants.WIDTH/4, constants.HEIGHT/2 + constants.MENU_SCALE * 60)
+            offset=(self.game.width/4, self.game.height/2 + constants.MENU_SCALE * 60)
         )
 
         self.widgets = [
@@ -45,7 +45,7 @@ class CharacterSelect(Scene):
                 renderer=self.game.renderer,
                 text="Choose your character",
                 size=constants.MENU_SCALE * 15,
-                offset=(constants.WIDTH / 2, constants.MENU_SCALE * 100),
+                offset=(self.game.width / 2, constants.MENU_SCALE * 100),
                 centered=True
             ),
             self.desc_widget,
@@ -81,7 +81,7 @@ class CharacterSelect(Scene):
 
         for i, character in enumerate(self.characters):
             spacing = constants.MENU_SCALE* constants.TILE_SIZE * 2
-            character_pos = (constants.WIDTH/2 + spacing*(i - (self.num_characters-1)/2), constants.HEIGHT/2)
+            character_pos = (self.game.width/2 + spacing*(i - (self.num_characters-1)/2), self.game.height/2)
             character_image = self.game.renderer.get_image(name=character, scale=constants.MENU_SCALE)
             self.game.renderer.draw_centered_image(screen, character_image, (character_pos))
             if self.cursor_pos == i:

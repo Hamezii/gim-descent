@@ -22,7 +22,7 @@ class Inventory(Scene):
         self.cursorpos = [0, 0]
         self.size = [2, 5]
         self.slot_size = constants.TILE_SIZE*constants.MENU_SCALE
-        self.pos = DynamicPos((-self.slot_size*2-21, constants.HEIGHT/2-self.slot_size*3), speed=10)
+        self.pos = DynamicPos((-self.slot_size*2-21, self.game.height/2-self.slot_size*3), speed=10)
         self.image_grid_pos = [0, 0]
 
         self.widgets = [

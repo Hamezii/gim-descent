@@ -30,7 +30,7 @@ class InventoryOptions(Scene):
         self.size = len(self.options)
 
         inv_slot_size = constants.TILE_SIZE*constants.MENU_SCALE
-        self.pos = (40 + inv_slot_size*2 + 12*constants.MENU_SCALE, constants.HEIGHT/2 - inv_slot_size*3)
+        self.pos = (40 + inv_slot_size*2 + 12*constants.MENU_SCALE, self.game.height/2 - inv_slot_size*3)
         image_bottom = self.pos[1]+inv_slot_size*1.5
         self.options_pos = [DynamicPos((self.pos[0], image_bottom + (10 + i*12)*constants.MENU_SCALE), speed=20) for i in range(self.size)]
         self.cursorpos = 0

@@ -27,8 +27,8 @@ class ThrowOptions(Scene):
         self.targettile = None
         self.droptile = None
 
-        self.help_pos = DynamicPos((constants.WIDTH//2, constants.HEIGHT+constants.MENU_SCALE*2.5), speed=10)
-        self.help_pos.move((self.help_pos.x, constants.HEIGHT/2+constants.TILE_SIZE*constants.MENU_SCALE))
+        self.help_pos = DynamicPos((self.game.width//2, self.game.height+constants.MENU_SCALE*2.5), speed=10)
+        self.help_pos.move((self.help_pos.x, self.game.height/2+constants.TILE_SIZE*constants.MENU_SCALE))
 
         text_args = {
             "renderer":self.game.renderer,
@@ -107,8 +107,8 @@ class ThrowOptions(Scene):
         self.help_pos.update(delta)
 
     def draw(self, screen):
-        item_x = constants.WIDTH//2+self.dir[0]*self.camera.get_zoom()/2
-        item_y = constants.HEIGHT//2+self.dir[1]*self.camera.get_zoom()/2
+        item_x = self.game.width//2+self.dir[0]*self.camera.get_zoom()/2
+        item_y = self.game.height//2+self.dir[1]*self.camera.get_zoom()/2
         self.parent.parent.draw_centered_entity(screen, self.item, self.camera.get_scale(), (item_x, item_y))
         if self.targettile is not None:
             crosshair = self.game.renderer.get_image(name="crosshair", scale=self.camera.get_scale())

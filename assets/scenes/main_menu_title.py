@@ -18,8 +18,8 @@ class MainMenuTitle(Scene):
         self.surface = self.game.renderer.get_image(name="title", scale=constants.MENU_SCALE/2)
         center_x, center_y = self.surface.get_rect().center
 
-        self.offset = [constants.WIDTH//2-center_x, -center_y*2]
-        self.y_goal = constants.HEIGHT/2 - 150*constants.MENU_SCALE
+        self.offset = [self.game.width//2-center_x, -center_y*2]
+        self.y_goal = self.game.height/2 - 150*constants.MENU_SCALE
         self.speed = 0
         self.shake_x = 0
         self.shake_y = 0
