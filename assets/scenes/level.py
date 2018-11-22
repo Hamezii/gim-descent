@@ -27,7 +27,7 @@ class Level(Scene):
         super().__init__(**kwargs)
         self.world: World = world
         self.world.set_game_reference(self)
-        self.camera = Camera(speed=5)
+        self.camera = Camera(speed=5, rect_size=(self.game.width, self.game.height))
         self.camera.set_target(self.__player_pos_to_camera_pos(), direct=True)
 
         self.keypress = None

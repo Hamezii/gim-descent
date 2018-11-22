@@ -13,12 +13,13 @@ class Camera:
     Can follow a point and shake.
     """
 
-    def __init__(self, speed):
+    def __init__(self, speed, rect_size):
         self._ppt = round(constants.MENU_SCALE*1.5)*20
         self._shake = 0
         self._shake_x = 0
         self._shake_y = 0
         self._pos = DynamicPos((0, 0), speed=speed)
+        self._rect_size = rect_size
 
         self._t_lastshake = 0
 
@@ -29,7 +30,7 @@ class Camera:
         """
         x = (self._pos.x + random.uniform(-self._shake_x, self._shake_x)) * self._ppt / constants.TILE_SIZE
         y = (self._pos.y + random.uniform(-self._shake_y, self._shake_y)) * self._ppt / constants.TILE_SIZE
-        rect = pygame.Rect(0, 0, constants.WIDTH, constants.HEIGHT)
+        rect = pygame.Rect((0, 0), self._rect_size)
         rect.center = (x, y)
         return rect
 
