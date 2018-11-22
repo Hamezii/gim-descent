@@ -34,6 +34,8 @@ class GameManager:
 
     def set_focus(self, scene):
         """Set the focused scene."""
+        if scene in self._focus_scene_stack:
+            self.remove_focus(scene)
         self._focus_scene_stack.append(scene)
 
     def remove_focus(self, scene):
