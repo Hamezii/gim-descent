@@ -5,16 +5,13 @@ Contains all the constants for Gim.
 import os
 import sys
 
-FULLSCREEN_MODE = True
-WIDTH = 1200
-HEIGHT = 800
 SEED = None
 
 DEFAULT_SETTINGS = {
     "FULLSCREEN_MODE": True,
     "WIDTH": 1200,
     "HEIGHT": 800,
-    "MUSIC_VOLUME": 0.5,
+    # "MUSIC_VOLUME": 0.5,
 }
 
 BLINK_RATE = 250
