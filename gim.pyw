@@ -78,20 +78,20 @@ def main():
         pygame.display.update()
 
 def init_screen():
-    """Returns the screen surface, as well as WIDTH and HEIGHT constants."""
+    """Returns the screen surface, as well as width and height constants."""
 
     pygame.display.set_caption("Gim Descent")
     settings = config.Settings()
 
-    if settings.FULLSCREEN_MODE:
+    if settings.fullscreen_mode:
         info_object = pygame.display.Info()
         width = info_object.current_w
         height = info_object.current_h
 
         screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
     else:
-        width = settings.WIDTH
-        height = settings.HEIGHT
+        width = settings.width
+        height = settings.height
         screen = pygame.display.set_mode((width, height))
 
     constants.MENU_SCALE = round(width/600)

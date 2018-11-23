@@ -27,28 +27,28 @@ class Settings:
             json.dump(self._dict, config_file)
 
     @property
-    def FULLSCREEN_MODE(self):
-        """Get FULLSCREEN_MODE setting."""
-        return self._dict["FULLSCREEN_MODE"]
-    @FULLSCREEN_MODE.setter
-    def FULLSCREEN_MODE(self, value):
-        """Set FULLSCREEN_MODE setting."""
-        self._dict["FULLSCREEN_MODE"] = value
+    def fullscreen_mode(self):
+        """Get fullscreen_mode setting."""
+        return self._dict["fullscreen_mode"]
+    @fullscreen_mode.setter
+    def fullscreen_mode(self, value):
+        """Set fullscreen_mode setting."""
+        self._dict["fullscreen_mode"] = value
 
     @property
-    def WIDTH(self):
-        """Get WIDTH setting."""
-        return self._dict["WIDTH"]
-    @WIDTH.setter
-    def WIDTH(self, value):
-        """Set WIDTH setting."""
-        self._dict["WIDTH"] = value
+    def width(self):
+        """Get width setting."""
+        return self._dict["width"]
+    @width.setter
+    def width(self, value):
+        """Set width setting."""
+        self._dict["width"] = value
 
     @property
-    def HEIGHT(self):
-        """Get HEIGHT setting."""
-        return self._dict["HEIGHT"]
-    @HEIGHT.setter
-    def HEIGHT(self, value):
-        """Set HEIGHT setting."""
-        self._dict["HEIGHT"] = value
+    def height(self):
+        """Get height setting."""
+        return self._dict["height"]
+    @height.setter
+    def height(self, value):
+        """Set height setting."""
+        self._dict["height"] = value

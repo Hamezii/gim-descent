@@ -8,9 +8,9 @@ import sys
 SEED = None
 
 DEFAULT_SETTINGS = {
-    "FULLSCREEN_MODE": True,
-    "WIDTH": 1200,
-    "HEIGHT": 800,
+    "fullscreen_mode": True,
+    "width": 1200,
+    "height": 800,
     # "MUSIC_VOLUME": 0.5,
 }
 
