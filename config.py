@@ -26,8 +26,29 @@ class Settings:
         with open(constants.CONFIG_PATH, 'w') as config_file:
             json.dump(self._dict, config_file)
 
-    def __getattr__(self, var):
-        if var in self._dict:
-            return self._dict[var]
-        else:
-            raise AttributeError("'Settings' object has no attribute '"+var+"'")
+    @property
+    def FULLSCREEN_MODE(self):
+        """Get FULLSCREEN_MODE setting."""
+        return self._dict["FULLSCREEN_MODE"]
+    @FULLSCREEN_MODE.setter
+    def FULLSCREEN_MODE(self, value):
+        """Set FULLSCREEN_MODE setting."""
+        self._dict["FULLSCREEN_MODE"] = value
+
+    @property
+    def WIDTH(self):
+        """Get WIDTH setting."""
+        return self._dict["WIDTH"]
+    @WIDTH.setter
+    def WIDTH(self, value):
+        """Set WIDTH setting."""
+        self._dict["WIDTH"] = value
+
+    @property
+    def HEIGHT(self):
+        """Get HEIGHT setting."""
+        return self._dict["HEIGHT"]
+    @HEIGHT.setter
+    def HEIGHT(self, value):
+        """Set HEIGHT setting."""
+        self._dict["HEIGHT"] = value
