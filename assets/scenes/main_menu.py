@@ -11,6 +11,7 @@ from .dungeon import Dungeon
 from .main_menu_title import MainMenuTitle
 from .option_select import OptionSelect
 from .scene import Scene
+from .settings import Settings
 
 
 class MainMenu(Scene):
@@ -32,6 +33,8 @@ class MainMenu(Scene):
         if option == "Continue game":
             self.game.change_base_scene(Dungeon)
             self.game.base_scene.load_game()
+        if option == "Settings":
+            self.game.set_focus(self.add_child_scene(Settings))
 
     def handle_input(self, keypress):
         if keypress == pygame.K_ESCAPE:
@@ -42,7 +45,7 @@ class MainMenu(Scene):
             if self.title.offset[1] == self.title.y_goal:
                 self.animation_done = True
                 audio.play_music(constants.MUSIC_DUNGEON)
-                options = ["New game"]
+                options = ["New game", "Settings"]
                 if self.game.has_save():
                     options.insert(0, "Continue game")
                 pos = (self.game.width // 2, self.game.height//2)
