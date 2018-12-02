@@ -25,7 +25,7 @@ AUDIO = os.path.join(ASSETS, "audio", "")
 MUSIC = os.path.join(AUDIO, "music", "")
 DEFAULT_IMAGES = os.path.join(ASSETS, "images", "")
 # DEFAULT_IMAGES is sort of redundant, would be used if there were texture packs
-CONFIG_PATH = os.path.join(ASSETS, "config.cfg")
+CONFIG_PATH = os.path.join(PATH, "config.cfg")
 
 MUSIC_NORMAL_VOLUME = 0.5
 MUSIC_DIMMED_VOLUME = 0.25
