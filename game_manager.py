@@ -24,8 +24,18 @@ class GameManager:
 
     def change_base_scene(self, scene_type, *args, **kwargs):
         """Replace the scene tree with a base scene given its type and input parameters. Focus on this scene."""
+        if self.base_scene is not None:
+            self._remove_base_scene()
         self.base_scene = scene_type(*args, **kwargs, game=self)
         self.set_focus(self.base_scene)
+
+    def _remove_base_scene(self):
+        """Remove the base scene."""
+        scene = self.base_scene
+        for child in scene.children:
+            self.remove_scene(child, parent_being_removed=True)
+        if scene in self._focus_scene_stack:
+            self.remove_focus(scene)
 
     @property
     def focus_scene(self):
