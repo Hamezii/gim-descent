@@ -27,6 +27,11 @@ class Stairs:
     direction: str = "down"
 
 @dataclass
+class ExitStairs:
+    """Tags a set of stairs as an exit from the dungeon."""
+    pass
+
+@dataclass
 class TilePosition:
     """Stores position of an entity."""
     x: int

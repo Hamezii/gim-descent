@@ -89,6 +89,11 @@ class Level(Scene):
         self.remove_scene()
         self.game.set_focus(self.parent.add_child_scene(LevelSelect))
 
+    def show_win_screen(self):
+        """Show the win screen."""
+        self.game.remove_focus(self)
+        self.game.set_focus(self.add_child_scene(GameOver, self.parent, victory=True))
+
     def draw_centered_entity(self, surface, entity, scale, pos):
         """Draw an entity, including icons etc.
 

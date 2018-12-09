@@ -566,6 +566,7 @@ class SplitSystem(System):
                         if self.world.has_component(entity, c.Boss):
                             self.world.add_component(new_entity, c.Boss())
 
+
 class StairsSystem(System):
     """Handles the changing of level when the player steps on stairs."""
 
@@ -575,7 +576,6 @@ class StairsSystem(System):
 
         player = self.world.tags.player
         player_pos = self.world.entity_component(player, c.TilePosition)
-
 
         for _, (stair, stair_pos) in self.world.get_components(c.Stairs, c.TilePosition):
             if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y: # If player on stairs
@@ -596,6 +596,13 @@ class StairsSystem(System):
                         self.world.add_component(entity, c.Delete())
 
                 self.game.select_next_level()
+
+        for entity, (stair, stair_pos) in self.world.get_components(c.ExitStairs, c.TilePosition):
+            if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y: # If player on exit stairs
+                self.world.remove_component(entity, c.ExitStairs)
+                self.game.parent.level_num += 1
+                self.game.show_win_screen()
+
 
 class AnimationSystem(System):
     """Updates Render components on entities with an Animation component."""
@@ -656,7 +663,7 @@ class DeadSystem(System):
                     # If this is the final boss entity, make stairs
                     if len(self.world.get_components(c.Boss, c.TilePosition)) == 1:
                         pos = self.world.entity_component(entity, c.TilePosition)
-                        self.world.create_entity(*entity_templates.stairs(pos.x, pos.y))
+                        self.world.create_entity(*entity_templates.exit_stairs(pos.x, pos.y))
 
             if entity != self.world.tags.player:
                 self.world.add_component(entity, c.Delete())

@@ -312,3 +312,11 @@ def stairs(x, y, direction="down"):
         c.TilePosition(x, y),
         c.Stairs(direction=direction),
     ]
+
+def exit_stairs(x, y):
+    """Exit stairs components."""
+    return [
+        c.Render("stairs-down"),
+        c.TilePosition(x, y),
+        c.ExitStairs(),
+    ]
