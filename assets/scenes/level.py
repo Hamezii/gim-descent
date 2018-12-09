@@ -73,8 +73,7 @@ class Level(Scene):
                 if self.game.has_save():
                     self.game.delete_save()
                 audio.stop_music()
-                self.game.set_focus(self.add_child_scene(GameOver, self.parent))
-
+                self.game.set_focus(self.add_child_scene(GameOver, self.parent, victory=False))
 
     def __player_pos_to_camera_pos(self):
         """
