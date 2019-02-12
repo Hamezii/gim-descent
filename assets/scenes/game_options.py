@@ -24,7 +24,7 @@ class GameOptions(Scene):
             pos=(self.game.width/2, self.game.height/2),
             options=("Resume", "Main Menu")
         )
-        self.option_scene.connect("selected", self.selected)
+        self.option_scene.connect_signal("selected", self.selected)
 
     def handle_input(self, keypress):
         if self.option_scene.handle_input(keypress):

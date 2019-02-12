@@ -57,7 +57,7 @@ class MainMenu(Scene):
                 pos = (self.game.width // 2, self.game.height//2)
                 option_select = self.add_child_scene(OptionSelect, options, pos)
                 self.game.set_focus(option_select)
-                option_select.connect("selected", self.selected_option)
+                option_select.connect_signal("selected", self.selected_option)
 
     def draw(self, screen):
         if self.title_background is None:

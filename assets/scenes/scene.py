@@ -27,18 +27,18 @@ class Scene:
         """Return True if this scene or any of its children are the focus scene."""
         return any((self is self.game.focus_scene, *(child.has_focus_scene() for child in self.children)))
 
-    def get_event(self, event_name, *args, **kwargs):
+    def call_recursively(self, event_name, *args, **kwargs):
         """Call a function on this scene given its name and parameters.
 
-        Call get_event on children.
+        Call call_recursively on children.
         """
         function = getattr(self, event_name, None)
         if function is not None:
             function(*args, **kwargs)
         for child in self.children:
-            child.get_event(event_name, *args, **kwargs)
+            child.call_recursively(event_name, *args, **kwargs)
 
-    def connect(self, signal_name, function_obj):
+    def connect_signal(self, signal_name, function_obj):
         """Connect a signal so that it calls a function when it is emitted."""
         if not signal_name in self.signals:
             self.signals[signal_name] = []

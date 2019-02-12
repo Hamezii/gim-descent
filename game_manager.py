@@ -63,9 +63,9 @@ class GameManager:
         if not parent_being_removed:
             scene.parent.children.remove(scene)
 
-    def send_event(self, event_name, *args, **kwargs):
+    def call_all_scenes(self, event_name, *args, **kwargs):
         """Recursively call a function on all scenes in the scene tree."""
-        self.base_scene.get_event(event_name, *args, **kwargs)
+        self.base_scene.call_recursively(event_name, *args, **kwargs)
 
     def has_save(self):
         """Return True if there is a save file and False otherwise.
@@ -98,7 +98,7 @@ class GameManager:
         delta = self.clock.tick()
         self.t_elapsed += delta
         self.fps = int(self.clock.get_fps())
-        self.send_event("update", delta)
+        self.call_all_scenes("update", delta)
 
     def draw(self, screen):
         """Draw the whole scene tree, taking into account draw order."""
