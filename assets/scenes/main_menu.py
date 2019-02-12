@@ -26,6 +26,10 @@ class MainMenu(Scene):
 
         audio.stop_music()
 
+    def _exit_game(self):
+        """Exit the game from the main menu."""
+        leave()
+
     def selected_option(self, option):
         """Respond to an option being selected."""
         if option == "New game":
@@ -35,17 +39,19 @@ class MainMenu(Scene):
             self.game.base_scene.load_game()
         if option == "Settings":
             self.game.set_focus(self.add_child_scene(Settings))
+        if option == "Exit":
+            self._exit_game()
 
     def handle_input(self, keypress):
         if keypress == pygame.K_ESCAPE:
-            leave()
+            self._exit_game()
 
     def update(self, delta):
         if not self.animation_done:
             if self.title.offset[1] == self.title.y_goal:
                 self.animation_done = True
                 audio.play_music(constants.MUSIC_DUNGEON)
-                options = ["New game", "Settings"]
+                options = ["New game", "Settings", "Exit"]
                 if self.game.has_save():
                     options.insert(0, "Continue game")
                 pos = (self.game.width // 2, self.game.height//2)
