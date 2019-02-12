@@ -19,9 +19,6 @@ def _import_image(name):
 
 class Renderer:
     """Rendering wrapper which stores cached surfaces."""
-    SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
-                     "!": "exc", "/": "fwdslash", "?": "que", " ": "space"}
-
     def __init__(self):
         self.total_images = 0
 
@@ -60,8 +57,8 @@ class Renderer:
             pos = (pos[0] - (len(text)/2) * character_width + 0.1 * size, pos[1] - size * 0.5)
 
         for i, character in enumerate(text):
-            if character in self.SPECIAL_CHARS:
-                char_name = "txt_"+self.SPECIAL_CHARS[character]
+            if character in constants.SPECIAL_CHARS:
+                char_name = "txt_"+ constants.SPECIAL_CHARS[character]
             else:
                 char_name = "txt-"+character.lower()
             surface.blit(self.get_image(name=char_name, scale=size*0.2, color=color), (pos[0] + i * character_width, pos[1]))

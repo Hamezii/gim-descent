@@ -23,7 +23,7 @@ class CharacterSelect(Scene):
     character_detail = (
         ("Balanced and reliable", "Disciplined fighter"),
         ("Thick armour comes in handy", "Half efficiency when drinking potions"),
-        ("Gets a free turn after any kill", "Cant take many hits")
+        ("Gets a free turn after any kill", "Can't take many hits")
     )
 
     def __init__(self, **kwargs):

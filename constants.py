@@ -27,6 +27,10 @@ DEFAULT_IMAGES = os.path.join(ASSETS, "images", "")
 # DEFAULT_IMAGES is sort of redundant, would be used if there were texture packs
 CONFIG_PATH = os.path.join(PATH, "config.cfg")
 
+SPECIAL_CHARS = {":": "col", "-": "dash", ".": "dot",
+                 "!": "exc", "/": "fwdslash", "?": "que",
+                 " ": "space", "'": "apos"}
+
 MUSIC_NORMAL_VOLUME = 0.5
 MUSIC_DIMMED_VOLUME = 0.25
 
