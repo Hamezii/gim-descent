@@ -13,7 +13,7 @@ To do:
 import pygame
 
 import audio
-import config
+import config as config_api
 import constants
 from assets.scenes.main_menu import MainMenu
 from game_manager import GameManager
@@ -81,17 +81,17 @@ def init_screen():
     """Returns the screen surface, as well as width and height constants."""
 
     pygame.display.set_caption("Gim Descent")
-    settings = config.Settings()
+    config = config_api.Config()
 
-    if settings.fullscreen_mode:
+    if config.fullscreen_mode:
         info_object = pygame.display.Info()
         width = info_object.current_w
         height = info_object.current_h
 
         screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
     else:
-        width = settings.width
-        height = settings.height
+        width = config.width
+        height = config.height
         screen = pygame.display.set_mode((width, height))
 
     constants.MENU_SCALE = round(width/600)

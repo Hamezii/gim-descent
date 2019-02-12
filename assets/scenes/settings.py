@@ -2,7 +2,6 @@
 
 import pygame
 
-import audio
 import config
 import constants
 import widget as wgt
@@ -16,7 +15,7 @@ class Settings(Scene):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.settings = config.Settings()
+        self.config = config.Config()
         x = self.game.width // 2 - constants.MENU_SCALE * 200
         y = self.game.height // 2 - constants.MENU_SCALE * 120
         width = constants.MENU_SCALE * 400
@@ -35,17 +34,17 @@ class Settings(Scene):
                 )
         ]
         toggle_pos = (self.box_rect.left + 10 * constants.MENU_SCALE, self.box_rect.top + 40 * constants.MENU_SCALE)
-        self.toggle = self.add_child_scene(Toggle, "Fullscreen", toggle_pos, state=self.settings.fullscreen_mode)
+        self.toggle = self.add_child_scene(Toggle, "Fullscreen", toggle_pos, state=self.config.fullscreen_mode)
         self.toggle.connect_signal("changed_state", lambda x: self.set_setting("fullscreen_mode", x))
 
     def set_setting(self, setting, value):
         """Set a setting to the specified value."""
-        setattr(self.settings, setting, value)
+        setattr(self.config, setting, value)
 
     def handle_input(self, keypress):
         self.game.set_focus(self.toggle) # testing
         if keypress == pygame.K_ESCAPE:
-            self.settings.save_settings()
+            self.config.save_to_file()
             self.remove_scene()
         return True
 
