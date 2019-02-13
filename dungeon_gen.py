@@ -64,31 +64,53 @@ class DungeonNetwork:
             node.connections[direction] = other_node
             other_node.connections[self.opposite[direction]] = node
 
+def __get_path_direction(x, distance):
+    """Return the direction a path should travel. Return None if not possible."""
+    min_x = -1
+    max_x = 5
+    can_go_left = True
+    can_go_right = True
+    if x - distance < min_x:
+        can_go_left = False
+    if x + distance > max_x:
+        can_go_right = False
+    if can_go_left and can_go_right:
+        return random.choice([constants.LEFT, constants.RIGHT])
+    elif can_go_right:
+        return constants.RIGHT
+    elif can_go_left:
+        return constants.LEFT
+    else:
+        return None
+
+def __make_node_and_connect_from(network, x, y, direction):
+    """Add a Node(x, y) to a network and connect it from a direction."""
+    node = LevelNode((x, y))
+    network.add_node(node)
+    network.connect(node, network.opposite[direction])
+
 def __generate_main_path(network):
     """Make the random path connecting the start to the end of the dungeon."""
-    y = 0
     x = 0
-    move = None
-    while y < 5:
-        direction = random.randint(-(y+1), y+1) # More winding near the bottom
+    y = 0
+    path_height = 5
+    path_length = 7
+    for height in range(path_height-1, -1, -1):
+        distance = random.randint(path_length//(1+height), path_length//(1+height*0.5))
+        direction = __get_path_direction(x, distance)
+        attempts = 0
+        while direction is None:
+            attempts += 1
+            distance = random.randint(max(0, path_length//(1+height) - attempts), distance-1)
+            direction = __get_path_direction(x, distance)
+        path_length -= distance
 
-        if direction < 0:
-            if x <= -1 or move == constants.RIGHT:
-                move = constants.DOWN
-            else:
-                move = constants.LEFT
-        if direction > 0:
-            if x >= 4 or move == constants.LEFT:
-                move = constants.DOWN
-            else:
-                move = constants.RIGHT
-        if direction == 0:
-            move = constants.DOWN
-        x += move[0]
-        y += move[1]
-        node = LevelNode((x, y))
-        network.add_node(node)
-        network.connect(node, network.opposite[move])
+        for _ in range(distance):
+            x += direction[0]
+            __make_node_and_connect_from(network, x, y, direction)
+
+        y += 1
+        __make_node_and_connect_from(network, x, y, constants.DOWN)
     network.get_node_at((x, y)).properties.append("boss")
 
 def __add_random_rooms(network, amount, depth):
