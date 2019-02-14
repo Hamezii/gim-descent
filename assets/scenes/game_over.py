@@ -4,6 +4,7 @@ import pygame
 
 import audio
 import constants
+import key_input
 import widget as wgt
 from misc import pluralise, time_to_str
 
@@ -40,7 +41,7 @@ class GameOver(Scene):
                 "Time: " + time_to_str(dungeon.game_time),
                 "You killed " + pluralise(dungeon.kills, "creature") + ".",
                 " ",
-                "Space for quick replay",
+                "Space to play again",
                 "Escape to return to the Main Menu"
             )
         )
@@ -65,11 +66,11 @@ class GameOver(Scene):
         )
 
     def handle_input(self, keypress):
-        if keypress == pygame.K_SPACE:
+        if keypress.has_action(key_input.Action.ACCEPT):
             audio.play_music(constants.MUSIC_DUNGEON)
             self.game.change_base_scene(character_select.CharacterSelect)
             return True
-        if keypress == pygame.K_ESCAPE:
+        if keypress.has_action(key_input.Action.BACK):
             self.game.change_base_scene(main_menu.MainMenu)
             return True
 

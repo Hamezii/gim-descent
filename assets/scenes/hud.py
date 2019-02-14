@@ -61,7 +61,7 @@ class HUD(Scene):
 
     def unfocused_input(self, keypress):
         """Respond to an input independent of what scene is currently being focused on."""
-        if keypress == pygame.K_F8:
+        if keypress.key == pygame.K_F8:
             self.remove_scene()
 
     def draw(self, screen):

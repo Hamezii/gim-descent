@@ -5,6 +5,7 @@ import pygame
 import audio
 import constants
 from misc import leave
+import key_input
 
 from .character_select import CharacterSelect
 from .dungeon import Dungeon
@@ -43,7 +44,7 @@ class MainMenu(Scene):
             self._exit_game()
 
     def handle_input(self, keypress):
-        if keypress == pygame.K_ESCAPE:
+        if keypress.has_action(key_input.Action.BACK):
             self._exit_game()
 
     def update(self, delta):

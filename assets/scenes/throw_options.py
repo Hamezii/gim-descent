@@ -1,9 +1,8 @@
 """Contains the ThrowOptions scene."""
 
-import pygame
-
 import components as c
 import constants
+import key_input
 import systems as s
 import widget as wgt
 from misc import DynamicPos
@@ -52,13 +51,13 @@ class ThrowOptions(Scene):
 
     def handle_input(self, keypress):
         handled = False
-        if keypress == pygame.K_x:
+        if keypress.has_action(key_input.Action.BACK):
             self.game.set_focus(self.parent.add_child_scene(inventory_options.InventoryOptions, self.item))
             self.remove_scene()
             handled = True
 
-        if keypress in constants.DIRECTIONS:
-            self.dir = keypress
+        if keypress.has_action(key_input.Action.DIRECTION):
+            self.dir = keypress.get_direction()
             playerpos = self.world.entity_component(
                 self.world.tags.player, c.TilePosition)
             self.targettile = [playerpos.x, playerpos.y]
@@ -83,7 +82,7 @@ class ThrowOptions(Scene):
 
             handled = True
 
-        if keypress == pygame.K_z:
+        if keypress.has_action(key_input.Action.ACCEPT):
             if self.droptile is not None:
                 self.world.entity_component(self.world.tags.player, c.Inventory).contents.remove(self.item)
                 self.world.remove_component(self.item, c.Stored)
@@ -100,6 +99,9 @@ class ThrowOptions(Scene):
                 self.remove_scene()
 
             handled = True
+
+        if keypress.has_action(key_input.Action.INVENTORY_CLOSE):
+            self.remove_scene()
 
         return handled
 

@@ -5,6 +5,7 @@ import pygame
 import audio
 import components as c
 import constants
+import key_input
 import widget as wgt
 from misc import DynamicPos
 
@@ -47,16 +48,21 @@ class InventoryOptions(Scene):
             ))
 
     def handle_input(self, keypress):
-        if keypress == constants.DOWN:
+        handled = False
+        if keypress.has_action(key_input.Action.DOWN):
+            handled = True
             self.cursorpos = min(self.cursorpos + 1, self.size-1)
             audio.play("click2", replace=True)
-        if keypress == constants.UP:
+        if keypress.has_action(key_input.Action.UP):
+            handled = True
             self.cursorpos = max(self.cursorpos - 1, 0)
             audio.play("click2", replace=True)
-        if keypress == pygame.K_x:
+        if keypress.has_action(key_input.Action.BACK):
+            handled = True
             self.remove_scene()
             audio.play("drop", replace=True)
-        if keypress == pygame.K_z:
+        if keypress.has_action(key_input.Action.ACCEPT):
+            handled = True
             audio.play("snap1", replace=True)
 
             selection = self.options[self.cursorpos]
@@ -91,7 +97,9 @@ class InventoryOptions(Scene):
                 pos = self.world.entity_component(self.world.tags.player, c.TilePosition)
                 self.world.add_component(self.item, c.TilePosition(pos.x, pos.y))
 
-        handled = keypress in (*constants.DIRECTIONS, pygame.K_z, pygame.K_x)
+        if keypress.has_action(key_input.Action.INVENTORY_CLOSE):
+            self.remove_scene()
+
         return handled
 
     def update(self, delta):

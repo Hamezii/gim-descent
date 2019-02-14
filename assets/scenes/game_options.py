@@ -3,6 +3,7 @@
 import pygame
 
 import constants
+import key_input
 
 from . import main_menu
 from .option_select import OptionSelect
@@ -29,10 +30,10 @@ class GameOptions(Scene):
     def handle_input(self, keypress):
         if self.option_scene.handle_input(keypress):
             return True
-        if keypress in [pygame.K_ESCAPE, pygame.K_x]:
+        if keypress.has_action(key_input.Action.BACK):
             self.remove_scene()
             return True
-        if keypress in constants.DIRECTIONS:
+        if keypress.has_action(key_input.Action.DIRECTION):
             return True
 
     def draw(self, screen):

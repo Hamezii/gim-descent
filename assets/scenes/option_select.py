@@ -3,6 +3,7 @@
 import pygame
 
 import constants
+import key_input
 import widget as wgt
 
 from .scene import Scene
@@ -25,15 +26,15 @@ class OptionSelect(Scene):
         )
 
     def handle_input(self, keypress):
-        if keypress == constants.DOWN:
+        if keypress.has_action(key_input.Action.DOWN):
             self.cursor_pos = min(len(self.options)-1, self.cursor_pos + 1)
             return True
 
-        if keypress == constants.UP:
+        if keypress.has_action(key_input.Action.UP):
             self.cursor_pos = max(0, self.cursor_pos - 1)
             return True
 
-        if keypress in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_z):
+        if keypress.has_action(key_input.Action.ACCEPT):
             self.emit_signal("selected", self.options[self.cursor_pos])
             return True
 

@@ -1,10 +1,9 @@
 """Contains the Inventory scene."""
 
-import pygame
-
 import audio
 import components as c
 import constants
+import key_input
 import widget as wgt
 from misc import DynamicPos
 
@@ -41,23 +40,23 @@ class Inventory(Scene):
 
     def handle_input(self, keypress):
         handled = False
-        if keypress == pygame.K_x:
+        if keypress.has_action(key_input.Action.BACK) or keypress.has_action(key_input.Action.INVENTORY_CLOSE):
             handled = True
             self.hide()
 
-        if keypress in constants.DIRECTIONS:
+        if keypress.has_action(key_input.Action.DIRECTION):
             handled = True
             audio.play("click3", replace=True)
-        if keypress == constants.UP:
+        if keypress.has_action(key_input.Action.UP):
             self.cursorpos[1] = max(self.cursorpos[1] - 1, 0)
-        if keypress == constants.DOWN:
+        if keypress.has_action(key_input.Action.DOWN):
             self.cursorpos[1] = min(self.cursorpos[1] + 1, self.size[1]-1)
-        if keypress == constants.LEFT:
+        if keypress.has_action(key_input.Action.LEFT):
             self.cursorpos[0] = max(self.cursorpos[0] - 1, 0)
-        if keypress == constants.RIGHT:
+        if keypress.has_action(key_input.Action.RIGHT):
             self.cursorpos[0] = min(self.cursorpos[0] + 1, self.size[0]-1)
 
-        if keypress == pygame.K_z:
+        if keypress.has_action(key_input.Action.ACCEPT):
             handled = True
             itempos = self.cursorpos[0]*self.size[1]+self.cursorpos[1]
             items = self.parent.world.entity_component(self.parent.world.tags.player, c.Inventory).contents

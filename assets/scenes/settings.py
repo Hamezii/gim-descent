@@ -4,6 +4,7 @@ import pygame
 
 import config
 import constants
+import key_input
 import widget as wgt
 
 from .scene import Scene
@@ -43,7 +44,7 @@ class Settings(Scene):
 
     def handle_input(self, keypress):
         self.game.set_focus(self.toggle) # testing
-        if keypress == pygame.K_ESCAPE:
+        if keypress.has_action(key_input.Action.BACK):
             self.config.save_to_file()
             self.remove_scene()
         return True

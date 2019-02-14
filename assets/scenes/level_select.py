@@ -3,6 +3,7 @@
 import pygame
 
 import constants
+import key_input
 import widget as wgt
 
 from .scene import Scene
@@ -44,16 +45,16 @@ class LevelSelect(Scene):
                     node.can_be_explored = True
 
     def handle_input(self, keypress):
-        if keypress in constants.DIRECTIONS:
+        if keypress.has_action(key_input.Action.DIRECTION):
             player_node = self.network.player_node
-            node = player_node.connections[keypress]
+            node = player_node.connections[keypress.get_direction()]
             if node is not None:
                 if node.explored or node.can_be_explored:
                     self.network.player_node = node
 
             return True
 
-        if keypress == pygame.K_z:
+        if keypress.has_action(key_input.Action.ACCEPT):
             node = self.network.player_node
             if node.can_be_explored:
                 node.explored = True

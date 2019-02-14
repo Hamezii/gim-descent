@@ -15,6 +15,7 @@ import pygame
 import audio
 import config as config_api
 import constants
+import key_input
 from assets.scenes.main_menu import MainMenu
 from game_manager import GameManager
 from misc import leave
@@ -27,30 +28,6 @@ pygame.init()
 pygame.mixer.set_num_channels(8)
 
 audio.load_audio()
-
-
-def get_input(events):
-    """Return the last key that was just pressed."""
-    keypress = None
-
-    for event in events:
-        if event.type == pygame.KEYDOWN:
-            keypress = event.key
-
-            if event.key == pygame.K_w or event.key == pygame.K_UP:
-                keypress = constants.UP
-
-            if event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                keypress = constants.LEFT
-
-            if event.key == pygame.K_s or event.key == pygame.K_DOWN:
-                keypress = constants.DOWN
-
-            if event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                keypress = constants.RIGHT
-
-    return keypress
-
 
 def main():
     """Run the game."""
@@ -66,10 +43,10 @@ def main():
             if event.type == pygame.QUIT:
                 game.save_game()
                 leave()
-        keypress = get_input(events)
-        if keypress is not None:
-            game.input(keypress)
-            game.call_all_scenes("unfocused_input", keypress)
+            if event.type == pygame.KEYDOWN:
+                keypress = key_input.Keypress(event.key)
+                game.input(keypress)
+                game.call_all_scenes("unfocused_input", keypress)
 
         game.update()
 

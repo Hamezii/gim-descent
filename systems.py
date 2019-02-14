@@ -7,6 +7,7 @@ import audio
 import components as c
 import constants
 import entity_templates
+import key_input
 from ecs import System
 
 
@@ -178,14 +179,16 @@ class InitiativeSystem(System):
 
 class PlayerInputSystem(System):
     """Interprets input from the player, applying it to all entities with a PlayerInput component."""
-
     def process(self, **args):
-        playerinput = args["playerinput"]
-        if playerinput in constants.DIRECTIONS:
-            for entity, _ in self.world.get_components(c.PlayerInput, c.MyTurn):
-                bumppos = (playerinput[0], playerinput[1])
-                self.world.add_component(entity, c.Bump(*bumppos))
+        bumppos = None
+        playerinputs = args["playerinputs"]
+        for keypress in playerinputs:
+            if keypress.has_action(key_input.Action.DIRECTION):
+                bumppos = keypress.get_direction()
 
+        if bumppos is not None:
+            for entity, _ in self.world.get_components(c.PlayerInput, c.MyTurn):
+                self.world.add_component(entity, c.Bump(*bumppos))
 
 
 class AIFlyWizardSystem(System):

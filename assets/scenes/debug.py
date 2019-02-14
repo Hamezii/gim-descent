@@ -27,7 +27,7 @@ class Debug(Scene):
 
     def unfocused_input(self, keypress):
         """Respond to player input independent of what scene is being focused on."""
-        if keypress == pygame.K_F12:
+        if keypress.key == pygame.K_F12:
             self.active = not self.active
 
     def draw(self, screen):

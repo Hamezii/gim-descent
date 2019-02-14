@@ -1,13 +1,12 @@
 """Contains the CharacterSelect scene."""
 
-import pygame
-
 import constants
 import entity_templates
+import key_input
 import widget as wgt
 
-from .dungeon import Dungeon
 from . import main_menu
+from .dungeon import Dungeon
 from .scene import Scene
 
 
@@ -53,16 +52,16 @@ class CharacterSelect(Scene):
         ]
 
     def handle_input(self, keypress):
-        if keypress == constants.RIGHT:
+        if keypress.has_action(key_input.Action.RIGHT):
             self.cursor_pos = min(self.cursor_pos+1, 2)
 
-        if keypress == constants.LEFT:
+        if keypress.has_action(key_input.Action.LEFT):
             self.cursor_pos = max(self.cursor_pos-1, 0)
 
-        if keypress == pygame.K_ESCAPE:
+        if keypress.has_action(key_input.Action.BACK):
             self.game.change_base_scene(main_menu.MainMenu)
 
-        if keypress == pygame.K_z:
+        if keypress.has_action(key_input.Action.ACCEPT):
             self.game.change_base_scene(Dungeon)
             dungeon = self.game.base_scene
             dungeon.init_world()

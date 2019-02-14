@@ -9,6 +9,7 @@ import components as c
 import constants
 import dungeon_gen
 import entity_templates
+import key_input
 import level_gen
 import systems as s
 from ecs import World
@@ -35,11 +36,11 @@ class Dungeon(Scene):
         self.dungeon_network = None
 
     def handle_input(self, keypress):
-        if keypress == pygame.K_F10: # Save
+        if keypress.key == pygame.K_F10: # Save
             self.save_game()
-        if keypress == pygame.K_F11: # Load
+        if keypress.key == pygame.K_F11: # Load
             self.load_game()
-        if keypress == pygame.K_ESCAPE: # Exiting to menu
+        if keypress.has_action(key_input.Action.BACK): # Exiting to menu
             self.game.set_focus(self.add_child_scene(GameOptions))
 
         return True

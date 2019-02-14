@@ -2,22 +2,20 @@
 
 import random
 
-import pygame
-
 import audio
 import components as c
-import constants
+import key_input
 import systems as s
 from camera import Camera
 from ecs import World
 
 from .debug import Debug
+from .game_over import GameOver
 from .hud import HUD
 from .inventory import Inventory
+from .level_select import LevelSelect
 from .scene import Scene
 from .viewport import Viewport
-from .level_select import LevelSelect
-from .game_over import GameOver
 
 
 class Level(Scene):
@@ -30,7 +28,7 @@ class Level(Scene):
         self.camera = Camera(speed=5, rect_size=(self.game.width, self.game.height))
         self.camera.set_target(self.__player_pos_to_camera_pos(), direct=True)
 
-        self.keypress = None
+        self.keypresses = []
         self.player_alive = True
 
         self.add_child_scene(Viewport)
@@ -39,29 +37,28 @@ class Level(Scene):
         self.inventory = self.add_child_scene(Inventory)
 
     def handle_input(self, keypress):
-        if keypress == pygame.K_MINUS:  # Zooming out
+        self.keypresses.append(keypress)
+        if keypress.has_action(key_input.Action.ZOOM_OUT):
             if self.camera.get_zoom() > 20:
                 self.camera.zoom(-20)
             return True
-        if keypress == pygame.K_EQUALS:  # Zooming in
+        if keypress.has_action(key_input.Action.ZOOM_IN):
             self.camera.zoom(20)
             return True
-        if keypress == pygame.K_z: # Inventory
+        if keypress.has_action(key_input.Action.INVENTORY_OPEN):
             # Only open if player does not have Dead component
             if not self.world.has_component(self.world.tags.player, c.Dead):
                 self.inventory.show()
             return True
-        if keypress in constants.DIRECTIONS: # Caching movement direction
-            self.keypress = keypress
-            return True
+
 
     def update(self, delta):
         if not self.player_alive:
-            self.keypress = None
-        self.world.process(playerinput=self.keypress, d_t=delta)
-        self.keypress = None
+            self.keypresses = []
+        self.world.process(playerinputs=self.keypresses, d_t=delta)
+        self.keypresses = []
         while not self.world.has_component(self.world.tags.player, c.MyTurn) and self.player_alive: # Waiting for input
-            self.world.process(playerinput=None, d_t=0)
+            self.world.process(playerinputs=[], d_t=0)
 
         # Move the camera towards the player and update it
         cameragoal = self.__player_pos_to_camera_pos()

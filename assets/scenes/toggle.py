@@ -3,6 +3,7 @@
 import pygame
 
 import constants
+import key_input
 import widget as wgt
 
 from .scene import Scene
@@ -27,7 +28,7 @@ class Toggle(Scene):
         )
 
     def handle_input(self, keypress):
-        if keypress in [pygame.K_RETURN, pygame.K_SPACE, pygame.K_z]:
+        if keypress.has_action(key_input.Action.ACCEPT):
             self.state = not self.state
             self.emit_signal("changed_state", self.state)
             return True
