@@ -4,8 +4,9 @@ import pygame
 
 import audio
 import constants
-from misc import leave
 import key_input
+import widget as wgt
+from misc import leave
 
 from .character_select import CharacterSelect
 from .dungeon import Dungeon
@@ -25,11 +26,49 @@ class MainMenu(Scene):
 
         self.title = self.add_child_scene(MainMenuTitle)
 
+        self.widgets = tuple()
         audio.stop_music()
 
     def _exit_game(self):
         """Exit the game from the main menu."""
         leave()
+
+    def _start_main_menu(self):
+        """Add everything to the main menu. Called after the title drops.
+
+        The main menu animation and proper main menu could be two seperate scenes.
+        """
+        audio.play_music(constants.MUSIC_DUNGEON)
+        options = ["New game", "Settings", "Exit"]
+        if self.game.has_save():
+            options.insert(0, "Continue game")
+        pos = (self.game.width // 2, self.game.height//2)
+        option_select = self.add_child_scene(OptionSelect, options, pos)
+        self.game.set_focus(option_select)
+        option_select.connect_signal("selected", self.selected_option)
+
+        # Help text
+        self.widgets = (
+            wgt.Text(
+                renderer=self.game.renderer,
+                offset=(5*constants.MENU_SCALE, 5*constants.MENU_SCALE),
+                size=5*constants.MENU_SCALE,
+                color=constants.LIGHT_GRAY,
+                text="CONTROLS"
+            ),
+            wgt.TextLines(
+                renderer=self.game.renderer,
+                offset=(5*constants.MENU_SCALE, 16*constants.MENU_SCALE),
+                size=5*constants.MENU_SCALE,
+                color=constants.GRAY,
+                text=[
+                    "WASD, ARROWS       MOVE",
+                    "Z, SPACE, ENTER    SELECT/OPEN INVENTORY",
+                    "X, ESCAPE          BACK/EXIT",
+                    "TAB                OPEN/CLOSE INVENTORY"
+                ]
+            )
+        )
 
     def selected_option(self, option):
         """Respond to an option being selected."""
@@ -51,14 +90,8 @@ class MainMenu(Scene):
         if not self.animation_done:
             if self.title.offset[1] == self.title.y_goal:
                 self.animation_done = True
-                audio.play_music(constants.MUSIC_DUNGEON)
-                options = ["New game", "Settings", "Exit"]
-                if self.game.has_save():
-                    options.insert(0, "Continue game")
-                pos = (self.game.width // 2, self.game.height//2)
-                option_select = self.add_child_scene(OptionSelect, options, pos)
-                self.game.set_focus(option_select)
-                option_select.connect_signal("selected", self.selected_option)
+                self._start_main_menu()
+
 
     def draw(self, screen):
         if self.title_background is None:
@@ -71,3 +104,5 @@ class MainMenu(Scene):
         # Logic to get title background to show in the right place
         # for different sized sceens
         screen.blit(self.title_background, (0, self.game.height-self.title_background.get_height()))
+        for widget in self.widgets:
+            widget.draw(screen)

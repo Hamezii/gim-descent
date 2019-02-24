@@ -43,11 +43,12 @@ class Settings(Scene):
                 )
         ]
         self.options = []
+        self.option_index = None
+
         toggle_pos = (self.box_rect.left + 10 * constants.MENU_SCALE, self.box_rect.top + 40 * constants.MENU_SCALE)
         toggle = self.add_child_scene(Toggle, "Fullscreen", toggle_pos, state=self.config.fullscreen_mode)
         toggle.connect_signal("changed_state", lambda x: self.set_setting("fullscreen_mode", x))
         self.options.append(toggle)
-        self.option_index = None
 
     def set_setting(self, setting, value):
         """Set a setting to the specified value."""
