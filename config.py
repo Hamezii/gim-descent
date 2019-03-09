@@ -5,6 +5,13 @@ import os
 
 import constants
 
+DEFAULT_SETTINGS = {
+    "fullscreen_mode": True,
+    "width": 1200,
+    "height": 800,
+    # "MUSIC_VOLUME": 0.5,
+}
+
 class Config:
     """Contains data from the config file."""
     def __init__(self):

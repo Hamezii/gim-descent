@@ -7,13 +7,6 @@ import sys
 
 SEED = None
 
-DEFAULT_SETTINGS = {
-    "fullscreen_mode": True,
-    "width": 1200,
-    "height": 800,
-    # "MUSIC_VOLUME": 0.5,
-}
-
 BLINK_RATE = 250
 
 TILE_SIZE = 40
