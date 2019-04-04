@@ -1,6 +1,6 @@
 # Gim
-Gim Descent is a turn-based roguelike dungeon-crawler.
-The aim  is to fight through a dungeon and defeat a boss on floor 12.
+Gim Descent is a simple tactical roguelike dungeon-crawler.
+The aim is to fight through a dungeon and defeat the boss.
 
 An executable for this game is available at the link to itch.io!
 
@@ -16,7 +16,5 @@ Plus / Minus - Zoom in and out (useful for when you're trying to find where to g
 Escape - Return to main menu / exit
 
 ## Dependencies
-The executable runs without any dependencies.
-
 When running from source, you will need to have at least Python 3.6.x installed as well as pygame. 
 Execute the file named gim.pyw to start the game.
