@@ -32,6 +32,7 @@ class GameOptions(Scene):
             return True
         if keypress.has_action(key_input.Action.BACK):
             self.remove_scene()
+            self.emit_signal("closed")
             return True
         if keypress.has_action(key_input.Action.DIRECTION):
             return True
@@ -43,6 +44,7 @@ class GameOptions(Scene):
         """Respond when an option has been selected."""
         if option == "Resume":
             self.remove_scene()
+            self.emit_signal("closed")
         if option == "Main Menu":
             self.game.save_game()
             self.game.change_base_scene(main_menu.MainMenu)

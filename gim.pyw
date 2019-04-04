@@ -2,7 +2,9 @@
 James Lecomte
 
 To do:
-- Add an exit option and settings option to main menu
+- Add equipment or permanent items to the game
+
+- Add damage particle effects
 
 - Improve AI
 '''

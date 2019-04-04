@@ -12,7 +12,7 @@ from .toggle import Toggle
 
 
 class Settings(Scene):
-    """Lets you look at and modify the config file."""
+    """Interface for settings and the config file."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

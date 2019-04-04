@@ -29,6 +29,7 @@ class Dungeon(Scene):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.paused = False
         self.game_time = 0
         self.kills = 0
         self.level_num = 1
@@ -41,12 +42,20 @@ class Dungeon(Scene):
         if keypress.key == pygame.K_F11: # Load
             self.load_game()
         if keypress.has_action(key_input.Action.BACK): # Exiting to menu
-            self.game.set_focus(self.add_child_scene(GameOptions))
+            self.paused = True
+            options_menu = self.add_child_scene(GameOptions)
+            options_menu.connect_signal("closed", self._unpause)
+            self.game.set_focus(options_menu)
 
         return True
 
+    def _unpause(self):
+        """Unpause the game. Called after the pause menu is closed."""
+        self.paused = False
+
     def update(self, delta):
-        self.game_time += delta * 0.001
+        if not self.paused:
+            self.game_time += delta * 0.001
 
     def is_blinking(self):
         """Return True if blinking images should be lit up at the moment."""
