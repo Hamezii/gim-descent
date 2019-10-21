@@ -13,6 +13,7 @@ To do:
 # py -m cProfile -s tottime gim.pyw
 
 import pygame
+import ctypes
 
 import audio
 import config as config_api
@@ -24,6 +25,7 @@ from misc import leave
 
 #from functools import lru_cache
 
+ctypes.windll.user32.SetProcessDPIAware() # Fix windows scaling
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
 
