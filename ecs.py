@@ -1,4 +1,6 @@
 """Entity Component System."""
+# Shown to be optimised enough, from time analysis. No further optimisation necessary.
+
 
 #from functools import lru_cache
 
