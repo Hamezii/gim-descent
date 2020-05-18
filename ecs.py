@@ -20,9 +20,12 @@ def memoize(func):
     def cache_remove(component_type):
         """Remove a specific component type from the cache."""
         if component_type in cache:
+            # This code only runs if keys of the cache are NOT LISTS, since component_type is also not a list.
+            # however, if component_type is a list (i.e a list of component types), this code will run.
             del cache[component_type]
             return
         for key in list(cache):
+            # For any key that depends on the component that has to be recached, remove the cache.
             if component_type in key:
                 del cache[key]
 
