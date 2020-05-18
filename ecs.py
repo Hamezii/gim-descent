@@ -305,6 +305,8 @@ class World:
     @memoize
     def get_components(self, *component_types):
         """Get a list for Entity and multiple Component sets."""
+        # The reason to use this intermediary function for _get_components is because _get_components returns an iterator,
+        # while this function converts it in to a list and caches it.
         return [query for query in self._get_components(*component_types)]
 
     def try_component(self, entity, component_type):
