@@ -2,7 +2,7 @@
 Gim Descent is a turn-based roguelike dungeon-crawler.
 The aim is to fight through a dungeon and defeat the boss.
 
-An executable for this game is available at the link to itch.io!
+An executable for this game is available at itch.io! https://hamezii.itch.io/gim
 
 ## Controls
 Arrow keys/WASD to move.
