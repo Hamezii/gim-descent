@@ -32,9 +32,11 @@ class Widget:
         """Return True if the surface requires updating."""
         current_attributes = {attr: getattr(self, attr) for attr in self.dirty_attributes}
 
-        if self._surface_attributes is None:
-            self._surface_attributes = current_attributes
-            return True
+
+        # --- Don't think this section of code is necessary, but will keep it anyway
+        # if self._surface_attributes is None:
+        #     self._surface_attributes = current_attributes
+        #     return True
 
         if current_attributes == self._surface_attributes:
             return False
