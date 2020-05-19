@@ -18,6 +18,7 @@ class GameOver(Scene):
     REL_HEIGHT = 7*9 + 8
     def __init__(self, dungeon, victory, **kwargs):
         super().__init__(**kwargs)
+        self.victory = victory
         self.dungeon = dungeon
         self.width = self.REL_WIDTH * constants.MENU_SCALE
         self.height = self.REL_HEIGHT * constants.MENU_SCALE
@@ -37,12 +38,11 @@ class GameOver(Scene):
             offset=(text_x, text_y),
             text=(
                 *top_text,
-                "Score: :PLACEHOLDER:",
                 "Time: " + time_to_str(dungeon.game_time),
                 "You killed " + pluralise(dungeon.kills, "creature") + ".",
                 " ",
-                "Space to play again",
-                "Escape to return to the Main Menu"
+                "Space to continue playing" if self.victory else "Space to play again",
+                "Escape to finish run" if self.victory else "Space to return to the Main Menu"
             )
         )
 
@@ -67,8 +67,11 @@ class GameOver(Scene):
 
     def handle_input(self, keypress):
         if keypress.has_action(key_input.Action.ACCEPT):
-            audio.play_music(constants.MUSIC_DUNGEON)
-            self.game.change_base_scene(character_select.CharacterSelect)
+            if self.victory:
+                self.parent.select_next_level()
+            else:
+                audio.play_music(constants.MUSIC_DUNGEON)
+                self.game.change_base_scene(character_select.CharacterSelect)
             return True
         if keypress.has_action(key_input.Action.BACK):
             self.game.change_base_scene(main_menu.MainMenu)
