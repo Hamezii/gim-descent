@@ -598,13 +598,11 @@ class StairsSystem(System):
                     if entity not in player_entities:
                         self.world.add_component(entity, c.Delete())
 
-                self.game.select_next_level()
+                if stair.is_exit:
+                    self.game.show_win_screen()
+                else:
+                    self.game.select_next_level()
 
-        for entity, (stair, stair_pos) in self.world.get_components(c.ExitStairs, c.TilePosition):
-            if player_pos.x == stair_pos.x and player_pos.y == stair_pos.y: # If player on exit stairs
-                self.world.remove_component(entity, c.ExitStairs)
-                self.game.parent.level_num += 1
-                self.game.show_win_screen()
 
 
 class AnimationSystem(System):

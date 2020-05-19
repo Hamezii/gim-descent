@@ -20,7 +20,7 @@ class Config:
         if os.path.exists(constants.CONFIG_PATH):
             self.load_from_file()
         else:
-            self.config_dict = constants.DEFAULT_SETTINGS.copy()
+            self.config_dict = DEFAULT_SETTINGS.copy()
             self.save_to_file()
 
     def load_from_file(self):

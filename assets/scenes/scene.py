@@ -7,7 +7,7 @@ class Scene:
     scene_properties = {
         "draw_above_parent": True
     }
-    def __init__(self, game, parent=None):
+    def __init__(self, game: game_manager.GameManager, parent=None):
         self.game: game_manager.GameManager = game
         self.parent = parent
         self.children = []

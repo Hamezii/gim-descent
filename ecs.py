@@ -1,4 +1,6 @@
 """Entity Component System."""
+# Shown to be optimised enough, from time analysis. No further optimisation necessary.
+
 
 #from functools import lru_cache
 
@@ -20,9 +22,12 @@ def memoize(func):
     def cache_remove(component_type):
         """Remove a specific component type from the cache."""
         if component_type in cache:
+            # This code only runs if keys of the cache are NOT LISTS, since component_type is also not a list.
+            # however, if component_type is a list (i.e a list of component types), this code will run.
             del cache[component_type]
             return
         for key in list(cache):
+            # For any key that depends on the component that has to be recached, remove the cache.
             if component_type in key:
                 del cache[key]
 
@@ -296,13 +301,15 @@ class World:
 
     @memoize
     def get_component(self, component_type):
-        """Get a list for Entity, Component pairs."""
-        return [query for query in self._get_component(component_type)]
+        """Get a tuple for Entity, Component pairs."""
+        return tuple(query for query in self._get_component(component_type))
 
     @memoize
     def get_components(self, *component_types):
-        """Get a list for Entity and multiple Component sets."""
-        return [query for query in self._get_components(*component_types)]
+        """Get a tuple for Entity and multiple Component sets."""
+        # The reason to use this intermediary function for _get_components is because _get_components returns an iterator,
+        # while this function converts it in to a list and caches it.
+        return tuple(query for query in self._get_components(*component_types))
 
     def try_component(self, entity, component_type):
         """Try to get a single component type for an Entity.

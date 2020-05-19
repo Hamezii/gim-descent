@@ -1,5 +1,5 @@
 # Gim
-Gim Descent is a simple tactical roguelike dungeon-crawler.
+Gim Descent is a turn-based roguelike dungeon-crawler.
 The aim is to fight through a dungeon and defeat the boss.
 
 An executable for this game is available at the link to itch.io!

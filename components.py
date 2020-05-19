@@ -25,11 +25,8 @@ class Bomber:
 class Stairs:
     """Stores the direction the stairs go in."""
     direction: str = "down"
+    is_exit: bool = False
 
-@dataclass
-class ExitStairs:
-    """Tags a set of stairs as an exit from the dungeon."""
-    pass
 
 @dataclass
 class TilePosition:
