@@ -65,7 +65,8 @@ class MainMenu(Scene):
                     "WASD, ARROWS       MOVE",
                     "Z, SPACE, ENTER    SELECT/OPEN INVENTORY",
                     "X, ESCAPE          BACK/EXIT",
-                    "TAB                OPEN/CLOSE INVENTORY"
+                    "TAB                OPEN/CLOSE INVENTORY",
+                    "PLUS, MINUS        ZOOM IN AND OUT"
                 ]
             )
         )
