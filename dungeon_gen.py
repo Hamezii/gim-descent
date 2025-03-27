@@ -96,7 +96,7 @@ def __generate_main_path(network):
     path_height = 5
     path_length = 7
     for height in range(path_height-1, -1, -1):
-        distance = random.randint(path_length//(1+height), path_length//(1+height*0.5))
+        distance = random.randint(int(path_length//(1+height)), int(path_length//(1+height*0.5)))
         direction = __get_path_direction(x, distance)
         attempts = 0
         while direction is None:

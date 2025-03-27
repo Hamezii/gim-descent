@@ -318,5 +318,5 @@ def exit_stairs(x, y):
     return [
         c.Render("stairs-down"),
         c.TilePosition(x, y),
-        c.ExitStairs(),
+        c.Stairs(is_exit=True),
     ]
